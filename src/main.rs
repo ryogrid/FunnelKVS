@@ -4,7 +4,6 @@
 #[macro_use]
 extern crate rocket;
 
-/// GETがきたときに"Hello, world!"というレスポンスを返す
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
@@ -12,6 +11,6 @@ fn index() -> &'static str {
 
 fn main() {
     rocket::ignite()
-        .mount("/", routes![index])  // ここにルーティングをセットする
+        .mount("/", routes![index]) 
         .launch();
 }

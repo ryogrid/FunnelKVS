@@ -21,6 +21,7 @@ class NodeInfo:
     # 半閉区間 (start, end] で startの値は含まない
     assigned_range_start = None
     assigned_range_end = None
+    first_successor_id = None
 
     def __init__(self, **params):
         # メンバ変数に代入していく
@@ -33,12 +34,18 @@ class ChordNode:
     #KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
     stored_data = {}
     predicessor = None
+    # NodeInfoオブジェクトを要素として持つ
     finger_table = []
     successors = []
 
+    # join時の処理もコンストラクタで行う
     def __init__(self, node_address):
         print("hello Chord!")
-        self.initialize_routing_entries()
+        # TODO: join時は自ノードの情報を他ノードに通知する必要はなかったかもしれない
+        #       ただし、その場合でも、joinすることによって担当範囲を引き継ぐことになる場合を考えると、
+        #       最初の仲介ノードから保持しているデータを受け取る必要はありそう（レプリケーションを
+        #       考慮する場合も同様）
+        self.initialize_routing_entries_and_advertise()
 
     def put(self, key_str, value_str):
         print("not implemented yet")
@@ -49,8 +56,31 @@ class ChordNode:
     def delete(self, key_str):
         print("not implemented yet")
 
-    def initialize_routing_entries(self):
+    def initialize_routing_entries_and_advertise(self):
         print("not implemented yet")
+
+    # idで識別されるデータを担当するノードの名前解決を行うメソッド
+    # TODO: 実システムでのやりとりの形になるようにブレークダウンする必要あり
+    #       なお、node_infoクラスにChordNodeオブジェクト自体も格納しておけばこのような形でも検証できなくはない
+    def find_successor(self, id):
+        n_dash = self.find_predecessor(id)
+        return n_dash.first_successor
+
+    # TODO: 実システムでのやりとりの形になるようにブレークダウンする必要あり
+    #       なお、node_infoクラスにChordNodeオブジェクト自体も格納しておけばこのような形でも検証できなくはない
+    def find_predecessor(self, id):
+        n_dash = self
+        while not (int(n_dash.id_str) < id and id <= int(n_dash.first_successor_id)):
+            n_dash = n_dash.closest_preceding_finger(id)
+        return n_dash
+
+    def closest_preceding_finger(self, id):
+        # TODO: 範囲の狭いエントリから探索していく形になるよう確認すること
+        for entry in self.finger_table:
+            if int(self.node_info.address_str) < int(entry.id_str) and int(entry.id_str) <= id:
+                return entry
+        #自身が一番近いpredecessorである
+        return self.node_info
 
 def add_new_node():
     print("not implemented yet")

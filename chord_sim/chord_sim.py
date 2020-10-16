@@ -51,7 +51,7 @@ class NodeInfo:
 
     # NodeInfoオブジェクトを保持
     successor_info = None
-    predicessor_info = None
+    predecessor_info = None
 
     def __init__(self, **params):
         # メンバ変数に代入していく
@@ -76,12 +76,24 @@ class ChordNode:
         #       考慮する場合も同様）
         self.join(node_address)
 
+    #TODO global_put
+    def global_put(self, key_str, value_str):
+        print("not implemented yet")
+
     #TODO: put
     def put(self, key_str, value_str):
         print("not implemented yet")
 
+    #TODO: global_get
+    def global_get(self, key_str):
+        print("not implemented yet")
+
     #TODO: get
     def get(self, key_str):
+        print("not implemented yet")
+
+    #TODO: global_delete
+    def global_delete(self, key_str):
         print("not implemented yet")
 
     #TODO: delete
@@ -98,6 +110,7 @@ class ChordNode:
     #       stabilize処理を行う
     #       FingerTableやpredecessorはここで初めて設定される
     def stabilize(self):
+        # TODO: FingerTableを順を追って構築していく処理を実装する
         print("not implemented yet")
 
     # TODO: find_successor
@@ -148,7 +161,7 @@ def do_put_on_random_node():
     kv_data = KeyValue("hogehoge", "fugafuga")
     # TODO: ランダムに選択するよう変更する
     node = list(all_node_dict.values())[0]
-    node.put(kv_data.key, kv_data.value)
+    node.global_put(kv_data.key, kv_data.value)
     all_data_list.append(kv_data)
     print("not implemented yet")
 
@@ -162,7 +175,7 @@ def do_get_on_random_node():
 
     # TODO: ランダムに選択するよう変更する
     node = list(all_node_dict.values())[0]
-    node.get(target_data_key)
+    node.global_get(target_data_key)
     print("not implemented yet")
 
 def node_join_th():

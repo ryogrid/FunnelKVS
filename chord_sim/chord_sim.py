@@ -1,5 +1,7 @@
 # coding:utf-8
 
+# TODO: それっぽく動作していることが分かるような最低限のデバッグログを出力するようにする
+
 import threading
 import time
 
@@ -8,20 +10,48 @@ import time
 all_node_dict = {}
 
 # DHT上で保持されている全てのデータが保持されているリスト
-# 2要素のリスト [key、value] を要素として持つ
+# KeyValueオブジェクトを要素として持つ
 # 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
-# getする際はDHTに対してgetを発行するための適当なキーをこのリストからランダム
-# に選んだ要素のkeyを用いる. また value も一時的に保持しておき、取得できた内容と
+# getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
+# に選び、そのkeyを用いて探索を行う. また value も一時的に保持しておき、取得できた内容と
 # 一致しているか確認する
 all_data_list = []
 
+class ChordUtil:
+    # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
+    @classmethod
+    def hash_str(cls, input_str):
+        # TODO: ハッシュ関数のサンプルコードを探しておく
+        print("not implemented yet")
+
+class KeyValue:
+    key = None
+    value = None
+    # keyのハッシュ値
+    id = None
+
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+        self.id = ChordUtil.hash_str(key)
+
 class NodeInfo:
-    id_str = None
+    # NodeInfoオブジェクトに対応するChordNodeのオブジェクト
+    # 本来は address_str フィールドの文字列からオブジェクトを引くという
+    # ことをせずにアクセスできるのは実システムとの対応が崩れるのでズルなのだが
+    # ひとまず保持しておくことにする
+    node_obj = None
+
+    id = None
     address_str = None
-    # 半閉区間 (start, end] で startの値は含まない
+
+    # 半開区間 (start, end] で startの値は含まない
     assigned_range_start = None
     assigned_range_end = None
-    first_successor_id = None
+
+    # NodeInfoオブジェクトを保持
+    successor_info = None
+    predicessor_info = None
 
     def __init__(self, **params):
         # メンバ変数に代入していく
@@ -31,12 +61,11 @@ class NodeInfo:
 
 class ChordNode:
     node_info = None
-    #KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
+    # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
     stored_data = {}
-    predicessor = None
-    # NodeInfoオブジェクトを要素として持つ
+
+    # NodeInfoオブジェクトを要素として持つリスト
     finger_table = []
-    successors = []
 
     # join時の処理もコンストラクタで行う
     def __init__(self, node_address):
@@ -45,53 +74,95 @@ class ChordNode:
         #       ただし、その場合でも、joinすることによって担当範囲を引き継ぐことになる場合を考えると、
         #       最初の仲介ノードから保持しているデータを受け取る必要はありそう（レプリケーションを
         #       考慮する場合も同様）
-        self.initialize_routing_entries_and_advertise()
+        self.join(node_address)
 
+    #TODO: put
     def put(self, key_str, value_str):
         print("not implemented yet")
 
+    #TODO: get
     def get(self, key_str):
         print("not implemented yet")
 
+    #TODO: delete
     def delete(self, key_str):
         print("not implemented yet")
 
-    def initialize_routing_entries_and_advertise(self):
+    # TODO: join
+    #       node_addressに対応するノードをsuccessorとして設定し, そのノードと
+    #       必要に応じてやり取りを行う
+    def join(self, node_address):
         print("not implemented yet")
 
-    # idで識別されるデータを担当するノードの名前解決を行うメソッド
-    # TODO: 実システムでのやりとりの形になるようにブレークダウンする必要あり
+    # TODO: stabilize
+    #       stabilize処理を行う
+    #       FingerTableやpredecessorはここで初めて設定される
+    def stabilize(self):
+        print("not implemented yet")
+
+    # TODO: find_successor
+    #       idで識別されるデータを担当するノードの名前解決を行う
+    #       実システムでのやりとりの形になるようにブレークダウンする必要あり
     #       なお、node_infoクラスにChordNodeオブジェクト自体も格納しておけばこのような形でも検証できなくはない
     def find_successor(self, id):
         n_dash = self.find_predecessor(id)
         return n_dash.first_successor
 
-    # TODO: 実システムでのやりとりの形になるようにブレークダウンする必要あり
+    # TODO: find_predecessor
+    #       id　の前で一番近い位置に存在するノードを探索する
+    #       実システムでのやりとりの形になるようにブレークダウンする必要あり
     #       なお、node_infoクラスにChordNodeオブジェクト自体も格納しておけばこのような形でも検証できなくはない
     def find_predecessor(self, id):
         n_dash = self
-        while not (int(n_dash.id_str) < id and id <= int(n_dash.first_successor_id)):
+        while not (n_dash.node_info.predecessor_info.id < id and id <= n_dash.node_info.successor_info.id):
             n_dash = n_dash.closest_preceding_finger(id)
         return n_dash
 
+    # TODO: closest_preceding_finger
+    #       自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
     def closest_preceding_finger(self, id):
         # TODO: 範囲の狭いエントリから探索していく形になるよう確認すること
         for entry in self.finger_table:
-            if int(self.node_info.address_str) < int(entry.id_str) and int(entry.id_str) <= id:
+            if self.node_info.id < entry.id and entry.id <= id:
                 return entry
         #自身が一番近いpredecessorである
         return self.node_info
 
-def add_new_node():
-    print("not implemented yet")
+# node_addrに対応するノードをpredecessorとして持つ形でネットワークに新規ノードを参加させる
+def add_new_node(node_addr):
+    new_node = ChordNode(node_addr)
+    all_node_dict[new_node.node_info.address_str] = new_node
 
+# ランダムに選択したノードに stabilize のアクションをとらせる
+# やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
 def do_stabilize_on_random_node():
+    # TODO: ランダムに選択するよう変更する
+    node = list(all_node_dict.values())[0]
+    node.stabilize()
     print("not implemented yet")
 
+# 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
+# アドレスをよろしく解決し、見つかったノードにputの操作を依頼する
 def do_put_on_random_node():
+    # TODO: 実行毎に内容が異なるよう修正する
+    kv_data = KeyValue("hogehoge", "fugafuga")
+    # TODO: ランダムに選択するよう変更する
+    node = list(all_node_dict.values())[0]
+    node.put(kv_data.key, kv_data.value)
+    all_data_list.append(kv_data)
     print("not implemented yet")
 
+# TODO: do_get_on_random_node
+#       グローバル変数であるall_data_listからランダムにデータを選択し、そのデータのIDから
+#       Chordネットワーク上の担当ノードのアドレスをよろしく解決し、見つかったノードにgetの操作を依頼する
 def do_get_on_random_node():
+    # TODO: ランダムに選択するよう修正する
+    target_data = all_data_list[0]
+    target_data_key = target_data.id
+
+    # TODO: ランダムに選択するよう変更する
+    node = list(all_node_dict.values())[0]
+    node.get(target_data_key)
     print("not implemented yet")
 
 def node_join_th():

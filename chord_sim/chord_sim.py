@@ -21,7 +21,7 @@ class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
     @classmethod
     def hash_str(cls, input_str):
-        # TODO: ハッシュ関数のサンプルコードを探しておく
+        # TODO: ハッシュ関数のサンプルコードを探しておき、実装する
         print("not implemented yet")
 
 class KeyValue:
@@ -152,9 +152,9 @@ def do_put_on_random_node():
     all_data_list.append(kv_data)
     print("not implemented yet")
 
-# TODO: do_get_on_random_node
-#       グローバル変数であるall_data_listからランダムにデータを選択し、そのデータのIDから
-#       Chordネットワーク上の担当ノードのアドレスをよろしく解決し、見つかったノードにgetの操作を依頼する
+
+# グローバル変数であるall_data_listからランダムにデータを選択し、そのデータのIDから
+# Chordネットワーク上の担当ノードのアドレスをよろしく解決し、見つかったノードにgetの操作を依頼する
 def do_get_on_random_node():
     # TODO: ランダムに選択するよう修正する
     target_data = all_data_list[0]

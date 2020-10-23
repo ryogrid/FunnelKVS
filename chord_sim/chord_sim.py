@@ -71,9 +71,9 @@ class NodeInfo:
     # 何ノード目として生成されたかの値
     born_id = None
 
-    # 半開区間 (start, end] で startの値は含まない
-    assigned_range_start = None
-    assigned_range_end = None
+    # # 半開区間 (start, end] で startの値は含まない
+    # assigned_range_start = None
+    # assigned_range_end = None
 
     # NodeInfoオブジェクトを保持
     successor_info = None

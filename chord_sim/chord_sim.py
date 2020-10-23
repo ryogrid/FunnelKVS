@@ -370,6 +370,7 @@ def node_join_th():
     while counter < 10:
         add_new_node()
         time.sleep(1) # sleep 1sec
+        counter += 1
 
 def stabilize_th():
     # 実システムではあり得ないが、デバッグプリントが見にくくなることを

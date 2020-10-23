@@ -149,8 +149,13 @@ class ChordNode:
 
         if(first_node):
             # 最初の1ノードの場合
-            # 自身を仲介ノード（successorに設定される）としてネットワークに参加する
+
+            # joinメソッド内で仲介ノードを引く際に自身が登録されていないとエラー
+            # となるため、このタイミングで all_node_dict に登録する
+            all_node_dict[self.node_info.address_str] = self
+
             # TODO: 初期ノードの初期化がこれで問題ないか確認する
+            # 自身を仲介ノード（successorに設定される）としてネットワークに参加する
             self.join(self.node_info.address_str)
         else:
             self.join(node_address)

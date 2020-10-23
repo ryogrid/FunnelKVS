@@ -1,6 +1,7 @@
 # coding:utf-8
 
-# TODO: それっぽく動作していることが分かるような最低限のデバッグログを出力するようにする
+# TODO: それっぽく動作していることが分かるような最低限のデバッグプリントを出力するようにする
+# TODO: ノードの　born_id をデバッグプリントに含めるようにする
 
 import threading
 import time
@@ -19,6 +20,10 @@ all_node_dict = {}
 # 一致しているか確認する
 all_data_list = []
 
+# 検証を分かりやすくするために何ノード目として生成されたか
+# のデバッグ用IDを持たせるためのカウンタ
+already_born_node_num = 0
+
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
     # アルゴリズムはSHA1, 160bitで表現される正の整数となる
@@ -36,6 +41,12 @@ class ChordUtil:
         idx = random.randint(0, length - 1)
         return list_like[idx]
 
+    # UNIXTIME（ミリ秒精度）にいくつか値を加算した値からアドレス文字列を生成する
+    @classmethod
+    def gen_address_str(cls):
+        return str(time.time() + 10)
+
+# all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
     key = None
     value = None
@@ -57,6 +68,10 @@ class NodeInfo:
     id = None
     address_str = None
 
+    # デバッグ用のID（実システムには存在しない）
+    # 何ノード目として生成されたかの値
+    born_id = None
+
     # 半開区間 (start, end] で startの値は含まない
     assigned_range_start = None
     assigned_range_end = None
@@ -77,18 +92,27 @@ class ChordNode:
     stored_data = {}
 
     # NodeInfoオブジェクトを要素として持つリスト
+    # インデックスの小さい方から狭い範囲が格納される形で保持する
     finger_table = []
 
     # join時の処理もコンストラクタで行う
-    def __init__(self, node_address):
+    def __init__(self, node_address, first_node = False):
+        global already_born_node_num
+
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chorネットワーク上でのIDを決定する
-        self.node_info.address_str = str(time.time() + 10)
+        self.node_info.address_str = ChordUtil.gen_address_str()
         self.node_info.id = ChordUtil.hash_str(self.node_info.address_str)
-        # TODO: join時は自ノードの情報を他ノードに通知する必要はなかったかもしれない
-        #       ただし、その場合でも、joinすることによって担当範囲を引き継ぐことになる場合を考えると、
-        #       最初の仲介ノードから保持しているデータを受け取る必要はありそう（レプリケーションを
-        #       考慮する場合も同様）
-        self.join(node_address)
+
+        already_born_node_num += 1
+        self.node_info.born_id = already_born_node_num
+
+        if(first_node):
+            # 最初の1ノードの場合
+            # 自身を仲介ノード（successorに設定される）としてネットワークに参加する
+            # TODO: 初期ノードの初期化がこれで問題ないか確認する
+            self.join(self.node_info.address_str)
+        else:
+            self.join(node_address)
 
     def global_put(self, key_str, value_str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
@@ -114,10 +138,12 @@ class ChordNode:
 
     # 得られた value の文字列を返す
     def get(self, id_str):
+        # TODO: id_strに対応するデータを持っていなかった場合、例外が発生するので
+        #       その場合にNot Found 的なエラー文字列を返してやるようにする
         ret_value_str = self.stored_data[id_str]
         print("get," + str(self.node_info.id) + "," + id_str + "," + ret_value_str)
-        return ret_value_str
 
+        return ret_value_str
 
     # TODO: global_delete (ひとまずglobal_getとglobal_putだけ実装するので後で良い）
     def global_delete(self, key_str):
@@ -135,9 +161,6 @@ class ChordNode:
         successor_info = all_node_dict[node_address]
         self.node_info.successor_info = successor_info
 
-        # TODO: successorが担当していたID範囲のデータを委譲してもらう必要がありそう
-        #       ひとまず範囲関係なく全部受け取ってしまってもいいはずだが
-
         # 自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
         print("join," + hex(self.node_info.id) + "," + hex(successor_info.id))
 
@@ -146,6 +169,16 @@ class ChordNode:
     #       FingerTableやpredecessorはここで初めて設定される
     def stabilize(self):
         # TODO: FingerTableを順を追って構築していく処理を実装する
+        #       また、おそらく、ここでjoin時には分からなかった自身の担当範囲
+        #       が決定し、自身がjoinするまでその範囲を担当していたノードから
+        #       保持しているデータの委譲（コピーでも良いはず）を受ける必要が
+        #       あるはず。
+        #       ただし、全ノードが揃って、stabilizeも十分に行われた後にしか
+        #       putを行わないという条件であれば、保持データの委譲は不要にできる
+        #       が、現実的にはそのようなシチュエーションは想定できないので、初版
+        #       での本シミュレータの動作確認時にひとまず動かすというタイミングで
+        #       のみ許される条件であろう
+
         print("not implemented yet")
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
@@ -162,10 +195,9 @@ class ChordNode:
             n_dash = n_dash.closest_preceding_finger(id)
         return n_dash
 
-    # TODO: closest_preceding_finger
-    #       自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
+    #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
     def closest_preceding_finger(self, id):
-        # TODO: 範囲の狭いエントリから探索していく形になっているか確認すること
+        # 範囲の狭いエントリから探索していく
         for entry in self.finger_table:
             if self.node_info.id < entry.id and entry.id <= id:
                 return entry
@@ -173,16 +205,23 @@ class ChordNode:
         #自身が一番近いpredecessorである
         return self.node_info
 
-# node_addrに対応するノードをsuccessorとして持つ形でネットワークに新規ノードを参加させる
-def add_new_node(node_addr):
-    new_node = ChordNode(node_addr)
+# ネットワークに存在するノードから1ノードをランダムに取得する
+# ChordNodeオブジェクトを返す
+def get_a_random_node():
+    node_list = list(all_node_dict.values())
+    node = ChordUtil.get_random_elem(node_list)
+    return node
+
+# ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
+def add_new_node():
+    tyukai_node = get_a_random_node()
+    new_node = ChordNode(tyukai_node.node_info.address_str)
     all_node_dict[new_node.node_info.address_str] = new_node
 
 # ランダムに選択したノードに stabilize のアクションをとらせる
 # やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
 def do_stabilize_on_random_node():
-    node_list = list(all_node_dict.values())
-    node = ChordUtil.get_random_elem(node_list)
+    node = get_a_random_node()
     node.stabilize()
 
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
@@ -192,7 +231,7 @@ def do_put_on_random_node():
     # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyとvalueに用いる
     kv_data = KeyValue(unixtime_str, unixtime_str)
     node_list = list(all_node_dict.values())
-    node = ChordUtil.get_random_elem(node_list)
+    node = get_a_random_node()
     node.global_put(kv_data.key, kv_data.value)
     all_data_list.append(kv_data)
     print("not implemented yet")
@@ -208,8 +247,7 @@ def do_get_on_random_node():
     target_data = ChordUtil.get_random_elem(all_data_list)
     target_data_key = target_data.id
 
-    node_list = list(all_node_dict.values())
-    node = ChordUtil.get_random_elem(node_list)
+    node = get_a_random_node()
     node.global_get(target_data_key)
 
 def node_join_th():
@@ -221,16 +259,23 @@ def node_join_th():
 def stabilize_th():
     while True:
         do_stabilize_on_random_node()
+        # TODO: 百ミリ秒程度は sleepなりでインターバルを入れないと
+        #       プロセスのロードが大変なことになると思われる
 
 def data_put_th():
     while True:
         do_put_on_random_node()
+        time.sleep(1) # sleep 1sec
 
 def data_get_th():
     while True:
         do_get_on_random_node()
+        time.sleep(1) # sleep 1sec
 
 def main():
+    first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
+    all_node_dict[first_node.node_info.address_str] = first_node
+
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True, args=())
     node_join_th_handle.start()
 

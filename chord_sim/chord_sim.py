@@ -58,6 +58,13 @@ class ChordUtil:
             ret_id = ID_MAX + 1
         return id
 
+
+    # TODO: ID空間が環状になっていることを踏まえて base_id から前方をたどった場合の
+    #       ノード間の距離を求める
+    @classmethod
+    def calc_distance_between_nodes(cls, base_id, target_id):
+        print("not implemented yet")
+
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
     key = None
@@ -115,6 +122,8 @@ class ChordNode:
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chorネットワーク上でのIDを決定する
         self.node_info.address_str = ChordUtil.gen_address_str()
         self.node_info.id = ChordUtil.hash_str(self.node_info.address_str)
+
+        self.node_info.node_obj = self
 
         already_born_node_num += 1
         self.node_info.born_id = already_born_node_num
@@ -177,22 +186,67 @@ class ChordNode:
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
         print("join," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(successor.node_info.id))
 
-    # TODO: stabilize_successor
-    #       successorおよびpredicessorに関するstabilize処理を行う
-    #       predecessorはこの呼び出しで初めて設定される
-    def stabilize_successor(self):
-        # TODO: successorとpredicessorを訂正する処理を行う
-        #       また、おそらく、ここでjoin時には分からなかった自身の担当範囲
-        #       が決定し、自身がjoinするまでその範囲を担当していたノードから
-        #       保持しているデータの委譲（コピーでも良いはず）を受ける必要が
-        #       あるはず。
-        #       ただし、全ノードが揃って、stabilizeも十分に行われた後にしか
-        #       putを行わないという条件であれば、保持データの委譲は不要にできる
-        #       が、現実的にはそのようなシチュエーションは想定できないので、初版
-        #       での本シミュレータの動作確認時にひとまず動かすというタイミングで
-        #       のみ許される条件であろう
+    # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
+    # 本メソッドはstabilize処理の中で用いられる
+    def check_predecessor(self, id, node_obj):
+        if self.node_info.predecessor_info == None:
+            # 未設定状態なので確認するまでもなく、predecessorらしいと判断し
+            # 経路情報に設定し、処理を終了する
+            self.node_info.predecessor_info = node_obj.node_info
+            return
 
-        print("not implemented yet")
+        distance_check = ChordUtil.calc_distans_between_nodes(self.node_info.id, id)
+        distance_cur = ChordUtil.calc_distans_between_nodes(self.node_info.id, self.node_info.predecessor_info.id)
+
+        # 確認を求められたノードの方が現在の predecessor より predecessorらしければ
+        # 経路表の情報を更新する
+        if distance_check < distance_cur:
+            self.node_info.predecessor_info = node_obj.node_info
+
+    # successorおよびpredicessorに関するstabilize処理を行う
+    # predecessorはこの呼び出しで初めて設定される
+    def stabilize_successor(self):
+        # TODO: ここでjoin時には分からなかった自身の担当範囲が決定し、自身がjoinする
+        #       までその範囲を担当していたノードから保持しているデータの委譲（コピーでも
+        #       良いはず）を受ける必要があるかもしれない.
+        #       　そうでなければ、successorを必要十分な数だけ複数持つことで委譲を不要
+        #       とするか、定期的にデータを委譲する処理を走らせるかしてデータへの到達性
+        #       を担保するのかもしれない.
+        #       　ただし、全ノードが揃って、stabilizeも十分に行われた後にしか
+        #       putを行わず、ノードの離脱が発生しないという条件であれば、保持データの
+        #       委譲は不要にでき、successorも増やすことなく到達性が担保できるはずである.
+        #       しかし、現実的にはそのようなシチュエーションは想定できないので、
+        #       本シミュレータをひとまず動かすための暫定実装でのみ許される条件であろう.
+
+        # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
+        successor_obj = self.node_info.successor_info.node_obj
+        pred_id_of_successor = successor_obj.node_info.predecessor_info.id
+
+        # 下のパターン1から3という記述は以下の資料による説明に基づく
+        # https://www.slideshare.net/did2/chorddht
+        if(pred_id_of_successor == self.node_info.id):
+            # パターン1
+            # 特に訂正は不要なので処理を終了する
+            return
+        else:
+            # 以下、パターン2およびパターン3に対応する処理
+
+            # 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
+            # 情報を更新してもらう
+            # 事前チェックによって避けられるかもしれないが、常に実行する
+            successor_obj.check_predecessor(self.id, self.node_info)
+
+            distance_unknown = ChordUtil.calc_distans_between_nodes(successor_obj.node_info.id, pred_id_of_successor)
+            distance_me = ChordUtil.calc_distans_between_nodes(successor_obj.node_info.id, self.node_info.id)
+            if distance_unknown < distance_me:
+                # successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
+                # successorから自身に対して前方向にたどった場合の経路中に存在する場合
+                # 自身の認識するsuccessorの情報を更新する
+                self.node_info.successor_info = successor_obj.node_info.predecessor_info
+
+                # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
+                # ば情報を更新してもらう
+                self.node_info.successor_info.node_obj.check_predecesor(self.id, self.node_info)
 
     # FingerTableに関するstabilize処理を行う
     # 一回の呼び出しでランダムに選択した1エントリを更新する
@@ -326,6 +380,8 @@ def data_get_th():
 
 def main():
     # 再現性のため乱数シードを固定
+    # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで
+    # スイッチするかは実行毎に異なる可能性があるため、あまり意味はないかもしれない
     random.seed(1337)
 
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)

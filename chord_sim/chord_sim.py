@@ -252,22 +252,26 @@ def do_get_on_random_node():
 
 def node_join_th():
     counter = 0
-    while counter < 500:
+    while counter < 50:
         add_new_node()
-        time.sleep(1) # sleep 1sec
+        time.sleep(0.1) # sleep 100msec
 
 def stabilize_th():
     while True:
         do_stabilize_on_random_node()
-        # TODO: 百ミリ秒程度は sleepなりでインターバルを入れないと
-        #       プロセスのロードが大変なことになると思われる
+        time.sleep(0.1) # sleep 100msec
 
 def data_put_th():
+    #全ノードがネットワークに参加し十分に stabilize処理が行われた
+    #状態になるまで待つ
+    time.sleep(15) # sleep 15sec
     while True:
         do_put_on_random_node()
         time.sleep(1) # sleep 1sec
 
 def data_get_th():
+    # 最初のputが行われるまで待つ
+    time.sleep(17) # sleep 17sec
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec

@@ -58,12 +58,31 @@ class ChordUtil:
             ret_id = ID_MAX + 1
         return id
 
-
-    # TODO: ID空間が環状になっていることを踏まえて base_id から前方をたどった場合の
-    #       ノード間の距離を求める
+    # ID空間が環状になっていることを踏まえて base_id から前方をたどった場合の
+    # ノード間の距離を求める
+    # ここで前方とは、IDの値が小さくなる方向である
     @classmethod
     def calc_distance_between_nodes(cls, base_id, target_id):
-        print("not implemented yet")
+        # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
+        # 同じ数だけずらす
+        slided_target_id = 0
+        slided_base_id = base_id - target_id
+        if(slided_base_id < 0):
+            # マイナスの値をとった場合は値0を通り越しているので
+            # それにあった値に置き換える
+            slided_base_id = ID_MAX - slided_base_id
+
+        # あとは差をとって、符号を逆転させる（前方は値が小さくなる方向を意味するため）
+        distance = -1 * (slided_target_id - slided_base_id)
+
+        # 求めた値が負の値の場合は入力された値において base_id < target_id
+        # であった場合であり、前方をたどった場合の距離は ID_MAX から得られた値
+        # の絶対値を引いたものであり、ここでは負の値となっているのでそのまま加算
+        # すればよい
+        if distance < 0:
+            distance = ID_MAX + distance
+
+        return distance
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:

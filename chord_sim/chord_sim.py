@@ -387,7 +387,7 @@ def data_put_th():
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    time.sleep(12) # sleep 15sec
+    time.sleep(12) # sleep 12sec
 
     # stabilizeを行うスレッドを動作させなくする
     is_stabiize_finished = True
@@ -398,7 +398,7 @@ def data_put_th():
 
 def data_get_th():
     # 最初のputが行われるまで待つ
-    time.sleep(14) # sleep 17sec
+    time.sleep(14) # sleep 14sec
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec
@@ -423,6 +423,9 @@ def main():
 
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True, args=())
     data_get_th_handle.start()
+
+    while True:
+        time.sleep(1)
 
 if __name__ == '__main__':
     main()

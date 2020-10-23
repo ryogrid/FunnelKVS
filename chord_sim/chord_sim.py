@@ -208,7 +208,8 @@ class ChordNode:
         self.node_info.successor_info = successor.node_info
 
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
-        print("join," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(successor.node_info.id))
+        print("join," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(successor.node_info.id)
+              + "," + self.node_info.address_str + "," + successor.node_info.address_str)
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる

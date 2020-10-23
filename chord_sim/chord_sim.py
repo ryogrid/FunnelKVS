@@ -5,6 +5,10 @@ import time
 import random
 import hashlib
 
+# 160bit符号なし整数の最大値
+# Chordネットワーク上のID空間の上限
+ID_MAX = 2**160 - 1
+
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
 all_node_dict = {}
@@ -44,6 +48,15 @@ class ChordUtil:
     @classmethod
     def gen_address_str(cls):
         return str(time.time() + 10)
+
+    # 計算したID値がID空間の最大値を超えていた場合は、空間内に収まる値に変換する
+    @classmethod
+    def overflow_check_and_conv(cls, id):
+        ret_id = id
+        if id > ID_MAX:
+            # 1を足すのは MAX より 1大きい値が 0 となるようにするため
+            ret_id = ID_MAX + 1
+        return id
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
@@ -92,7 +105,8 @@ class ChordNode:
 
     # NodeInfoオブジェクトを要素として持つリスト
     # インデックスの小さい方から狭い範囲が格納される形で保持する
-    finger_table = []
+    # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
+    finger_table = [None] * 160
 
     # join時の処理もコンストラクタで行う
     def __init__(self, node_address, first_node = False):
@@ -156,12 +170,12 @@ class ChordNode:
 
     # node_addressに対応するノードをsuccessorとして設定する
     def join(self, node_address):
-        # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報を受け取るようにする必要あり
-        successor_info = all_node_dict[node_address]
-        self.node_info.successor_info = successor_info
+        # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報をやりとりするようにする必要あり
+        successor = all_node_dict[node_address]
+        self.node_info.successor_info = successor.node_info
 
-        # 自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
-        print("join," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(successor_info.id))
+        # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
+        print("join," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(successor.node_info.id))
 
     # TODO: stabilize_successor
     #       successorおよびpredicessorに関するstabilize処理を行う
@@ -180,23 +194,29 @@ class ChordNode:
 
         print("not implemented yet")
 
-    # TODO: stabilize_finger_table
-    #       FingerTableに関するstabilize処理を行う
-    #       FingerTableのエントリはこの呼び出しによって埋まっていく
+    # FingerTableに関するstabilize処理を行う
+    # 一回の呼び出しでランダムに選択した1エントリを更新する
+    # FingerTableのエントリはこの呼び出しによって埋まっていく
     def stabilize_finger_table(self):
-        # TODO: FingerTableを一回に一つづつ埋めていく（更新する）処理を書く
-        print("not implemented yet")
-
+        length = len(self.finger_table)
+        idx = random.randint(0, length - 1)
+        # FingerTableの各要素はインデックスを idx とすると 2^IDX 先までを担当する、もしくは
+        # 担当するノードに最も近いノードが格納される
+        update_id = ChordUtil.overflow_check_and_conv(self.node_info.id + 2**idx)
+        found_node = self.find_successor(id)
+        self.finger_table[idx] = found_node.node_info
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
-    # TODO: あとで実システムでのやりとりの形になるようにブレークダウンする必要あり
+    # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
+    #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_successor(self, id):
         n_dash = self.find_predecessor(id)
         print("find_successor," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(id) + "," + hex(n_dash.node_info.id) + "," + hex(n_dash.node_info.successor_info.id))
         return n_dash.node_info.successor_info.node_obj
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
-    # TODO: あとで実システムでのやりとりの形になるようにブレークダウンする必要あり
+    # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
+    #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_predecessor(self, id):
         n_dash = self
         while not (n_dash.node_info.predecessor_info.id < id and id <= n_dash.node_info.successor_info.id):
@@ -209,13 +229,16 @@ class ChordNode:
     def closest_preceding_finger(self, id):
         # 範囲の狭いエントリから探索していく
         for entry in self.finger_table:
-            print("closest_preceding_finger," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," +
-                  hex(entry.id))
+            # ランダムに更新しているため埋まっていないエントリも存在し得る
+            if entry == None:
+                continue
+
+            print("closest_preceding_finger," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(entry.id))
             if self.node_info.id < entry.id and entry.id <= id:
-                return entry
+                return entry.node_obj
 
         #自身が一番近いpredecessorである
-        return self.node_info
+        return self
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す
@@ -236,7 +259,8 @@ def do_stabilize_on_random_node():
     node = get_a_random_node()
     node.stabilize_successor()
 
-    # テーブル長が160と長いので半分の80エントリは一気に更新してしまう
+    # テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
+    # 一気に更新してしまう
     for n in range(80):
         node.stabilize_finger_table()
 
@@ -249,8 +273,6 @@ def do_put_on_random_node():
     node = get_a_random_node()
     node.global_put(kv_data.key, kv_data.value)
     all_data_list.append(kv_data)
-    print("not implemented yet")
-
 
 # グローバル変数であるall_data_listからランダムにデータを選択し、そのデータのIDから
 # Chordネットワーク上の担当ノードのアドレスをよろしく解決し、見つかったノードにgetの操作を依頼する
@@ -303,6 +325,9 @@ def data_get_th():
         time.sleep(1) # sleep 1sec
 
 def main():
+    # 再現性のため乱数シードを固定
+    random.seed(1337)
+
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
     all_node_dict[first_node.node_info.address_str] = first_node
 

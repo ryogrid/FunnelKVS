@@ -1,8 +1,5 @@
 # coding:utf-8
 
-# TODO: それっぽく動作していることが分かるような最低限のデバッグプリントを出力するようにする
-# TODO: ノードの　born_id をデバッグプリントに含めるようにする
-
 import threading
 import time
 import random
@@ -23,6 +20,8 @@ all_data_list = []
 # 検証を分かりやすくするために何ノード目として生成されたか
 # のデバッグ用IDを持たせるためのカウンタ
 already_born_node_num = 0
+
+is_stabiize_finished = False
 
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
@@ -124,7 +123,7 @@ class ChordNode:
     def put(self, key_str, value_str):
         key_id_str = str(ChordUtil.hash_str(key_str))
         self.stored_data[key_id_str] = value_str
-        print("put," + str(self.node_info.id) + "," + key_id_str + "," + key_str + "," + value_str)
+        print("put," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + key_id_str + "," + key_str + "," + value_str)
 
     # 得られた value の文字列を返す
     def global_get(self, key_str):
@@ -138,11 +137,13 @@ class ChordNode:
 
     # 得られた value の文字列を返す
     def get(self, id_str):
-        # TODO: id_strに対応するデータを持っていなかった場合、例外が発生するので
-        #       その場合にNot Found 的なエラー文字列を返してやるようにする
-        ret_value_str = self.stored_data[id_str]
-        print("get," + str(self.node_info.id) + "," + id_str + "," + ret_value_str)
+        ret_value_str = None
+        try:
+            ret_value_str = self.stored_data[id_str]
+        except:
+            ret_value_str = "ASKED KEY NOT FOUND"
 
+        print("get," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + id_str + "," + ret_value_str)
         return ret_value_str
 
     # TODO: global_delete (ひとまずglobal_getとglobal_putだけ実装するので後で良い）
@@ -153,22 +154,20 @@ class ChordNode:
     def delete(self, key_str):
         print("not implemented yet")
 
-
-    # node_addressに対応するノードをsuccessorとして設定し, そのノードと
-    # 必要に応じてやり取りを行う
+    # node_addressに対応するノードをsuccessorとして設定する
     def join(self, node_address):
         # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報を受け取るようにする必要あり
         successor_info = all_node_dict[node_address]
         self.node_info.successor_info = successor_info
 
         # 自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
-        print("join," + hex(self.node_info.id) + "," + hex(successor_info.id))
+        print("join," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(successor_info.id))
 
-    # TODO: stabilize
-    #       stabilize処理を行う
-    #       FingerTableやpredecessorはここで初めて設定される
-    def stabilize(self):
-        # TODO: FingerTableを順を追って構築していく処理を実装する
+    # TODO: stabilize_successor
+    #       successorおよびpredicessorに関するstabilize処理を行う
+    #       predecessorはこの呼び出しで初めて設定される
+    def stabilize_successor(self):
+        # TODO: successorとpredicessorを訂正する処理を行う
         #       また、おそらく、ここでjoin時には分からなかった自身の担当範囲
         #       が決定し、自身がjoinするまでその範囲を担当していたノードから
         #       保持しているデータの委譲（コピーでも良いはず）を受ける必要が
@@ -181,17 +180,28 @@ class ChordNode:
 
         print("not implemented yet")
 
+    # TODO: stabilize_finger_table
+    #       FingerTableに関するstabilize処理を行う
+    #       FingerTableのエントリはこの呼び出しによって埋まっていく
+    def stabilize_finger_table(self):
+        # TODO: FingerTableを一回に一つづつ埋めていく（更新する）処理を書く
+        print("not implemented yet")
+
+
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # TODO: あとで実システムでのやりとりの形になるようにブレークダウンする必要あり
     def find_successor(self, id):
         n_dash = self.find_predecessor(id)
-        return n_dash.first_successor
+        print("find_successor," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(id) + "," + hex(n_dash.node_info.id) + "," + hex(n_dash.node_info.successor_info.id))
+        return n_dash.node_info.successor_info.node_obj
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
     # TODO: あとで実システムでのやりとりの形になるようにブレークダウンする必要あり
     def find_predecessor(self, id):
         n_dash = self
         while not (n_dash.node_info.predecessor_info.id < id and id <= n_dash.node_info.successor_info.id):
+            print("find_predecessor," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," +
+                  hex(n_dash.node_info.id))
             n_dash = n_dash.closest_preceding_finger(id)
         return n_dash
 
@@ -199,6 +209,8 @@ class ChordNode:
     def closest_preceding_finger(self, id):
         # 範囲の狭いエントリから探索していく
         for entry in self.finger_table:
+            print("closest_preceding_finger," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," +
+                  hex(entry.id))
             if self.node_info.id < entry.id and entry.id <= id:
                 return entry
 
@@ -222,7 +234,11 @@ def add_new_node():
 # やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
 def do_stabilize_on_random_node():
     node = get_a_random_node()
-    node.stabilize()
+    node.stabilize_successor()
+
+    # テーブル長が160と長いので半分の80エントリは一気に更新してしまう
+    for n in range(80):
+        node.stabilize_finger_table()
 
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
 # アドレスをよろしく解決し、見つかったノードにputの操作を依頼する
@@ -230,7 +246,6 @@ def do_put_on_random_node():
     unixtime_str = str(time.time())
     # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyとvalueに用いる
     kv_data = KeyValue(unixtime_str, unixtime_str)
-    node_list = list(all_node_dict.values())
     node = get_a_random_node()
     node.global_put(kv_data.key, kv_data.value)
     all_data_list.append(kv_data)
@@ -252,26 +267,37 @@ def do_get_on_random_node():
 
 def node_join_th():
     counter = 0
-    while counter < 50:
+    while counter < 10:
         add_new_node()
-        time.sleep(0.1) # sleep 100msec
+        time.sleep(1) # sleep 1sec
 
 def stabilize_th():
-    while True:
+    # 実システムではあり得ないが、デバッグプリントが見にくくなることを
+    # 避けるため、一度ネットワークが構築され、安定状態になったと思われる
+    # タイミングに達したら stabilize 処理は行われなくする
+    while is_stabiize_finished == False:
         do_stabilize_on_random_node()
-        time.sleep(0.1) # sleep 100msec
+        # 1ノードが追加されるごとに、200ノードを選択し処理が
+        # 行われる程度の間隔に設定
+        time.sleep(0.005) # sleep 5msec
 
 def data_put_th():
+    global is_stabiize_finished
+
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    time.sleep(15) # sleep 15sec
+    time.sleep(12) # sleep 15sec
+
+    # stabilizeを行うスレッドを動作させなくする
+    is_stabiize_finished = True
+
     while True:
         do_put_on_random_node()
         time.sleep(1) # sleep 1sec
 
 def data_get_th():
     # 最初のputが行われるまで待つ
-    time.sleep(17) # sleep 17sec
+    time.sleep(14) # sleep 17sec
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec

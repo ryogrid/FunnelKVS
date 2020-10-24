@@ -192,7 +192,7 @@ class ChordNode:
         try:
             ret_value_str = self.stored_data[id_str]
         except:
-            ret_value_str = "ASKED KEY NOT FOUND"
+            ret_value_str = "ASKED_KEY_NOT_FOUND"
 
         print("get," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + id_str + "," + ret_value_str)
         return ret_value_str
@@ -225,6 +225,11 @@ class ChordNode:
     # successorおよびpredicessorに関するstabilize処理を行う
     # predecessorはこの呼び出しで初めて設定される
     def stabilize_successor(self):
+        print("stablize_succesor," + str(self.node_info.born_id) + "," +
+              hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
+              + self.node_info.successor_info.address_str + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
+
         # TODO: ここでjoin時には分からなかった自身の担当範囲が決定し、自身がjoinする
         #       までその範囲を担当していたノードから保持しているデータの委譲（コピーでも
         #       良いはず）を受ける必要があるかもしれない.
@@ -279,6 +284,11 @@ class ChordNode:
     # 一回の呼び出しでランダムに選択した1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
     def stabilize_finger_table(self):
+        print("stablize_finger_table," + str(self.node_info.born_id) + "," +
+              hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
+              + self.node_info.successor_info.address_str + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
+
         length = len(self.node_info.finger_table)
         idx = random.randint(0, length - 1)
         # FingerTableの各要素はインデックスを idx とすると 2^IDX 先までを担当する、もしくは
@@ -291,8 +301,18 @@ class ChordNode:
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_successor(self, id):
+        print("find_successor," + str(self.node_info.born_id) + ","
+              + hex(id) + "," + hex(self.node_info.node_id) + "," 
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
+
         n_dash = self.find_predecessor(id)
-        print("find_successor," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + hex(id) + "," + hex(n_dash.node_info.node_id) + "," + hex(n_dash.node_info.successor_info.node_id))
+        print("find_successor," + str(self.node_info.born_id) + ","
+              + hex(id) + "," + hex(self.node_info.node_id) + "," + hex(n_dash.node_info.node_id) + ","
+              + hex(n_dash.node_info.successor_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.successor_info.node_id))
+
         return all_node_dict[n_dash.node_info.successor_info.address_str]
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
@@ -402,7 +422,7 @@ def do_get_on_random_node():
     lock_of_all_data.release()
 
 def node_join_th():
-    counter = 0
+    counter = 1
     while counter < 10:
         add_new_node()
         time.sleep(1) # sleep 1sec

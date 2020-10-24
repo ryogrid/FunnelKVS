@@ -64,7 +64,7 @@ class ChordUtil:
     #       にして返す
     @classmethod
     def conv_id_to_ratio_str(cls, id):
-        ratio = id / ID_MAX
+        ratio = (id / ID_MAX) * 100.0
         return '%2.4f' % ratio
 
     # ID空間が環状になっていることを踏まえて base_id から前方をたどった場合の
@@ -106,11 +106,11 @@ class KeyValue:
         self.id = ChordUtil.hash_str(key)
 
 class NodeInfo:
-    # NodeInfoオブジェクトに対応するChordNodeのオブジェクト
-    # 本来は address_str フィールドの文字列からオブジェクトを引くという
-    # ことをせずにアクセスできるのは実システムとの対応が崩れるのでズルなのだが
-    # ひとまず保持しておくことにする
-    node_obj = None
+    # # NodeInfoオブジェクトに対応するChordNodeのオブジェクト
+    # # 本来は address_str フィールドの文字列からオブジェクトを引くという
+    # # ことをせずにアクセスできるのは実システムとの対応が崩れるのでズルなのだが
+    # # ひとまず保持しておくことにする
+    # node_obj = None
 
     id = None
     address_str = None
@@ -127,6 +127,11 @@ class NodeInfo:
     successor_info = None
     predecessor_info = None
 
+    # NodeInfoオブジェクトを要素として持つリスト
+    # インデックスの小さい方から狭い範囲が格納される形で保持する
+    # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
+    finger_table = [None] * 160
+
     def __init__(self, **params):
         # メンバ変数に代入していく
         for key, val in params.items():
@@ -138,11 +143,6 @@ class ChordNode:
     # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
     stored_data = {}
 
-    # NodeInfoオブジェクトを要素として持つリスト
-    # インデックスの小さい方から狭い範囲が格納される形で保持する
-    # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
-    finger_table = [None] * 160
-
     # join時の処理もコンストラクタで行う
     def __init__(self, node_address, first_node = False):
         global already_born_node_num
@@ -151,7 +151,7 @@ class ChordNode:
         self.node_info.address_str = ChordUtil.gen_address_str()
         self.node_info.id = ChordUtil.hash_str(self.node_info.address_str)
 
-        self.node_info.node_obj = self
+        # self.node_info.node_obj = self
 
         already_born_node_num += 1
         self.node_info.born_id = already_born_node_num
@@ -225,11 +225,11 @@ class ChordNode:
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
-    def check_predecessor(self, id, node_obj):
+    def check_predecessor(self, id, node_info):
         if self.node_info.predecessor_info == None:
             # 未設定状態なので確認するまでもなく、predecessorらしいと判断し
             # 経路情報に設定し、処理を終了する
-            self.node_info.predecessor_info = node_obj.node_info
+            self.node_info.predecessor_info = node_info
             return
 
         distance_check = ChordUtil.calc_distans_between_nodes(self.node_info.id, id)
@@ -238,7 +238,7 @@ class ChordNode:
         # 確認を求められたノードの方が現在の predecessor より predecessorらしければ
         # 経路表の情報を更新する
         if distance_check < distance_cur:
-            self.node_info.predecessor_info = node_obj.node_info
+            self.node_info.predecessor_info = node_info
 
     # successorおよびpredicessorに関するstabilize処理を行う
     # predecessorはこの呼び出しで初めて設定される
@@ -256,13 +256,13 @@ class ChordNode:
         #       本シミュレータをひとまず動かすための暫定実装でのみ許される条件であろう.
 
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
-        successor_obj = self.node_info.successor_info.node_obj
-        if successor_obj.node_info.predecessor_info == None:
+        successor_info = self.node_info.successor_info
+        if successor_info.predecessor_info == None:
             # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
             # 処理を終了する
-            successor_obj.node_info.predecessor_info = self.node_info
+            successor_info.predecessor_info = self.node_info
 
-        pred_id_of_successor = successor_obj.node_info.predecessor_info.id
+        pred_id_of_successor = successor_info.predecessor_info.id
 
         # 下のパターン1から3という記述は以下の資料による説明に基づく
         # https://www.slideshare.net/did2/chorddht
@@ -276,6 +276,7 @@ class ChordNode:
             # 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
             # 情報を更新してもらう
             # 事前チェックによって避けられるかもしれないが、常に実行する
+            successor_obj = all_node_dict[successor_info.address_str]
             successor_obj.check_predecessor(self.id, self.node_info)
 
             distance_unknown = ChordUtil.calc_distans_between_nodes(successor_obj.node_info.id, pred_id_of_successor)
@@ -288,19 +289,20 @@ class ChordNode:
 
                 # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                 # ば情報を更新してもらう
-                self.node_info.successor_info.node_obj.check_predecesor(self.id, self.node_info)
+                new_successor_obj = all_node_dict[self.node_info.successor_info.address_str]
+                new_successor_obj.check_predecesor(self.id, self.node_info)
 
     # FingerTableに関するstabilize処理を行う
     # 一回の呼び出しでランダムに選択した1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
     def stabilize_finger_table(self):
-        length = len(self.finger_table)
+        length = len(self.node_info.finger_table)
         idx = random.randint(0, length - 1)
         # FingerTableの各要素はインデックスを idx とすると 2^IDX 先までを担当する、もしくは
         # 担当するノードに最も近いノードが格納される
         update_id = ChordUtil.overflow_check_and_conv(self.node_info.id + 2**idx)
         found_node = self.find_successor(id)
-        self.finger_table[idx] = found_node.node_info
+        self.node_info.finger_table[idx] = found_node.node_info
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
@@ -308,7 +310,7 @@ class ChordNode:
     def find_successor(self, id):
         n_dash = self.find_predecessor(id)
         print("find_successor," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(id) + "," + hex(n_dash.node_info.id) + "," + hex(n_dash.node_info.successor_info.id))
-        return n_dash.node_info.successor_info.node_obj
+        return all_node_dict[n_dash.node_info.successor_info.address_str]
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
@@ -324,14 +326,14 @@ class ChordNode:
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
     def closest_preceding_finger(self, id):
         # 範囲の狭いエントリから探索していく
-        for entry in self.finger_table:
+        for entry in self.node_info.finger_table:
             # ランダムに更新しているため埋まっていないエントリも存在し得る
             if entry == None:
                 continue
 
             print("closest_preceding_finger," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(entry.id))
             if self.node_info.id < entry.id and entry.id <= id:
-                return entry.node_obj
+                return all_node_dict[entry.address_str]
 
         #自身が一番近いpredecessorである
         return self
@@ -465,14 +467,14 @@ def main():
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True, args=())
     node_join_th_handle.start()
 
-    stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True, args=())
-    stabilize_th_handle.start()
-
-    data_put_th_handle = threading.Thread(target=data_put_th, daemon=True, args=())
-    data_put_th_handle.start()
-
-    data_get_th_handle = threading.Thread(target=data_get_th, daemon=True, args=())
-    data_get_th_handle.start()
+    # stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True, args=())
+    # stabilize_th_handle.start()
+    #
+    # data_put_th_handle = threading.Thread(target=data_put_th, daemon=True, args=())
+    # data_put_th_handle.start()
+    #
+    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True, args=())
+    # data_get_th_handle.start()
 
     while True:
         time.sleep(1)

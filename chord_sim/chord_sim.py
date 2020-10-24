@@ -168,6 +168,7 @@ class ChordNode:
             # TODO: 初期ノードの初期化がこれで問題ないか確認する
             # 自身を仲介ノード（successorに設定される）としてネットワークに参加する
             #self.join(self.node_info.address_str)
+
             self.join(self)
         else:
             #self.join(node_address)
@@ -487,16 +488,16 @@ def main():
     first_node = ChordNode(None, first_node=True)
     #all_node_dict[first_node.node_info.address_str] = first_node
 
-    node_join_th_handle = threading.Thread(target=node_join_th, daemon=True, args=())
+    node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()
 
-    # stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True, args=())
+    # stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
     # stabilize_th_handle.start()
     #
-    # data_put_th_handle = threading.Thread(target=data_put_th, daemon=True, args=())
+    # data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     # data_put_th_handle.start()
     #
-    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True, args=())
+    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     # data_get_th_handle.start()
 
     while True:

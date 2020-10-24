@@ -27,6 +27,8 @@ already_born_node_num = 0
 
 is_stabiize_finished = False
 
+lock_of_all_data = threading.Lock()
+
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
     # アルゴリズムはSHA1, 160bitで表現される正の整数となる
@@ -57,6 +59,13 @@ class ChordUtil:
             # 1を足すのは MAX より 1大きい値が 0 となるようにするため
             ret_id = ID_MAX + 1
         return id
+
+    # TODO: idがID空間の最大値に対して何パーセントの位置かを適当な精度の浮動小数の文字列
+    #       にして返す
+    @classmethod
+    def conv_id_to_ratio_str(cls, id):
+        ratio = id / ID_MAX
+        return '%2.4f' % ratio
 
     # ID空間が環状になっていることを踏まえて base_id から前方をたどった場合の
     # ノード間の距離を求める
@@ -208,8 +217,11 @@ class ChordNode:
         self.node_info.successor_info = successor.node_info
 
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
-        print("join," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(successor.node_info.id)
-              + "," + self.node_info.address_str + "," + successor.node_info.address_str)
+        print("join," + str(self.node_info.born_id) + "," +
+              hex(self.node_info.id) + "," + hex(successor.node_info.id) + ","
+              + self.node_info.address_str + "," + successor.node_info.address_str + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.id) + ","
+              + ChordUtil.conv_id_to_ratio_str(successor.node_info.id))
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
@@ -245,6 +257,11 @@ class ChordNode:
 
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         successor_obj = self.node_info.successor_info.node_obj
+        if successor_obj.node_info.predecessor_info == None:
+            # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
+            # 処理を終了する
+            successor_obj.node_info.predecessor_info = self.node_info
+
         pred_id_of_successor = successor_obj.node_info.predecessor_info.id
 
         # 下のパターン1から3という記述は以下の資料による説明に基づく
@@ -328,13 +345,26 @@ def get_a_random_node():
 
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
+    global lock_of_all_data
+
+    # ロックの取得
+    lock_of_all_data.acquire()
+
     tyukai_node = get_a_random_node()
     new_node = ChordNode(tyukai_node.node_info.address_str)
     all_node_dict[new_node.node_info.address_str] = new_node
 
+    # ロックの解放
+    lock_of_all_data.release()
+
 # ランダムに選択したノードに stabilize のアクションをとらせる
 # やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
 def do_stabilize_on_random_node():
+    global lock_of_all_data
+
+    # ロックの取得
+    lock_of_all_data.acquire()
+
     node = get_a_random_node()
     node.stabilize_successor()
 
@@ -343,9 +373,17 @@ def do_stabilize_on_random_node():
     for n in range(80):
         node.stabilize_finger_table()
 
+    # ロックの解放
+    lock_of_all_data.release()
+
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
 # アドレスをよろしく解決し、見つかったノードにputの操作を依頼する
 def do_put_on_random_node():
+    global lock_of_all_data
+
+    # ロックの取得
+    lock_of_all_data.acquire()
+
     unixtime_str = str(time.time())
     # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyとvalueに用いる
     kv_data = KeyValue(unixtime_str, unixtime_str)
@@ -353,9 +391,17 @@ def do_put_on_random_node():
     node.global_put(kv_data.key, kv_data.value)
     all_data_list.append(kv_data)
 
+    # ロックの解放
+    lock_of_all_data.release()
+
 # グローバル変数であるall_data_listからランダムにデータを選択し、そのデータのIDから
 # Chordネットワーク上の担当ノードのアドレスをよろしく解決し、見つかったノードにgetの操作を依頼する
 def do_get_on_random_node():
+    global lock_of_all_data
+
+    # ロックの取得
+    lock_of_all_data.acquire()
+
     # まだ put が行われていなかったら何もせずに終了する
     if len(all_data_list) == 0:
         return
@@ -365,6 +411,9 @@ def do_get_on_random_node():
 
     node = get_a_random_node()
     node.global_get(target_data_key)
+
+    # ロックの解放
+    lock_of_all_data.release()
 
 def node_join_th():
     counter = 0

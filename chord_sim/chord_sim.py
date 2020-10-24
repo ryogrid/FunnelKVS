@@ -212,7 +212,19 @@ class ChordNode:
             # 未設定状態なので確認するまでもなく、predecessorらしいと判断し
             # 経路情報に設定し、処理を終了する
             self.node_info.predecessor_info = node_info
+            print("check_predecessor_1," + str(self.node_info.born_id) + ","
+                  + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+                  + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
+
             return
+
+        print("check_predecessor_2," + str(self.node_info.born_id) + ","
+              + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+              + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
         distance_check = ChordUtil.calc_distans_between_nodes(self.node_info.node_id, id)
         distance_cur = ChordUtil.calc_distans_between_nodes(self.node_info.node_id, self.node_info.predecessor_info.node_id)
@@ -221,14 +233,20 @@ class ChordNode:
         # 経路表の情報を更新する
         if distance_check < distance_cur:
             self.node_info.predecessor_info = node_info
+            print("check_predecessor_3," + str(self.node_info.born_id) + ","
+                  + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+                  + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
     # successorおよびpredicessorに関するstabilize処理を行う
     # predecessorはこの呼び出しで初めて設定される
     def stabilize_successor(self):
-        print("stablize_succesor," + str(self.node_info.born_id) + "," +
-              hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
-              + self.node_info.successor_info.address_str + ","
-              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
+        print("stablize_succesor_1," + str(self.node_info.born_id) + ","
+              + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+              + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
         # TODO: ここでjoin時には分からなかった自身の担当範囲が決定し、自身がjoinする
         #       までその範囲を担当していたノードから保持しているデータの委譲（コピーでも
@@ -248,7 +266,25 @@ class ChordNode:
             # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
             # 処理を終了する
             successor_info.predecessor_info = self.node_info
+            print("stablize_succesor_2," + str(self.node_info.born_id) + ","
+                  + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+                  + hex(self.node_info.successor_info.node_id) + ","
+                  + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+                  + self.node_info.predecessor_info.address_str + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id)
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.predecessor_info.node_id))
+
             return
+
+        print("stablize_succesor_3," + str(self.node_info.born_id) + ","
+              + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+              + hex(self.node_info.successor_info.node_id) + ","
+              + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+              + self.node_info.predecessor_info.address_str + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id)
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.predecessor_info.node_id))
 
         pred_id_of_successor = successor_info.predecessor_info.node_id
 
@@ -284,9 +320,8 @@ class ChordNode:
     # 一回の呼び出しでランダムに選択した1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
     def stabilize_finger_table(self):
-        print("stablize_finger_table," + str(self.node_info.born_id) + "," +
+        print("stablize_finger_table_1," + str(self.node_info.born_id) + "," +
               hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
-              + self.node_info.successor_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
 
         length = len(self.node_info.finger_table)
@@ -297,12 +332,18 @@ class ChordNode:
         found_node = self.find_successor(update_id)
         self.node_info.finger_table[idx] = found_node.node_info
 
+        print("stablize_finger_table_2," + str(self.node_info.born_id) + "," +
+              hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id)
+              + str(idx) + "," + hex(found_node.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(found_node.node_info.node_id))
+
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_successor(self, id):
         print("find_successor," + str(self.node_info.born_id) + ","
-              + hex(id) + "," + hex(self.node_info.node_id) + "," 
+              + hex(id) + "," + hex(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
 
         n_dash = self.find_predecessor(id)

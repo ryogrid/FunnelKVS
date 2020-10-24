@@ -43,6 +43,7 @@ class ChordUtil:
     @classmethod
     def get_random_elem(cls, list_like):
         length = len(list_like)
+        print(length)
         idx = random.randint(0, length - 1)
         return list_like[idx]
 
@@ -132,11 +133,11 @@ class NodeInfo:
     # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
     finger_table = [None] * 160
 
-    def __init__(self, **params):
-        # メンバ変数に代入していく
-        for key, val in params.items():
-            if hasattr(self, key):
-                self.__dict__[key] = val
+    # def __init__(self, **params):
+    #     # メンバ変数に代入していく
+    #     for key, val in params.items():
+    #         if hasattr(self, key):
+    #             self.__dict__[key] = val
 
 class ChordNode:
     node_info = NodeInfo()
@@ -168,6 +169,27 @@ class ChordNode:
             self.join(self.node_info.address_str)
         else:
             self.join(node_address)
+
+    # node_addressに対応するノードをsuccessorとして設定する
+    def join(self, node_address):
+        # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報をやりとりするようにする必要あり
+        successor = all_node_dict[node_address]
+
+        # #TODO: 試しに無理やり合わせてみる
+        # successor.node_info.address_str = node_address
+
+        print(successor)
+        self.node_info.successor_info = successor.node_info
+        print(node_address)
+        print(successor.node_info.address_str)
+        print(self.node_info.successor_info.address_str)
+
+        # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
+        print("join," + str(self.node_info.born_id) + "," +
+              hex(self.node_info.id) + "," + hex(self.node_info.successor_info.id) + ","
+              + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.id) + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.id))
 
     def global_put(self, key_str, value_str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
@@ -209,19 +231,6 @@ class ChordNode:
     # TODO: delete (ひとまずgetとputだけ実装するので後で良い）
     def delete(self, key_str):
         print("not implemented yet")
-
-    # node_addressに対応するノードをsuccessorとして設定する
-    def join(self, node_address):
-        # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報をやりとりするようにする必要あり
-        successor = all_node_dict[node_address]
-        self.node_info.successor_info = successor.node_info
-
-        # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
-        print("join," + str(self.node_info.born_id) + "," +
-              hex(self.node_info.id) + "," + hex(successor.node_info.id) + ","
-              + self.node_info.address_str + "," + successor.node_info.address_str + ","
-              + ChordUtil.conv_id_to_ratio_str(self.node_info.id) + ","
-              + ChordUtil.conv_id_to_ratio_str(successor.node_info.id))
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
@@ -342,18 +351,20 @@ class ChordNode:
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す
 def get_a_random_node():
-    node_list = list(all_node_dict.values())
-    node = ChordUtil.get_random_elem(node_list)
-    return node
+    key_list = list(all_node_dict.keys())
+    selected_key = ChordUtil.get_random_elem(key_list)
+    return all_node_dict[selected_key]
 
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
     global lock_of_all_data
+    global all_node_dict
 
     # ロックの取得
     lock_of_all_data.acquire()
 
     tyukai_node = get_a_random_node()
+    print(tyukai_node)
     new_node = ChordNode(tyukai_node.node_info.address_str)
     all_node_dict[new_node.node_info.address_str] = new_node
 
@@ -457,13 +468,16 @@ def data_get_th():
         time.sleep(1) # sleep 1sec
 
 def main():
+    global all_node_dict
+
     # 再現性のため乱数シードを固定
     # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで
     # スイッチするかは実行毎に異なる可能性があるため、あまり意味はないかもしれない
     random.seed(1337)
 
+    # all_node_dictへの登録は first_node が True の場合、ChordNodeのコンストラクタ内で行われる
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
-    all_node_dict[first_node.node_info.address_str] = first_node
+    #all_node_dict[first_node.node_info.address_str] = first_node
 
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True, args=())
     node_join_th_handle.start()

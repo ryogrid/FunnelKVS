@@ -34,7 +34,7 @@ class ChordUtil:
     # アルゴリズムはSHA1, 160bitで表現される正の整数となる
     # メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
     @classmethod
-    def hash_str(cls, input_str):
+    def hash_str_to_int(cls, input_str):
         hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
         hash_id_num = int(hash_hex_str, 16)
         return hash_id_num
@@ -43,7 +43,6 @@ class ChordUtil:
     @classmethod
     def get_random_elem(cls, list_like):
         length = len(list_like)
-        print(length)
         idx = random.randint(0, length - 1)
         return list_like[idx]
 
@@ -96,64 +95,44 @@ class ChordUtil:
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
-    key = None
-    value = None
-    # keyのハッシュ値
-    data_id = None
-
     def __init__(self, key, value):
         self.key = key
         self.value = value
-        self.data_id = ChordUtil.hash_str(key)
+        # keyのハッシュ値
+        self.data_id = ChordUtil.hash_str_to_int(key)
 
 class NodeInfo:
-    # # NodeInfoオブジェクトに対応するChordNodeのオブジェクト
-    # # 本来は address_str フィールドの文字列からオブジェクトを引くという
-    # # ことをせずにアクセスできるのは実システムとの対応が崩れるのでズルなのだが
-    # # ひとまず保持しておくことにする
-    # node_obj = None
 
-    node_id = None
-    address_str = None
+    def __init__(self):
+        self.node_id = None
+        self.address_str = None
 
-    # デバッグ用のID（実システムには存在しない）
-    # 何ノード目として生成されたかの値
-    born_id = None
+        # デバッグ用のID（実システムには存在しない）
+        # 何ノード目として生成されたかの値
+        self.born_id = None
 
-    # # 半開区間 (start, end] で startの値は含まない
-    # assigned_range_start = None
-    # assigned_range_end = None
+        # NodeInfoオブジェクトを保持
+        self.successor_info = None
+        self.predecessor_info = None
 
-    # NodeInfoオブジェクトを保持
-    successor_info = None
-    predecessor_info = None
-
-    # NodeInfoオブジェクトを要素として持つリスト
-    # インデックスの小さい方から狭い範囲が格納される形で保持する
-    # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
-    finger_table = [None] * 160
-
-    # def __init__(self, **params):
-    #     # メンバ変数に代入していく
-    #     for key, val in params.items():
-    #         if hasattr(self, key):
-    #             self.__dict__[key] = val
+        # NodeInfoオブジェクトを要素として持つリスト
+        # インデックスの小さい方から狭い範囲が格納される形で保持する
+        # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
+        self.finger_table = [None] * 160
 
 class ChordNode:
-    node_info = NodeInfo()
-    # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
-    stored_data = {}
 
     # join時の処理もコンストラクタで行う
-    #def __init__(self, node_address, first_node = False):
-    def __init__(self, init_node, first_node=False):
+    def __init__(self, node_address, first_node = False):
         global already_born_node_num
+
+        self.node_info = NodeInfo()
+        # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
+        self.stored_data = {}
 
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chorネットワーク上でのIDを決定する
         self.node_info.address_str = ChordUtil.gen_address_str()
-        self.node_info.node_id = ChordUtil.hash_str(self.node_info.address_str)
-
-        # self.node_info.node_obj = self
+        self.node_info.node_id = ChordUtil.hash_str_to_int(self.node_info.address_str)
 
         already_born_node_num += 1
         self.node_info.born_id = already_born_node_num
@@ -167,29 +146,16 @@ class ChordNode:
 
             # TODO: 初期ノードの初期化がこれで問題ないか確認する
             # 自身を仲介ノード（successorに設定される）としてネットワークに参加する
-            #self.join(self.node_info.address_str)
-
-            self.join(self)
+            self.join(self.node_info.address_str)
         else:
-            #self.join(node_address)
-            self.join(init_node)
+            self.join(node_address)
 
     # node_addressに対応するノードをsuccessorとして設定する
-    #def join(self, node_address):
-    def join(self, init_node):
+    def join(self, node_address):
         # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報をやりとりするようにする必要あり
-        #successor = all_node_dict[node_address]
-        successor = init_node
+        successor = all_node_dict[node_address]
 
-        # #TODO: 試しに無理やり合わせてみる
-        # successor.node_info.address_str = node_address
-
-        print(successor)
         self.node_info.successor_info = successor.node_info
-
-        # print(node_address)
-        # print(successor.node_info.address_str)
-        # print(self.node_info.successor_info.address_str)
 
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
         print("join," + str(self.node_info.born_id) + "," +
@@ -203,10 +169,10 @@ class ChordNode:
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
         target_node = self.find_successor()
         target_node.put(key_str, value_str)
-        print("global_put," + str(ChordUtil.hash_str(key_str)) + "," + key_str + "," + value_str)
+        print("global_put," + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + value_str)
 
     def put(self, key_str, value_str):
-        key_id_str = str(ChordUtil.hash_str(key_str))
+        key_id_str = str(ChordUtil.hash_str_to_int(key_str))
         self.stored_data[key_id_str] = value_str
         print("put," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + key_id_str + "," + key_str + "," + value_str)
 
@@ -215,7 +181,7 @@ class ChordNode:
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
         target_node = self.find_successor()
-        key_id_str = str(ChordUtil.hash_str(key_str))
+        key_id_str = str(ChordUtil.hash_str_to_int(key_str))
         got_value_str = target_node.get(key_id_str)
         print("global_get," + key_id_str + "," + key_str + "," + got_value_str)
         return got_value_str
@@ -371,9 +337,7 @@ def add_new_node():
     lock_of_all_data.acquire()
 
     tyukai_node = get_a_random_node()
-    print(tyukai_node)
-    #new_node = ChordNode(tyukai_node.node_info.address_str)
-    new_node = ChordNode(tyukai_node)
+    new_node = ChordNode(tyukai_node.node_info.address_str)
     all_node_dict[new_node.node_info.address_str] = new_node
 
     # ロックの解放
@@ -484,16 +448,14 @@ def main():
     random.seed(1337)
 
     # all_node_dictへの登録は first_node が True の場合、ChordNodeのコンストラクタ内で行われる
-    #first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
-    first_node = ChordNode(None, first_node=True)
-    #all_node_dict[first_node.node_info.address_str] = first_node
+    first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
 
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()
 
-    # stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
-    # stabilize_th_handle.start()
-    #
+    stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
+    stabilize_th_handle.start()
+
     # data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     # data_put_th_handle.start()
     #

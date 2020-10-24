@@ -123,7 +123,7 @@ class NodeInfo:
 class ChordNode:
 
     # join時の処理もコンストラクタで行う
-    def __init__(self, node_address, first_node = False):
+    def __init__(self, node_address, first_node = False, second_node = False):
         global already_born_node_num
 
         self.node_info = NodeInfo()
@@ -137,16 +137,28 @@ class ChordNode:
         already_born_node_num += 1
         self.node_info.born_id = already_born_node_num
 
-        if(first_node):
+        if first_node:
             # 最初の1ノードの場合
 
-            # joinメソッド内で仲介ノードを引く際に自身が登録されていないとエラー
-            # となるため、このタイミングで all_node_dict に登録する
-            all_node_dict[self.node_info.address_str] = self
+            # # joinメソッド内で仲介ノードを引く際に自身が登録されていないとエラー
+            # # となるため、このタイミングで all_node_dict に登録する
+            # all_node_dict[self.node_info.address_str] = self
 
             # TODO: 初期ノードの初期化がこれで問題ないか確認する
-            # 自身を仲介ノード（successorに設定される）としてネットワークに参加する
-            self.join(self.node_info.address_str)
+            # # 自身を仲介ノード（successorに設定される）としてネットワークに参加する
+            # self.join(self.node_info.address_str)
+
+            # successorを None のまま終了する
+            return
+        elif second_node:
+            # 2番目にネットワークに参加するノードの場合
+
+            # 1番目にネットワークに参加したノードはsuccessorを持たない状態となって
+            # いるため自身をsuccessorとして設定しておく
+            first_node = all_node_dict[node_address]
+            first_node.node_info.successor_info = self.node_info
+
+            self.join(node_address)
         else:
             self.join(node_address)
 
@@ -168,8 +180,16 @@ class ChordNode:
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
         target_node = self.find_successor()
+        if target_node == None:
+            print("global_put_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+                  + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + value_str)
+            return
+
         target_node.put(key_str, value_str)
-        print("global_put," + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + value_str)
+        print("global_put_2," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+              + str(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
+              + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + value_str)
 
     def put(self, key_str, value_str):
         key_id_str = str(ChordUtil.hash_str_to_int(key_str))
@@ -181,9 +201,17 @@ class ChordNode:
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
         target_node = self.find_successor()
+        if target_node == None:
+            print("global_get_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+                  + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str)
+            return
+
         key_id_str = str(ChordUtil.hash_str_to_int(key_str))
         got_value_str = target_node.get(key_id_str)
-        print("global_get," + key_id_str + "," + key_str + "," + got_value_str)
+        print("global_get_2," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+              + str(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
+              + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + got_value_str)
         return got_value_str
 
     # 得られた value の文字列を返す
@@ -270,21 +298,16 @@ class ChordNode:
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
                   + hex(self.node_info.successor_info.node_id) + ","
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
-                  + self.node_info.predecessor_info.address_str + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
-                  + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id)
-                  + ChordUtil.conv_id_to_ratio_str(self.node_info.predecessor_info.node_id))
-
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
             return
 
         print("stablize_succesor_3," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + hex(self.node_info.successor_info.node_id) + ","
               + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
-              + self.node_info.predecessor_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
-              + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id)
-              + ChordUtil.conv_id_to_ratio_str(self.node_info.predecessor_info.node_id))
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
         pred_id_of_successor = successor_info.predecessor_info.node_id
 
@@ -301,7 +324,7 @@ class ChordNode:
             # 情報を更新してもらう
             # 事前チェックによって避けられるかもしれないが、常に実行する
             successor_obj = all_node_dict[successor_info.address_str]
-            successor_obj.check_predecessor(self.node_id, self.node_info)
+            successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
 
             distance_unknown = ChordUtil.calc_distans_between_nodes(successor_obj.node_info.node_id, pred_id_of_successor)
             distance_me = ChordUtil.calc_distans_between_nodes(successor_obj.node_info.node_id, self.node_info.node_id)
@@ -330,9 +353,15 @@ class ChordNode:
         # 担当するノードに最も近いノードが格納される
         update_id = ChordUtil.overflow_check_and_conv(self.node_info.node_id + 2**idx)
         found_node = self.find_successor(update_id)
+        if found_node == None:
+            print("stablize_finger_table_2," + str(self.node_info.born_id) + "," +
+                  hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
+            return
+
         self.node_info.finger_table[idx] = found_node.node_info
 
-        print("stablize_finger_table_2," + str(self.node_info.born_id) + "," +
+        print("stablize_finger_table_3," + str(self.node_info.born_id) + "," +
               hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id)
               + str(idx) + "," + hex(found_node.node_info.node_id) + ","
@@ -342,12 +371,18 @@ class ChordNode:
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_successor(self, id):
-        print("find_successor," + str(self.node_info.born_id) + ","
+        print("find_successor_1," + str(self.node_info.born_id) + ","
               + hex(id) + "," + hex(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
 
         n_dash = self.find_predecessor(id)
-        print("find_successor," + str(self.node_info.born_id) + ","
+        if n_dash == None:
+            print("find_successor_2," + str(self.node_info.born_id) + ","
+                  + hex(id) + "," + hex(self.node_info.node_id) + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
+            return None
+
+        print("find_successor_3," + str(self.node_info.born_id) + ","
               + hex(id) + "," + hex(self.node_info.node_id) + "," + hex(n_dash.node_info.node_id) + ","
               + hex(n_dash.node_info.successor_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -360,9 +395,16 @@ class ChordNode:
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_predecessor(self, id):
+        print("find_predecessor_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
+        if self.node_info.predecessor_info == None:
+            # predecessorが他ノードによる stabilize_successor によって埋まっていなければ
+            # 探索は行わず Noneを返す
+            print("find_predecessor_2," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
+            return None
+
         n_dash = self
         while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
-            print("find_predecessor," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," +
+            print("find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," +
                   hex(n_dash.node_info.node_id))
             n_dash = n_dash.closest_preceding_finger(id)
         return n_dash
@@ -463,16 +505,18 @@ def do_get_on_random_node():
     lock_of_all_data.release()
 
 def node_join_th():
-    counter = 1
+    counter = 2
     while counter < 10:
         add_new_node()
-        time.sleep(1) # sleep 1sec
+        time.sleep(0.1) # sleep 100msec
         counter += 1
 
 def stabilize_th():
     # 実システムではあり得ないが、デバッグプリントが見にくくなることを
     # 避けるため、一度ネットワークが構築され、安定状態になったと思われる
     # タイミングに達したら stabilize 処理は行われなくする
+
+    time.sleep(2) # sleep 2sec
     while is_stabiize_finished == False:
         do_stabilize_on_random_node()
         # 1ノードが追加されるごとに、200ノードを選択し処理が
@@ -484,7 +528,7 @@ def data_put_th():
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    time.sleep(12) # sleep 12sec
+    time.sleep(22) # sleep 22sec
 
     # stabilizeを行うスレッドを動作させなくする
     is_stabiize_finished = True
@@ -495,7 +539,7 @@ def data_put_th():
 
 def data_get_th():
     # 最初のputが行われるまで待つ
-    time.sleep(14) # sleep 14sec
+    time.sleep(24) # sleep 24sec
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec
@@ -508,8 +552,11 @@ def main():
     # スイッチするかは実行毎に異なる可能性があるため、あまり意味はないかもしれない
     random.seed(1337)
 
-    # all_node_dictへの登録は first_node が True の場合、ChordNodeのコンストラクタ内で行われる
+    # 最初の2ノードはここで登録する
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
+    all_node_dict[first_node.node_info.address_str] = first_node
+    second_node = ChordNode(first_node.node_info.address_str, second_node=True)
+    all_node_dict[second_node.node_info.address_str] = second_node
 
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()

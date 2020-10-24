@@ -261,6 +261,7 @@ class ChordNode:
             # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
             # 処理を終了する
             successor_info.predecessor_info = self.node_info
+            return
 
         pred_id_of_successor = successor_info.predecessor_info.id
 

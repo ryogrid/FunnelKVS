@@ -500,19 +500,23 @@ class ChordNode:
                 continue
 
             ChordUtil.dprint("closest_preceding_finger_1," + str(self.node_info.born_id) + ","
-                  + hex(self.node_info.node_id) + "," + hex(entry.node_id))
-            #if self.node_info.node_id < entry.node_id and entry.node_id <= id:
-            if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, entry.node_id):
-                ChordUtil.dprint("closest_preceding_finger_2," + str(self.node_info.born_id) + ","
-                      + hex(self.node_info.node_id) + "," + hex(entry.node_id) + ","
-                      + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
-                      + ChordUtil.conv_id_to_ratio_str(entry.node_id))
-                return all_node_dict[entry.address_str]
+                  + hex(self.node_info.node_id) + "," + hex(entry.node_id) + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                  + ChordUtil.conv_id_to_ratio_str(entry.node_id))
 
-            # なめていっている entry の node_id が探索対象のidより右回りで見た時に遠くに
+            # #if self.node_info.node_id < entry.node_id and entry.node_id <= id:
+            # if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, entry.node_id):
+            #     ChordUtil.dprint("closest_preceding_finger_2," + str(self.node_info.born_id) + ","
+            #           + hex(self.node_info.node_id) + "," + hex(entry.node_id) + ","
+            #           + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+            #           + ChordUtil.conv_id_to_ratio_str(entry.node_id))
+            #     return all_node_dict[entry.address_str]
+
+            # なめていっている entry の node_id が探索対象のidより右回りで見た時にidより遠くに
             # なってしまった場合は探索を打ち切る
             if ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, id) \
                     < ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, entry.node_id):
+                ChordUtil.dprint("closest_preceding_finger_2")
                 break
 
             zantei_closest_node_info = entry

@@ -421,9 +421,12 @@ class ChordNode:
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
             return
 
+        ChordUtil.dprint("stabilize_finger_table_3," + str(self.node_info.born_id) + "," +
+              hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+              + hex(self.node_info.successor_info.successor_info.node_id) + "," + hex(found_node.node_info.node_id))
         self.node_info.finger_table[idx] = found_node.node_info
 
-        ChordUtil.dprint("stabilize_finger_table_3," + str(self.node_info.born_id) + "," +
+        ChordUtil.dprint("stabilize_finger_table_4," + str(self.node_info.born_id) + "," +
               hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id)
               + str(idx) + "," + hex(found_node.node_info.node_id) + ","
@@ -508,7 +511,8 @@ class ChordNode:
 
             # なめていっている entry の node_id が探索対象のidより右回りで見た時に遠くに
             # なってしまった場合は探索を打ち切る
-            if ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, id) < entry.node_id:
+            if ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, id) \
+                    < ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, entry.node_id):
                 break
 
             zantei_closest_node_info = entry

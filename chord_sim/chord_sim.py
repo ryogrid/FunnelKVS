@@ -302,6 +302,8 @@ class ChordNode:
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
+            # TODO: predecessorは自身から右回りで一番遠いノードのはずなので経路表の最後のエントリに入れてしまう
+            self.node_info.finger_table[160 - 1]
             return
 
         ChordUtil.dprint("check_predecessor_2," + str(self.node_info.born_id) + ","
@@ -317,6 +319,9 @@ class ChordNode:
         # 経路表の情報を更新する
         if distance_check < distance_cur:
             self.node_info.predecessor_info = node_info
+            # TODO: predecessorは自身から右回りで一番遠いノードのはずなので経路表の最後のエントリに入れてしまう
+            self.node_info.finger_table[160 - 1] = node_info
+
             ChordUtil.dprint("check_predecessor_3," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
@@ -389,6 +394,8 @@ class ChordNode:
                 # successorから自身に対して前方向にたどった場合の経路中に存在する場合
                 # 自身の認識するsuccessorの情報を更新する
                 self.node_info.successor_info = successor_obj.node_info.predecessor_info
+                # TODO: succesorは自身から右回りで一番近いノードのはずなので経路表の最初のエントリに入れてしまう
+                self.node_info.finger_table[0] = self.node_info.successor_info
 
                 # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                 # ば情報を更新してもらう

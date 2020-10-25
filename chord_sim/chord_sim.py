@@ -467,6 +467,9 @@ def do_stabilize_on_random_node():
     # テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
     # 一気に更新してしまう
     for n in range(80):
+        print("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+              + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+              + str(n))
         node.stabilize_finger_table()
 
     # ロックの解放

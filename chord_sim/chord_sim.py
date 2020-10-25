@@ -5,6 +5,7 @@ import time
 import random
 import hashlib
 import datetime
+from typing import Dict, List, Any
 
 # 160bit符号なし整数の最大値
 # Chordネットワーク上のID空間の上限
@@ -12,7 +13,7 @@ ID_MAX = 2**160 - 1
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
-all_node_dict = {}
+all_node_dict : Dict[str, 'ChordNode'] = {}
 
 # DHT上で保持されている全てのデータが保持されているリスト
 # KeyValueオブジェクトを要素として持つ
@@ -20,7 +21,7 @@ all_node_dict = {}
 # getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
 # に選び、そのkeyを用いて探索を行う. また value も一時的に保持しておき、取得できた内容と
 # 一致しているか確認する
-all_data_list = []
+all_data_list : List['KeyValue'] = []
 
 # 検証を分かりやすくするために何ノード目として生成されたか
 # のデバッグ用IDを持たせるためのカウンタ
@@ -37,26 +38,26 @@ class ChordUtil:
     # アルゴリズムはSHA1, 160bitで表現される正の整数となる
     # メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
     @classmethod
-    def hash_str_to_int(cls, input_str):
+    def hash_str_to_int(cls, input_str : str) -> int:
         hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
         hash_id_num = int(hash_hex_str, 16)
         return hash_id_num
 
     # 与えたリストの要素のうち、ランダムに選択した1要素を返す
     @classmethod
-    def get_random_elem(cls, list_like):
+    def get_random_elem(cls, list_like : List[Any]) -> 'ChordNode':
         length = len(list_like)
         idx = random.randint(0, length - 1)
         return list_like[idx]
 
     # UNIXTIME（ミリ秒精度）にいくつか値を加算した値からアドレス文字列を生成する
     @classmethod
-    def gen_address_str(cls):
+    def gen_address_str(cls) -> str:
         return str(time.time() + 10)
 
     # 計算したID値がID空間の最大値を超えていた場合は、空間内に収まる値に変換する
     @classmethod
-    def overflow_check_and_conv(cls, id):
+    def overflow_check_and_conv(cls, id : int) -> int:
         ret_id = id
         if id > ID_MAX:
             # 1を足すのは MAX より 1大きい値が 0 となるようにするため
@@ -66,7 +67,7 @@ class ChordUtil:
     # TODO: idがID空間の最大値に対して何パーセントの位置かを適当な精度の浮動小数の文字列
     #       にして返す
     @classmethod
-    def conv_id_to_ratio_str(cls, id):
+    def conv_id_to_ratio_str(cls, id : int) -> str:
         ratio = (id / ID_MAX) * 100.0
         return '%2.4f' % ratio
 
@@ -74,7 +75,7 @@ class ChordUtil:
     # ノード間の距離を求める
     # ここで前方とは、IDの値が小さくなる方向である
     @classmethod
-    def calc_distance_between_nodes(cls, base_id, target_id):
+    def calc_distance_between_nodes(cls, base_id : int, target_id : int) -> int:
         # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
         # 同じ数だけずらす
         slided_target_id = 0
@@ -97,45 +98,45 @@ class ChordUtil:
         return distance
 
     @classmethod
-    def dprint(cls, print_str):
+    def dprint(cls, print_str : str):
         print(str(datetime.datetime.now()) + "," + print_str)
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
     def __init__(self, key, value):
-        self.key = key
-        self.value = value
+        self.key : str = key
+        self.value : str = value
         # keyのハッシュ値
-        self.data_id = ChordUtil.hash_str_to_int(key)
+        self.data_id : int = ChordUtil.hash_str_to_int(key)
 
 class NodeInfo:
 
     def __init__(self):
-        self.node_id = None
-        self.address_str = None
+        self.node_id : int = None
+        self.address_str : str = None
 
         # デバッグ用のID（実システムには存在しない）
         # 何ノード目として生成されたかの値
-        self.born_id = None
+        self.born_id : int = None
 
         # NodeInfoオブジェクトを保持
-        self.successor_info = None
-        self.predecessor_info = None
+        self.successor_info : 'NodeInfo' = None
+        self.predecessor_info : 'NodeInfo' = None
 
         # NodeInfoオブジェクトを要素として持つリスト
         # インデックスの小さい方から狭い範囲が格納される形で保持する
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
-        self.finger_table = [None] * 160
+        self.finger_table : List['NodeInfo'] = [None] * 160
 
 class ChordNode:
 
     # join時の処理もコンストラクタで行う
-    def __init__(self, node_address, first_node = False, second_node = False):
+    def __init__(self, node_address : str, first_node = False, second_node = False):
         global already_born_node_num
 
         self.node_info = NodeInfo()
         # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
-        self.stored_data = {}
+        self.stored_data : Dict[str, str] = {}
 
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chorネットワーク上でのIDを決定する
         self.node_info.address_str = ChordUtil.gen_address_str()
@@ -170,7 +171,7 @@ class ChordNode:
             self.join(node_address)
 
     # node_addressに対応するノードをsuccessorとして設定する
-    def join(self, node_address):
+    def join(self, node_address : str):
         # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報をやりとりするようにする必要あり
         successor = all_node_dict[node_address]
 
@@ -183,7 +184,7 @@ class ChordNode:
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
-    def global_put(self, key_str, value_str):
+    def global_put(self, key_str : str, value_str : str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
         data_id = ChordUtil.hash_str_to_int(key_str)
@@ -199,16 +200,16 @@ class ChordNode:
               + str(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
               + str(data_id) + "," + key_str + "," + value_str)
 
-    def put(self, key_str, value_str):
+    def put(self, key_str : str, value_str : str):
         key_id_str = str(ChordUtil.hash_str_to_int(key_str))
         self.stored_data[key_id_str] = value_str
         ChordUtil.dprint("put," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + key_id_str + "," + key_str + "," + value_str)
 
     # 得られた value の文字列を返す
-    def global_get(self, data_id, key_str):
+    def global_get(self, data_id : int, key_str : str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
-        target_node = self.find_successor(str(data_id))
+        target_node = self.find_successor(data_id)
         if target_node == None:
             ChordUtil.dprint("global_get_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
                   + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str)
@@ -223,7 +224,7 @@ class ChordNode:
         return got_value_str
 
     # 得られた value の文字列を返す
-    def get(self, id_str):
+    def get(self, id_str : str):
         ret_value_str = None
         try:
             ret_value_str = self.stored_data[id_str]
@@ -243,7 +244,7 @@ class ChordNode:
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
-    def check_predecessor(self, id, node_info):
+    def check_predecessor(self, id : int, node_info : 'NodeInfo'):
         if self.node_info.predecessor_info == None:
             # 未設定状態なので確認するまでもなく、predecessorらしいと判断し
             # 経路情報に設定し、処理を終了する
@@ -378,7 +379,7 @@ class ChordNode:
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
-    def find_successor(self, id):
+    def find_successor(self, id : int):
         try:
             ChordUtil.dprint("find_successor_1," + str(self.node_info.born_id) + ","
                   + hex(id) + "," + hex(self.node_info.node_id) + ","
@@ -406,7 +407,7 @@ class ChordNode:
     # id(int)　の前で一番近い位置に存在するノードを探索する
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
-    def find_predecessor(self, id):
+    def find_predecessor(self, id: int):
         ChordUtil.dprint("find_predecessor_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
         if self.node_info.predecessor_info == None:
             # predecessorが他ノードによる stabilize_successor によって埋まっていなければ
@@ -429,7 +430,7 @@ class ChordNode:
         return n_dash
 
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-    def closest_preceding_finger(self, id):
+    def closest_preceding_finger(self, id : int):
         # 範囲の狭いエントリから探索していく
         for entry in self.node_info.finger_table:
             # ランダムに更新しているため埋まっていないエントリも存在し得る

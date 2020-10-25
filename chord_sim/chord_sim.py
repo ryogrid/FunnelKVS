@@ -215,10 +215,9 @@ class ChordNode:
 
         self.node_info.successor_info = successor.node_info
 
-        # TODO: 最低限、一つはエントリが埋まっていないと、stabilize_finger_table自体が
+        # TODO: 最低限、1つエントリが埋まっていないと、stabilize_finger_table自体が
         #       finger_tableを用いて探索を行うことでエントリを埋めていくので、うまく動かない
-        #       のではないかと思うので、インデックス0の一番近い範囲のエントリにはとりあえず
-        #       successorを設定しておいてみる
+        #       のではないかと思うので、最初のエントリにひとまずsuccessorを設定しておいてみる
         self.node_info.finger_table[0] = self.node_info.successor_info
 
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
@@ -302,8 +301,8 @@ class ChordNode:
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
-            # TODO: predecessorは自身から右回りで一番遠いノードのはずなので経路表の最後のエントリに入れてしまう
-            self.node_info.finger_table[160 - 1]
+            # # TODO: predecessorは自身から右回りで一番遠いノードのはずなので経路表の最後のエントリに入れてしまう
+            # self.node_info.finger_table[160 - 1]
             return
 
         ChordUtil.dprint("check_predecessor_2," + str(self.node_info.born_id) + ","
@@ -319,8 +318,8 @@ class ChordNode:
         # 経路表の情報を更新する
         if distance_check < distance_cur:
             self.node_info.predecessor_info = node_info
-            # TODO: predecessorは自身から右回りで一番遠いノードのはずなので経路表の最後のエントリに入れてしまう
-            self.node_info.finger_table[160 - 1] = node_info
+            # # TODO: predecessorは自身から右回りで一番遠いノードのはずなので経路表の最後のエントリに入れてしまう
+            # self.node_info.finger_table[160 - 1] = node_info
 
             ChordUtil.dprint("check_predecessor_3," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
@@ -487,7 +486,8 @@ class ChordNode:
         return n_dash
 
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-    def closest_preceding_finger(self, id : int):
+    def closest_preceding_finger(self, id : int) -> 'ChordNode':
+        zantei_closest_node_info = self.node_info
         # 範囲の狭いエントリから探索していく
         for entry in self.node_info.finger_table:
             # ランダムに更新しているため埋まっていないエントリも存在し得る
@@ -506,10 +506,16 @@ class ChordNode:
                       + ChordUtil.conv_id_to_ratio_str(entry.node_id))
                 return all_node_dict[entry.address_str]
 
-        ChordUtil.dprint("closest_preceding_finger_3")
+            # なめていっている entry の node_id が探索対象のidより右回りで見た時に遠くに
+            # なってしまった場合は探索を打ち切る
+            if ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, id) < entry.node_id:
+                break
 
-        #自身が一番近いpredecessorである
-        return self
+            zantei_closest_node_info = entry
+
+        ChordUtil.dprint("closest_preceding_finger_3")
+        # 探索していった中で一番近かったノードを返す
+        return all_node_dict[zantei_closest_node_info.address_str]
 
         # # 自身のsuccessorが一番近いpredecessorである （参考スライドとは異なるがこうしてみる）
         # return all_node_dict[self.node_info.successor_info.address_str]

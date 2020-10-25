@@ -209,10 +209,13 @@ class ChordNode:
     def global_get(self, data_id : int, key_str : str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
+        ChordUtil.dprint("global_get_0," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+                         + str(data_id) + "," + key_str)
+
         target_node = self.find_successor(data_id)
         if target_node == None:
             ChordUtil.dprint("global_get_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
-                  + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str)
+                  + str(data_id) + "," + key_str)
             return
 
         key_id_str = str(data_id)
@@ -421,7 +424,7 @@ class ChordNode:
                   hex(n_dash.node_info.node_id))
             n_dash_found = n_dash.closest_preceding_finger(id)
             if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
-                # 見つかったノードが、n_dash と同じ、変わらなかった場合
+                # 見つかったノードが、n_dash と同じで、変わらなかった場合
                 # 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
                 # なってしまうため n_dash_found を探索結果として返す
                 return n_dash_found
@@ -484,8 +487,12 @@ def do_stabilize_on_random_node():
     lock_of_all_data.acquire()
 
     node = get_a_random_node()
-    node.stabilize_successor()
-    done_stabilize_successor_cnt += 1
+
+    # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
+    #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
+    if done_stabilize_successor_cnt <= 3000:
+        node.stabilize_successor()
+        done_stabilize_successor_cnt += 1
 
     ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                      + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
@@ -495,7 +502,7 @@ def do_stabilize_on_random_node():
     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
     # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
     # 実行は開始する
-    if done_stabilize_successor_cnt > 1000:
+    if done_stabilize_successor_cnt > 3000:
         # テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
         # 一気に更新してしまう
         for n in range(80):
@@ -571,7 +578,7 @@ def data_put_th():
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    time.sleep(30) # sleep 22sec
+    time.sleep(50) # sleep 50sec
 
     # stabilizeを行うスレッドを動作させなくする
     is_stabiize_finished = True
@@ -582,7 +589,7 @@ def data_put_th():
 
 def data_get_th():
     # 最初のputが行われるまで待つ
-    time.sleep(34) # sleep 24sec
+    time.sleep(54) # sleep 24sec
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec

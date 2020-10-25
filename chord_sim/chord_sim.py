@@ -337,7 +337,7 @@ class ChordNode:
                 # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                 # ば情報を更新してもらう
                 new_successor_obj = all_node_dict[self.node_info.successor_info.address_str]
-                new_successor_obj.check_predecesor(self.node_id, self.node_info)
+                new_successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
 
     # FingerTableに関するstabilize処理を行う
     # 一回の呼び出しでランダムに選択した1エントリを更新する

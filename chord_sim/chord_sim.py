@@ -326,8 +326,8 @@ class ChordNode:
             successor_obj = all_node_dict[successor_info.address_str]
             successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
 
-            distance_unknown = ChordUtil.calc_distans_between_nodes(successor_obj.node_info.node_id, pred_id_of_successor)
-            distance_me = ChordUtil.calc_distans_between_nodes(successor_obj.node_info.node_id, self.node_info.node_id)
+            distance_unknown = ChordUtil.calc_distance_between_nodes(successor_obj.node_info.node_id, pred_id_of_successor)
+            distance_me = ChordUtil.calc_distance_between_nodes(successor_obj.node_info.node_id, self.node_info.node_id)
             if distance_unknown < distance_me:
                 # successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
                 # successorから自身に対して前方向にたどった場合の経路中に存在する場合

@@ -75,7 +75,7 @@ class ChordUtil:
     # ノード間の距離を求める
     # ここで前方とは、IDの値が小さくなる方向である
     @classmethod
-    def calc_distance_between_nodes(cls, base_id : int, target_id : int) -> int:
+    def calc_distance_between_nodes_left_mawari(cls, base_id : int, target_id : int) -> int:
         # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
         # 同じ数だけずらす
         slided_target_id = 0
@@ -96,6 +96,44 @@ class ChordUtil:
             distance = ID_MAX + distance
 
         return distance
+
+    # ID空間が環状になっていることを踏まえて base_id から後方をたどった場合の
+    # ノード間の距離を求める
+    # ここで後方とは、IDの値が大きくなる方向である
+    @classmethod
+    def calc_distance_between_nodes_right_mawari(cls, base_id : int, target_id : int) -> int:
+        # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
+        # 同じ数だけずらす
+        slided_base_id = 0
+        slided_target_id = target_id - base_id
+        if(slided_target_id < 0):
+            # マイナスの値をとった場合は値0を通り越しているので
+            # それにあった値に置き換える
+            slided_target_id = ID_MAX - slided_target_id
+
+        # あとは単純に差をとる
+        distance = slided_target_id - slided_base_id
+
+        # 求めた値が負の値の場合は入力された値において target_id < base_id
+        # であった場合であり、前方をたどった場合の距離は ID_MAX から得られた値
+        # の絶対値を引いたものであり、ここでは負の値となっているのでそのまま加算
+        # すればよい
+        if distance < 0:
+            distance = ID_MAX + distance
+
+        return distance
+
+    # from_id から IDが大きくなる方向にたどった場合に、 end_id との間に
+    # target_idが存在するか否かを bool値で返す
+    @classmethod
+    def exist_between_two_nodes_right_mawari(cls, from_id : int, end_id : int, target_id : int) -> bool:
+        distance_end = ChordUtil.calc_distance_between_nodes_right_mawari(from_id, end_id)
+        distance_target = ChordUtil.calc_distance_between_nodes_right_mawari(from_id, target_id)
+
+        if distance_target < distance_end:
+            return True
+        else:
+            return False
 
     @classmethod
     def dprint(cls, print_str : str):
@@ -196,8 +234,8 @@ class ChordNode:
         data_id = ChordUtil.hash_str_to_int(key_str)
         target_node = self.find_successor(data_id)
         if target_node == None:
-            ChordUtil.dprint("global_put_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
-                  + str(data_id) + "," + key_str + "," + value_str)
+            ChordUtil.dprint("global_put_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
+                  + hex(data_id) + "," + key_str + "," + value_str)
             return
 
         target_node.put(key_str, value_str)
@@ -215,8 +253,8 @@ class ChordNode:
     def global_get(self, data_id : int, key_str : str):
       # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
-        ChordUtil.dprint("global_get_0," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
-                         + str(data_id) + "," + key_str)
+        ChordUtil.dprint("global_get_0," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
+                         + hex(data_id) + "," + key_str)
 
         target_node = self.find_successor(data_id)
         if target_node == None:
@@ -272,8 +310,8 @@ class ChordNode:
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
-        distance_check = ChordUtil.calc_distance_between_nodes(self.node_info.node_id, id)
-        distance_cur = ChordUtil.calc_distance_between_nodes(self.node_info.node_id, self.node_info.predecessor_info.node_id)
+        distance_check = ChordUtil.calc_distance_between_nodes_left_mawari(self.node_info.node_id, id)
+        distance_cur = ChordUtil.calc_distance_between_nodes_left_mawari(self.node_info.node_id, self.node_info.predecessor_info.node_id)
 
         # 確認を求められたノードの方が現在の predecessor より predecessorらしければ
         # 経路表の情報を更新する
@@ -344,8 +382,8 @@ class ChordNode:
             successor_obj = all_node_dict[successor_info.address_str]
             successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
 
-            distance_unknown = ChordUtil.calc_distance_between_nodes(successor_obj.node_info.node_id, pred_id_of_successor)
-            distance_me = ChordUtil.calc_distance_between_nodes(successor_obj.node_info.node_id, self.node_info.node_id)
+            distance_unknown = ChordUtil.calc_distance_between_nodes_left_mawari(successor_obj.node_info.node_id, pred_id_of_successor)
+            distance_me = ChordUtil.calc_distance_between_nodes_left_mawari(successor_obj.node_info.node_id, self.node_info.node_id)
             if distance_unknown < distance_me:
                 # successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
                 # successorから自身に対して前方向にたどった場合の経路中に存在する場合
@@ -389,13 +427,14 @@ class ChordNode:
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_successor(self, id : int):
-        try:
-            ChordUtil.dprint("find_successor_1," + str(self.node_info.born_id) + ","
-                  + hex(self.node_info.node_id) + ","
-                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id)) + "," + hex(id)
-        except TypeError:
-            print(self.node_info.node_id)
-            print(type(self.node_info.node_id))
+        # try:
+        ChordUtil.dprint("find_successor_1," + str(self.node_info.born_id) + ","
+              + hex(self.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + "," + hex(id))
+        # except TypeError:
+        #     print("TypeError occur!!")
+        #     print(self.node_info.node_id)
+        #     print(type(self.node_info.node_id))
 
         n_dash = self.find_predecessor(id)
         if n_dash == None:
@@ -426,7 +465,8 @@ class ChordNode:
             return None
 
         n_dash = self
-        while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
+        #while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
+        while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.predecessor_info.node_id, n_dash.node_info.successor_info.node_id, id):
             ChordUtil.dprint("find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," +
                   hex(n_dash.node_info.node_id))
             n_dash_found = n_dash.closest_preceding_finger(id)
@@ -451,7 +491,8 @@ class ChordNode:
 
             ChordUtil.dprint("closest_preceding_finger_1," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(entry.node_id))
-            if self.node_info.node_id < entry.node_id and entry.node_id <= id:
+            #if self.node_info.node_id < entry.node_id and entry.node_id <= id:
+            if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, entry.node_id):
                 ChordUtil.dprint("closest_preceding_finger_2," + str(self.node_info.born_id) + ","
                       + hex(self.node_info.node_id) + "," + hex(entry.node_id) + ","
                       + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -460,11 +501,11 @@ class ChordNode:
 
         ChordUtil.dprint("closest_preceding_finger_3")
 
-        # #自身が一番近いpredecessorである
-        # return self
+        #自身が一番近いpredecessorである
+        return self
 
-        # TODO: 自身のsuccessorが一番近いpredecessorである （参考スライドとは異なるがこうしてみる）
-        return all_node_dict[self.node_info.successor_info.address_str]
+        # # 自身のsuccessorが一番近いpredecessorである （参考スライドとは異なるがこうしてみる）
+        # return all_node_dict[self.node_info.successor_info.address_str]
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す

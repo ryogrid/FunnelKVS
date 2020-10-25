@@ -4,6 +4,7 @@ import threading
 import time
 import random
 import hashlib
+import datetime
 
 # 160bit符号なし整数の最大値
 # Chordネットワーク上のID空間の上限
@@ -28,6 +29,8 @@ already_born_node_num = 0
 is_stabiize_finished = False
 
 lock_of_all_data = threading.Lock()
+
+done_stabilize_successor_cnt = 0
 
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
@@ -92,6 +95,10 @@ class ChordUtil:
             distance = ID_MAX + distance
 
         return distance
+
+    @classmethod
+    def dprint(cls, print_str):
+        print(str(datetime.datetime.now()) + "," + print_str)
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
@@ -170,7 +177,7 @@ class ChordNode:
         self.node_info.successor_info = successor.node_info
 
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
-        print("join," + str(self.node_info.born_id) + "," +
+        ChordUtil.dprint("join," + str(self.node_info.born_id) + "," +
               hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -181,12 +188,12 @@ class ChordNode:
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
         target_node = self.find_successor()
         if target_node == None:
-            print("global_put_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+            ChordUtil.dprint("global_put_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
                   + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + value_str)
             return
 
         target_node.put(key_str, value_str)
-        print("global_put_2," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+        ChordUtil.dprint("global_put_2," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + str(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
               + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + value_str)
@@ -194,7 +201,7 @@ class ChordNode:
     def put(self, key_str, value_str):
         key_id_str = str(ChordUtil.hash_str_to_int(key_str))
         self.stored_data[key_id_str] = value_str
-        print("put," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + key_id_str + "," + key_str + "," + value_str)
+        ChordUtil.dprint("put," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + key_id_str + "," + key_str + "," + value_str)
 
     # 得られた value の文字列を返す
     def global_get(self, key_str):
@@ -202,13 +209,13 @@ class ChordNode:
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
         target_node = self.find_successor()
         if target_node == None:
-            print("global_get_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+            ChordUtil.dprint("global_get_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
                   + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str)
             return
 
         key_id_str = str(ChordUtil.hash_str_to_int(key_str))
         got_value_str = target_node.get(key_id_str)
-        print("global_get_2," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
+        ChordUtil.dprint("global_get_2," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + str(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
               + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + got_value_str)
@@ -222,7 +229,7 @@ class ChordNode:
         except:
             ret_value_str = "ASKED_KEY_NOT_FOUND"
 
-        print("get," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + id_str + "," + ret_value_str)
+        ChordUtil.dprint("get," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + id_str + "," + ret_value_str)
         return ret_value_str
 
     # TODO: global_delete (ひとまずglobal_getとglobal_putだけ実装するので後で良い）
@@ -240,7 +247,7 @@ class ChordNode:
             # 未設定状態なので確認するまでもなく、predecessorらしいと判断し
             # 経路情報に設定し、処理を終了する
             self.node_info.predecessor_info = node_info
-            print("check_predecessor_1," + str(self.node_info.born_id) + ","
+            ChordUtil.dprint("check_predecessor_1," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -248,7 +255,7 @@ class ChordNode:
 
             return
 
-        print("check_predecessor_2," + str(self.node_info.born_id) + ","
+        ChordUtil.dprint("check_predecessor_2," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -261,7 +268,7 @@ class ChordNode:
         # 経路表の情報を更新する
         if distance_check < distance_cur:
             self.node_info.predecessor_info = node_info
-            print("check_predecessor_3," + str(self.node_info.born_id) + ","
+            ChordUtil.dprint("check_predecessor_3," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -270,7 +277,7 @@ class ChordNode:
     # successorおよびpredicessorに関するstabilize処理を行う
     # predecessorはこの呼び出しで初めて設定される
     def stabilize_successor(self):
-        print("stablize_succesor_1," + str(self.node_info.born_id) + ","
+        ChordUtil.dprint("stablize_succesor_1," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -294,7 +301,7 @@ class ChordNode:
             # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
             # 処理を終了する
             successor_info.predecessor_info = self.node_info
-            print("stablize_succesor_2," + str(self.node_info.born_id) + ","
+            ChordUtil.dprint("stablize_succesor_2," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
                   + hex(self.node_info.successor_info.node_id) + ","
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
@@ -302,7 +309,7 @@ class ChordNode:
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
             return
 
-        print("stablize_succesor_3," + str(self.node_info.born_id) + ","
+        ChordUtil.dprint("stablize_succesor_3," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + hex(self.node_info.successor_info.node_id) + ","
               + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
@@ -343,7 +350,7 @@ class ChordNode:
     # 一回の呼び出しでランダムに選択した1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
     def stabilize_finger_table(self):
-        print("stablize_finger_table_1," + str(self.node_info.born_id) + "," +
+        ChordUtil.dprint("stablize_finger_table_1," + str(self.node_info.born_id) + "," +
               hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
 
@@ -354,14 +361,14 @@ class ChordNode:
         update_id = ChordUtil.overflow_check_and_conv(self.node_info.node_id + 2**idx)
         found_node = self.find_successor(update_id)
         if found_node == None:
-            print("stablize_finger_table_2," + str(self.node_info.born_id) + "," +
+            ChordUtil.dprint("stablize_finger_table_2," + str(self.node_info.born_id) + "," +
                   hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
             return
 
         self.node_info.finger_table[idx] = found_node.node_info
 
-        print("stablize_finger_table_3," + str(self.node_info.born_id) + "," +
+        ChordUtil.dprint("stablize_finger_table_3," + str(self.node_info.born_id) + "," +
               hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id)
               + str(idx) + "," + hex(found_node.node_info.node_id) + ","
@@ -371,18 +378,18 @@ class ChordNode:
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_successor(self, id):
-        print("find_successor_1," + str(self.node_info.born_id) + ","
+        ChordUtil.dprint("find_successor_1," + str(self.node_info.born_id) + ","
               + hex(id) + "," + hex(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
 
         n_dash = self.find_predecessor(id)
         if n_dash == None:
-            print("find_successor_2," + str(self.node_info.born_id) + ","
+            ChordUtil.dprint("find_successor_2," + str(self.node_info.born_id) + ","
                   + hex(id) + "," + hex(self.node_info.node_id) + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
             return None
 
-        print("find_successor_3," + str(self.node_info.born_id) + ","
+        ChordUtil.dprint("find_successor_3," + str(self.node_info.born_id) + ","
               + hex(id) + "," + hex(self.node_info.node_id) + "," + hex(n_dash.node_info.node_id) + ","
               + hex(n_dash.node_info.successor_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -395,16 +402,16 @@ class ChordNode:
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_predecessor(self, id):
-        print("find_predecessor_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
+        ChordUtil.dprint("find_predecessor_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
         if self.node_info.predecessor_info == None:
             # predecessorが他ノードによる stabilize_successor によって埋まっていなければ
             # 探索は行わず Noneを返す
-            print("find_predecessor_2," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
+            ChordUtil.dprint("find_predecessor_2," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
             return None
 
         n_dash = self
         while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
-            print("find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," +
+            ChordUtil.dprint("find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," +
                   hex(n_dash.node_info.node_id))
             n_dash_found = n_dash.closest_preceding_finger(id)
             if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
@@ -422,12 +429,20 @@ class ChordNode:
         for entry in self.node_info.finger_table:
             # ランダムに更新しているため埋まっていないエントリも存在し得る
             if entry == None:
+                ChordUtil.dprint("closest_preceding_finger_0," + str(self.node_info.born_id) + ","
+                      + hex(self.node_info.node_id))
                 continue
 
-            print("closest_preceding_finger," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + hex(entry.node_id))
+            ChordUtil.dprint("closest_preceding_finger_1," + str(self.node_info.born_id) + ","
+                  + hex(self.node_info.node_id) + "," + hex(entry.node_id))
             if self.node_info.node_id < entry.node_id and entry.node_id <= id:
+                ChordUtil.dprint("closest_preceding_finger_2," + str(self.node_info.born_id) + ","
+                      + hex(self.node_info.node_id) + "," + hex(entry.node_id) + ","
+                      + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                      + ChordUtil.conv_id_to_ratio_str(entry.node_id))
                 return all_node_dict[entry.address_str]
 
+        ChordUtil.dprint("closest_preceding_finger_3")
         #自身が一番近いpredecessorである
         return self
 
@@ -457,20 +472,31 @@ def add_new_node():
 # やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
 def do_stabilize_on_random_node():
     global lock_of_all_data
+    global done_stabilize_successor_cnt
 
     # ロックの取得
     lock_of_all_data.acquire()
 
     node = get_a_random_node()
     node.stabilize_successor()
+    done_stabilize_successor_cnt += 1
 
-    # テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
-    # 一気に更新してしまう
-    for n in range(80):
-        print("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-              + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-              + str(n))
-        node.stabilize_finger_table()
+    ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
+                     + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+                     + str(done_stabilize_successor_cnt))
+
+    # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
+    # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
+    # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
+    # 実行は開始する
+    if done_stabilize_successor_cnt > 1000:
+        # テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
+        # 一気に更新してしまう
+        for n in range(80):
+            ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+                  + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+                  + str(n))
+            node.stabilize_finger_table()
 
     # ロックの解放
     lock_of_all_data.release()
@@ -529,7 +555,7 @@ def stabilize_th():
     time.sleep(2) # sleep 2sec
     while is_stabiize_finished == False:
         do_stabilize_on_random_node()
-        # 1ノードが追加されるごとに、200ノードを選択し処理が
+        # 1秒に200ノードを選択し処理が
         # 行われる程度の間隔に設定
         time.sleep(0.005) # sleep 5msec
 
@@ -538,7 +564,7 @@ def data_put_th():
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    time.sleep(22) # sleep 22sec
+    time.sleep(30) # sleep 22sec
 
     # stabilizeを行うスレッドを動作させなくする
     is_stabiize_finished = True
@@ -549,7 +575,7 @@ def data_put_th():
 
 def data_get_th():
     # 最初のputが行われるまで待つ
-    time.sleep(24) # sleep 24sec
+    time.sleep(34) # sleep 24sec
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec

@@ -424,7 +424,7 @@ class ChordNode:
             if entry == None:
                 continue
 
-            print("closest_preceding_finger," + str(self.node_info.born_id) + "," + hex(self.node_info.id) + "," + hex(entry.id))
+            print("closest_preceding_finger," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + hex(entry.node_id))
             if self.node_info.node_id < entry.node_id and entry.node_id <= id:
                 return all_node_dict[entry.address_str]
 

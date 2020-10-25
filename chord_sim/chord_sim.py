@@ -600,11 +600,11 @@ def main():
     stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
     stabilize_th_handle.start()
 
-    # data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
-    # data_put_th_handle.start()
-    #
-    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
-    # data_get_th_handle.start()
+    data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
+    data_put_th_handle.start()
+
+    data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
+    data_get_th_handle.start()
 
     while True:
         time.sleep(1)

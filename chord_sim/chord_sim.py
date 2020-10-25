@@ -406,7 +406,14 @@ class ChordNode:
         while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
             print("find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," +
                   hex(n_dash.node_info.node_id))
-            n_dash = n_dash.closest_preceding_finger(id)
+            n_dash_found = n_dash.closest_preceding_finger(id)
+            if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
+                # 見つかったノードが、n_dash と同じ、変わらなかった場合
+                # 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
+                # なってしまうため n_dash_found を探索結果として返す
+                return n_dash_found
+            else:
+                n_dash = n_dash_found
         return n_dash
 
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す

@@ -205,11 +205,10 @@ class ChordNode:
         ChordUtil.dprint("put," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + key_id_str + "," + key_str + "," + value_str)
 
     # 得られた value の文字列を返す
-    def global_get(self, key_str):
+    def global_get(self, data_id, key_str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
-        data_id = ChordUtil.hash_str_to_int(key_str)
-        target_node = self.find_successor(data_id)
+        target_node = self.find_successor(str(data_id))
         if target_node == None:
             ChordUtil.dprint("global_get_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
                   + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str)
@@ -380,9 +379,13 @@ class ChordNode:
     # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_successor(self, id):
-        ChordUtil.dprint("find_successor_1," + str(self.node_info.born_id) + ","
-              + hex(id) + "," + hex(self.node_info.node_id) + ","
-              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
+        try:
+            ChordUtil.dprint("find_successor_1," + str(self.node_info.born_id) + ","
+                  + hex(id) + "," + hex(self.node_info.node_id) + ","
+                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
+        except TypeError:
+            print(self.node_info.node_id)
+            print(type(self.node_info.node_id))
 
         n_dash = self.find_predecessor(id)
         if n_dash == None:
@@ -534,10 +537,11 @@ def do_get_on_random_node():
         return
 
     target_data = ChordUtil.get_random_elem(all_data_list)
-    target_data_key = target_data.data_id
+    target_data_id = target_data.data_id
+    target_data_key_str = target_data.key
 
     node = get_a_random_node()
-    node.global_get(target_data_key)
+    node.global_get(target_data_id, target_data_key_str)
 
     # ロックの解放
     lock_of_all_data.release()

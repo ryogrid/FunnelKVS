@@ -254,8 +254,8 @@ class ChordNode:
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
-        distance_check = ChordUtil.calc_distans_between_nodes(self.node_info.node_id, id)
-        distance_cur = ChordUtil.calc_distans_between_nodes(self.node_info.node_id, self.node_info.predecessor_info.node_id)
+        distance_check = ChordUtil.calc_distance_between_nodes(self.node_info.node_id, id)
+        distance_cur = ChordUtil.calc_distance_between_nodes(self.node_info.node_id, self.node_info.predecessor_info.node_id)
 
         # 確認を求められたノードの方が現在の predecessor より predecessorらしければ
         # 経路表の情報を更新する

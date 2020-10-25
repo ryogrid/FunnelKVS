@@ -186,17 +186,18 @@ class ChordNode:
     def global_put(self, key_str, value_str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
-        target_node = self.find_successor()
+        data_id = ChordUtil.hash_str_to_int(key_str)
+        target_node = self.find_successor(data_id)
         if target_node == None:
             ChordUtil.dprint("global_put_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
-                  + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + value_str)
+                  + str(data_id) + "," + key_str + "," + value_str)
             return
 
         target_node.put(key_str, value_str)
         ChordUtil.dprint("global_put_2," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + str(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
-              + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + value_str)
+              + str(data_id) + "," + key_str + "," + value_str)
 
     def put(self, key_str, value_str):
         key_id_str = str(ChordUtil.hash_str_to_int(key_str))
@@ -207,18 +208,19 @@ class ChordNode:
     def global_get(self, key_str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
-        target_node = self.find_successor()
+        data_id = ChordUtil.hash_str_to_int(key_str)
+        target_node = self.find_successor(data_id)
         if target_node == None:
             ChordUtil.dprint("global_get_1," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
                   + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str)
             return
 
-        key_id_str = str(ChordUtil.hash_str_to_int(key_str))
+        key_id_str = str(data_id)
         got_value_str = target_node.get(key_id_str)
         ChordUtil.dprint("global_get_2," + str(self.node_info.born_id) + "," + str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + str(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
-              + str(ChordUtil.hash_str_to_int(key_str)) + "," + key_str + "," + got_value_str)
+              + key_id_str + "," + key_str + "," + got_value_str)
         return got_value_str
 
     # 得られた value の文字列を返す

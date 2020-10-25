@@ -564,12 +564,18 @@ def do_stabilize_on_random_node():
     if done_stabilize_successor_cnt > 3000:
         ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
         ## 一気に更新してしまう
-        # TODO: ランダムなため重複は生じるがほぼ全てのエントリが一気に更新されるようにしてみる
-        for n in range(250):
-            ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-                  + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-                  + str(n))
-            node.stabilize_finger_table()
+
+        # # TODO: ランダムなため重複は生じるがほぼ全てのエントリが一気に更新されるようにしてみる
+        # for n in range(250):
+        #     ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+        #           + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+        #           + str(n))
+        #     node.stabilize_finger_table()
+
+        # TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
+        ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
+        node.stabilize_finger_table()
 
     # ロックの解放
     lock_of_all_data.release()
@@ -629,16 +635,16 @@ def stabilize_th():
     time.sleep(2) # sleep 2sec
     while is_stabiize_finished == False:
         do_stabilize_on_random_node()
-        # 1秒に200ノードを選択し処理が
+        # 1秒に1000ノードを選択し処理が
         # 行われる程度の間隔に設定
-        time.sleep(0.005) # sleep 5msec
+        time.sleep(0.001) # sleep 5msec
 
 def data_put_th():
     global is_stabiize_finished
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    time.sleep(50) # sleep 50sec
+    time.sleep(120) # sleep 120sec
 
     # stabilizeを行うスレッドを動作させなくする
     is_stabiize_finished = True
@@ -649,7 +655,7 @@ def data_put_th():
 
 def data_get_th():
     # 最初のputが行われるまで待つ
-    time.sleep(54) # sleep 24sec
+    time.sleep(125) # sleep 125sec
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec

@@ -370,6 +370,8 @@ class ChordNode:
 
         pred_id_of_successor = successor_info.predecessor_info.node_id
 
+        ChordUtil.dprint("stabilize_successor_3_5," + hex(pred_id_of_successor))
+        
         # 下のパターン1から3という記述は以下の資料による説明に基づく
         # https://www.slideshare.net/did2/chorddht
         if(pred_id_of_successor == self.node_info.node_id):
@@ -394,6 +396,7 @@ class ChordNode:
                 ChordUtil.dprint("stabilize_successor_4," + str(self.node_info.born_id) + ","
                                  + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
                                  + hex(successor_obj.node_info.predecessor_info.node_id) + ","
+                                 + hex(pred_id_of_successor) + ","
                                  + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
                                  + successor_obj.node_info.predecessor_info.address_str + ","
                                  + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","

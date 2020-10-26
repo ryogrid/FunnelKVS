@@ -371,7 +371,7 @@ class ChordNode:
         pred_id_of_successor = successor_info.predecessor_info.node_id
 
         ChordUtil.dprint("stabilize_successor_3_5," + hex(pred_id_of_successor))
-        
+
         # 下のパターン1から3という記述は以下の資料による説明に基づく
         # https://www.slideshare.net/did2/chorddht
         if(pred_id_of_successor == self.node_info.node_id):
@@ -393,15 +393,6 @@ class ChordNode:
                 # successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
                 # successorから自身に対して前方向にたどった場合の経路中に存在する場合
                 # 自身の認識するsuccessorの情報を更新する
-                ChordUtil.dprint("stabilize_successor_4," + str(self.node_info.born_id) + ","
-                                 + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
-                                 + hex(successor_obj.node_info.predecessor_info.node_id) + ","
-                                 + hex(pred_id_of_successor) + ","
-                                 + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
-                                 + successor_obj.node_info.predecessor_info.address_str + ","
-                                 + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
-                                 + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id)
-                                 + ChordUtil.conv_id_to_ratio_str(successor_obj.node_info.predecessor_info.node_id))
 
                 self.node_info.successor_info = successor_obj.node_info.predecessor_info
                 # TODO: succesorは自身から右回りで一番近いノードのはずなので経路表の最初のエントリに入れてしまう
@@ -411,6 +402,16 @@ class ChordNode:
                 # ば情報を更新してもらう
                 new_successor_obj = all_node_dict[self.node_info.successor_info.address_str]
                 new_successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
+
+                ChordUtil.dprint("stabilize_successor_4," + str(self.node_info.born_id) + ","
+                                 + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+                                 + hex(self.node_info.successor_info.predecessor_info.node_id) + ","
+                                 + hex(pred_id_of_successor) + ","
+                                 + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+                                 + successor_obj.node_info.predecessor_info.address_str + ","
+                                 + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                                 + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id)
+                                 + ChordUtil.conv_id_to_ratio_str(successor_obj.node_info.predecessor_info.node_id))
 
     # FingerTableに関するstabilize処理を行う
     # 一回の呼び出しでランダムに選択した1エントリを更新する

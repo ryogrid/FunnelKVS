@@ -356,7 +356,6 @@ class ChordNode:
             successor_info.predecessor_info = self.node_info
             ChordUtil.dprint("stabilize_successor_2," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
-                  + hex(self.node_info.successor_info.node_id) + ","
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
@@ -394,7 +393,6 @@ class ChordNode:
                 # 自身の認識するsuccessorの情報を更新する
                 ChordUtil.dprint("stabilize_successor_4," + str(self.node_info.born_id) + ","
                                  + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
-                                 + hex(self.node_info.successor_info.node_id) + ","
                                  + hex(successor_obj.node_info.predecessor_info.node_id) + ","
                                  + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
                                  + successor_obj.node_info.predecessor_info.address_str + ","

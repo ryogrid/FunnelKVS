@@ -330,7 +330,7 @@ class ChordNode:
     # successorおよびpredicessorに関するstabilize処理を行う
     # predecessorはこの呼び出しで初めて設定される
     def stabilize_successor(self):
-        ChordUtil.dprint("stablize_succesor_1," + str(self.node_info.born_id) + ","
+        ChordUtil.dprint("stabilize_succesor_1," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
@@ -354,7 +354,7 @@ class ChordNode:
             # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
             # 処理を終了する
             successor_info.predecessor_info = self.node_info
-            ChordUtil.dprint("stablize_succesor_2," + str(self.node_info.born_id) + ","
+            ChordUtil.dprint("stabilize_succesor_2," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
                   + hex(self.node_info.successor_info.node_id) + ","
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
@@ -362,7 +362,7 @@ class ChordNode:
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
             return
 
-        ChordUtil.dprint("stablize_succesor_3," + str(self.node_info.born_id) + ","
+        ChordUtil.dprint("stabilize_succesor_3," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + hex(self.node_info.successor_info.node_id) + ","
               + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
@@ -392,6 +392,16 @@ class ChordNode:
                 # successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
                 # successorから自身に対して前方向にたどった場合の経路中に存在する場合
                 # 自身の認識するsuccessorの情報を更新する
+                ChordUtil.dprint("stabilize_succesor_4," + str(self.node_info.born_id) + ","
+                                 + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
+                                 + hex(self.node_info.successor_info.node_id) + ","
+                                 + hex(successor_obj.node_info.predecessor_info.node_id) + ","
+                                 + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
+                                 + successor_obj.node_info.predecessor_info.address_str + ","
+                                 + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                                 + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id)
+                                 + ChordUtil.conv_id_to_ratio_str(successor_obj.node_info.predecessor_info.node_id))
+
                 self.node_info.successor_info = successor_obj.node_info.predecessor_info
                 # TODO: succesorは自身から右回りで一番近いノードのはずなので経路表の最初のエントリに入れてしまう
                 self.node_info.finger_table[0] = self.node_info.successor_info

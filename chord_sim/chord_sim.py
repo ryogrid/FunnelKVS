@@ -45,7 +45,7 @@ class ChordUtil:
 
     # 与えたリストの要素のうち、ランダムに選択した1要素を返す
     @classmethod
-    def get_random_elem(cls, list_like : List[Any]) -> 'ChordNode':
+    def get_random_elem(cls, list_like : List[Any]) -> Any:
         length = len(list_like)
         idx = random.randint(0, length - 1)
         return list_like[idx]
@@ -138,6 +138,10 @@ class ChordUtil:
     @classmethod
     def dprint(cls, print_str : str):
         print(str(datetime.datetime.now()) + "," + print_str)
+
+    @classmethod
+    def print_no_lf(cls, print_str : str):
+        print(print_str, end="")
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
@@ -542,10 +546,40 @@ class ChordNode:
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す
-def get_a_random_node():
-    key_list = list(all_node_dict.keys())
-    selected_key = ChordUtil.get_random_elem(key_list)
+def get_a_random_node() -> 'ChordNode':
+    key_list : List[str] = list(all_node_dict.keys())
+    selected_key : str = ChordUtil.get_random_elem(key_list)
     return all_node_dict[selected_key]
+
+# stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
+# ランダムに選択したノードからsuccessor方向にsuccessorの繋がりでノードを辿って
+# 行って各ノードの情報を出力する
+# また、predecessorの方向にpredecesorの繋がりでもたどって出力する
+def check_nodes_connectivity():
+    ChordUtil.dprint("check_nodes_connectivity_1")
+    counter : int = 0
+    # まずはsuccessor方向に辿る
+    cur_node_info : NodeInfo = get_a_random_node().node_info
+    ChordUtil.print_no_lf("check_nodes_connectivity__succ,")
+    while counter < 20:
+        ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
+        cur_node_info = cur_node_info.successor_info
+        if cur_node_info == None:
+            break
+        counter += 1
+    print("")
+
+    # 続いてpredecessor方向に辿る
+    counter = 0
+    cur_node_info = get_a_random_node().node_info
+    ChordUtil.print_no_lf("check_nodes_connectivity__pred,")
+    while counter < 20:
+        ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
+        cur_node_info = cur_node_info.predecessor_info
+        if cur_node_info == None:
+            break
+        counter += 1
+    print("")
 
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
@@ -567,6 +601,7 @@ def add_new_node():
 def do_stabilize_on_random_node():
     global lock_of_all_data
     global done_stabilize_successor_cnt
+    global is_stabiize_finished
 
     # ロックの取得
     lock_of_all_data.acquire()
@@ -578,30 +613,33 @@ def do_stabilize_on_random_node():
     if done_stabilize_successor_cnt <= 3000:
         node.stabilize_successor()
         done_stabilize_successor_cnt += 1
+    else:
+        check_nodes_connectivity()
+        is_stabiize_finished = True
 
     ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                      + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                      + str(done_stabilize_successor_cnt))
 
-    # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
-    # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
-    # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
-    # 実行は開始する
-    if done_stabilize_successor_cnt > 3000:
-        ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
-        ## 一気に更新してしまう
-
-        # # TODO: ランダムなため重複は生じるがほぼ全てのエントリが一気に更新されるようにしてみる
-        # for n in range(250):
-        #     ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-        #           + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-        #           + str(n))
-        #     node.stabilize_finger_table()
-
-        # TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
-        ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
-        node.stabilize_finger_table()
+    # # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
+    # # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
+    # # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
+    # # 実行は開始する
+    # if done_stabilize_successor_cnt > 3000:
+    #     ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
+    #     ## 一気に更新してしまう
+    #
+    #     # # TODO: ランダムなため重複は生じるがほぼ全てのエントリが一気に更新されるようにしてみる
+    #     # for n in range(250):
+    #     #     ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+    #     #           + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+    #     #           + str(n))
+    #     #     node.stabilize_finger_table()
+    #
+    #     # TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
+    #     ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+    #         + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
+    #     node.stabilize_finger_table()
 
     # ロックの解放
     lock_of_all_data.release()
@@ -706,11 +744,11 @@ def main():
     stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
     stabilize_th_handle.start()
 
-    data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
-    data_put_th_handle.start()
-
-    data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
-    data_get_th_handle.start()
+    # data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
+    # data_put_th_handle.start()
+    #
+    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
+    # data_get_th_handle.start()
 
     while True:
         time.sleep(1)

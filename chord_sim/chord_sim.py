@@ -763,9 +763,11 @@ def main():
     # 最初の3ノードはここで登録する
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
     all_node_dict[first_node.node_info.address_str] = first_node
+    time.sleep(0.5)
     second_node = ChordNode(first_node.node_info.address_str, second_node=True)
     all_node_dict[second_node.node_info.address_str] = second_node
-    third_node = ChordNode(first_node.node_info.address_str, third_node=True)
+    time.sleep(0.5)
+    third_node = ChordNode(second_node.node_info.address_str, third_node=True)
     all_node_dict[third_node.node_info.address_str] = third_node
 
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)

@@ -5,6 +5,7 @@ import time
 import random
 import hashlib
 import datetime
+import math
 from typing import Dict, List, Any
 
 # 160bit符号なし整数の最大値
@@ -135,6 +136,20 @@ class ChordUtil:
         else:
             return False
 
+    # successor, predecessorを経路表に入れる際に適切なエントリに入れるために
+    # 対応するインデックスを求めて返す
+    # 設定するインデックスは node_id より値が大きくてもっとも近いエントリの
+    # インデックスとなる
+    # 値が大きいエントリに入れるのは、担当ノードとしては、そのノードのsuccessorを
+    # 用いるためである
+    @classmethod
+    def calc_idx_of_ftable_from_node_id(cls, node_id : int) -> int:
+        log2_value = math.log2(node_id)
+        ceiled_value = math.ceil(log2_value)
+        # ChordUtil.dprint("calc_idx_of_ftable_from_node_id," + str(ceiled_value))
+        # print("", flush=True, end="")
+        return ceiled_value - 1 # 0オリジンのため
+
     @classmethod
     def dprint(cls, print_str : str):
         print(str(datetime.datetime.now()) + "," + print_str)
@@ -244,10 +259,12 @@ class ChordNode:
 
         self.node_info.successor_info = successor.node_info
 
-        # TODO: 最低限、1つエントリが埋まっていないと、stabilize_finger_table自体が
+        # TODO: 最低限、いくつかエントリが埋まっていないと、stabilize_finger_table自体が
         #       finger_tableを用いて探索を行うことでエントリを埋めていくので、うまく動かない
-        #       のではないかと思うので、最初のエントリにひとまずsuccessorを設定しておいてみる
-        self.node_info.finger_table[0] = self.node_info.successor_info
+        #       のではないかと思うので、node_idから求めた適切そうなエントリにひとまずsuccessorを
+        #       設定しておいてみる
+        idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.successor_info.node_id)
+        self.node_info.finger_table[idx] = self.node_info.successor_info
 
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
         ChordUtil.dprint("join," + str(self.node_info.born_id) + "," +
@@ -330,8 +347,9 @@ class ChordNode:
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
-            # # TODO: predecessorは自身から右回りで一番遠いノードのはずなので経路表の最後のエントリに入れてしまう
-            # self.node_info.finger_table[160 - 1]
+            # TODO: はじめて設定するpredecessorを経路表に入れてしまう
+            idx = ChordUtil.calc_idx_of_ftable_from_node_id(node_info.node_id)
+            self.node_info.finger_table[idx] = self.node_info.predecessor_info
             return
 
 
@@ -348,8 +366,9 @@ class ChordNode:
         # 経路表の情報を更新する
         if distance_check < distance_cur:
             self.node_info.predecessor_info = node_info
-            # # TODO: predecessorは自身から右回りで一番遠いノードのはずなので経路表の最後のエントリに入れてしまう
-            # self.node_info.finger_table[160 - 1] = node_info
+            # TODO: あたらしいpredecessorも経路表に入れてしまう
+            idx = ChordUtil.calc_idx_of_ftable_from_node_id(node_info.node_id)
+            self.node_info.finger_table[idx] = node_info
 
             ChordUtil.dprint("check_predecessor_3," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
@@ -385,6 +404,10 @@ class ChordNode:
             # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
             # 処理を終了する
             successor_info.predecessor_info = self.node_info
+            # TODO: successorの経路表に自身を入れてしまう
+            idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id)
+            successor_info.finger_table[idx] = self.node_info
+
             ChordUtil.dprint("stabilize_successor_2," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
@@ -426,8 +449,9 @@ class ChordNode:
                 # 自身の認識するsuccessorの情報を更新する
 
                 self.node_info.successor_info = successor_obj.node_info.predecessor_info
-                # TODO: succesorは自身から右回りで一番近いノードのはずなので経路表の最初のエントリに入れてしまう
-                self.node_info.finger_table[0] = self.node_info.successor_info
+                # TODO: 新しいsuccessorも経路表に入れてしまう
+                idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.successor_info.node_id)
+                self.node_info.finger_table[idx] = self.node_info.successor_info
 
                 # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                 # ば情報を更新してもらう
@@ -518,7 +542,7 @@ class ChordNode:
 
         n_dash = self
         #while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
-        while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.predecessor_info.node_id, n_dash.node_info.successor_info.node_id, id):
+        while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info.node_id, id):
             ChordUtil.dprint("find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," +
                   hex(n_dash.node_info.node_id))
             n_dash_found = n_dash.closest_preceding_finger(id)
@@ -529,13 +553,19 @@ class ChordNode:
                 return n_dash_found
             else:
                 n_dash = n_dash_found
+
+
         return n_dash
 
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
     def closest_preceding_finger(self, id : int) -> 'ChordNode':
-        zantei_closest_node_info = self.node_info
-        # 範囲の狭いエントリから探索していく
-        for entry in self.node_info.finger_table:
+        #zantei_closest_node_info = self.node_info
+
+        # 範囲の広いエントリから探索していく
+        # finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
+        # ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
+        # 順に見ていくようにする
+        for entry in reversed(self.node_info.finger_table):
             # ランダムに更新しているため埋まっていないエントリも存在し得る
             if entry == None:
                 ChordUtil.dprint("closest_preceding_finger_0," + str(self.node_info.born_id) + ","
@@ -547,29 +577,37 @@ class ChordNode:
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                   + ChordUtil.conv_id_to_ratio_str(entry.node_id))
 
+            # テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
+            # それを返す
+            # (大きな範囲を見た場合、探索対象のIDが自身のIDとエントリが保持しているノードのIDの中に含まれて
+            #  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
+            #  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
+            #  見つけるという処理になっていると思われる）
             # #if self.node_info.node_id < entry.node_id and entry.node_id <= id:
-            # if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, entry.node_id):
-            #     ChordUtil.dprint("closest_preceding_finger_2," + str(self.node_info.born_id) + ","
-            #           + hex(self.node_info.node_id) + "," + hex(entry.node_id) + ","
-            #           + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
-            #           + ChordUtil.conv_id_to_ratio_str(entry.node_id))
-            #     return all_node_dict[entry.address_str]
+            if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, entry.node_id):
+                ChordUtil.dprint("closest_preceding_finger_2," + str(self.node_info.born_id) + ","
+                      + hex(self.node_info.node_id) + "," + hex(entry.node_id) + ","
+                      + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                      + ChordUtil.conv_id_to_ratio_str(entry.node_id))
+                return all_node_dict[entry.address_str]
 
-            # なめていっている entry の node_id が探索対象のidより右回りで見た時にidより遠くに
-            # なってしまった場合は探索を打ち切る
-            if ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, id) \
-                    < ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, entry.node_id):
-                ChordUtil.dprint("closest_preceding_finger_2")
-                break
+            # # なめていっている entry の node_id が探索対象のidより右回りで見た時にidより遠くに
+            # # なってしまった場合は探索を打ち切る
+            # if ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, id) \
+            #         < ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, entry.node_id):
+            #     ChordUtil.dprint("closest_preceding_finger_2")
+            #     break
 
-            zantei_closest_node_info = entry
+            # zantei_closest_node_info = entry
 
         ChordUtil.dprint("closest_preceding_finger_3")
-        # 探索していった中で一番近かったノードを返す
-        return all_node_dict[zantei_closest_node_info.address_str]
+        # # 探索していった中で一番近かったノードを返す
+        # return all_node_dict[zantei_closest_node_info.address_str]
 
         # # 自身のsuccessorが一番近いpredecessorである （参考スライドとは異なるがこうしてみる）
         # return all_node_dict[self.node_info.successor_info.address_str]
+
+        return self
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す
@@ -651,25 +689,25 @@ def do_stabilize_on_random_node():
                      + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                      + str(done_stabilize_successor_cnt))
 
-    # # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
-    # # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
-    # # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
-    # # 実行は開始する
-    # if done_stabilize_successor_cnt > 3000:
-    #     ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
-    #     ## 一気に更新してしまう
-    #
-    #     # # TODO: ランダムなため重複は生じるがほぼ全てのエントリが一気に更新されるようにしてみる
-    #     # for n in range(250):
-    #     #     ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-    #     #           + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-    #     #           + str(n))
-    #     #     node.stabilize_finger_table()
-    #
-    #     # TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
-    #     ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-    #         + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
-    #     node.stabilize_finger_table()
+    # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
+    # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
+    # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
+    # 実行は開始する
+    if done_stabilize_successor_cnt > 10000:
+        ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
+        ## 一気に更新してしまう
+
+        # # TODO: ランダムなため重複は生じるがほぼ全てのエントリが一気に更新されるようにしてみる
+        # for n in range(250):
+        #     ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+        #           + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+        #           + str(n))
+        #     node.stabilize_finger_table()
+
+        # TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
+        ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
+        node.stabilize_finger_table()
 
     # ロックの解放
     lock_of_all_data.release()
@@ -778,11 +816,11 @@ def main():
     stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
     stabilize_th_handle.start()
 
-    # data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
-    # data_put_th_handle.start()
-    #
-    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
-    # data_get_th_handle.start()
+    data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
+    data_put_th_handle.start()
+
+    data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
+    data_get_th_handle.start()
 
     while True:
         time.sleep(1)

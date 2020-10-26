@@ -173,7 +173,7 @@ class NodeInfo:
 class ChordNode:
 
     # join時の処理もコンストラクタで行う
-    def __init__(self, node_address : str, first_node = False, second_node = False):
+    def __init__(self, node_address : str, first_node = False, second_node = False, third_node = False):
         global already_born_node_num
 
         self.node_info = NodeInfo()
@@ -208,7 +208,32 @@ class ChordNode:
             first_node = all_node_dict[node_address]
             first_node.node_info.successor_info = self.node_info
 
-            self.join(node_address)
+            # 1番目にネットワークに参加したノードをpredecessorとして設定しておく
+            self.node_info.predecessor_info = first_node.node_info
+
+            # self.join(node_address)
+
+            # succesor は Noneのまま終了する
+            return
+        elif third_node:
+            # 3番目にネットワークに参加するノードの場合
+
+            # 2番目にネットワークに参加したノードはsuccessorを持たない状態となって
+            # いるため自身をsuccessorとして設定しておく
+            second_node = all_node_dict[node_address]
+            second_node.node_info.successor_info = self.node_info
+
+            # 2番目にネットワークに参加したノードをpredecessorとして設定しておく
+            self.node_info.predecessor_info = second_node.node_info
+
+            # 1番目にネットワークに参加したノードをsuccessorとして設定しておく
+            first_node_info = second_node.node_info.predecessor_info
+            self.node_info.successor_info = first_node_info
+
+            # 自身を1番目にネットワークに参加したノードのpredecessorとして設定しておく
+            first_node_info.predecessor_info = self.node_info
+
+            # ここまでの処理で3ノードによる円環状のネットワークができたことになる、はず
         else:
             self.join(node_address)
 
@@ -309,6 +334,7 @@ class ChordNode:
             # self.node_info.finger_table[160 - 1]
             return
 
+
         ChordUtil.dprint("check_predecessor_2," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
@@ -330,6 +356,7 @@ class ChordNode:
                   + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
+
 
     # successorおよびpredicessorに関するstabilize処理を行う
     # predecessorはこの呼び出しで初めて設定される
@@ -557,6 +584,7 @@ def get_a_random_node() -> 'ChordNode':
 # また、predecessorの方向にpredecesorの繋がりでもたどって出力する
 def check_nodes_connectivity():
     ChordUtil.dprint("check_nodes_connectivity_1")
+    print("flush", flush=True)
     counter : int = 0
     # まずはsuccessor方向に辿る
     cur_node_info : NodeInfo = get_a_random_node().node_info
@@ -732,11 +760,13 @@ def main():
     # スイッチするかは実行毎に異なる可能性があるため、あまり意味はないかもしれない
     random.seed(1337)
 
-    # 最初の2ノードはここで登録する
+    # 最初の3ノードはここで登録する
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
     all_node_dict[first_node.node_info.address_str] = first_node
     second_node = ChordNode(first_node.node_info.address_str, second_node=True)
     all_node_dict[second_node.node_info.address_str] = second_node
+    third_node = ChordNode(first_node.node_info.address_str, third_node=True)
+    all_node_dict[third_node.node_info.address_str] = third_node
 
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()

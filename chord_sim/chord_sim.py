@@ -588,7 +588,8 @@ def check_nodes_connectivity():
     counter : int = 0
     # まずはsuccessor方向に辿る
     cur_node_info : NodeInfo = get_a_random_node().node_info
-    ChordUtil.print_no_lf("check_nodes_connectivity__succ,")
+    ChordUtil.print_no_lf("check_nodes_connectivity__succ")
+    print(",", flush=True, end="")
     while counter < 20:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
         cur_node_info = cur_node_info.successor_info
@@ -600,7 +601,8 @@ def check_nodes_connectivity():
     # 続いてpredecessor方向に辿る
     counter = 0
     cur_node_info = get_a_random_node().node_info
-    ChordUtil.print_no_lf("check_nodes_connectivity__pred,")
+    ChordUtil.print_no_lf("check_nodes_connectivity__pred")
+    print(",", flush=True, end="")
     while counter < 20:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
         cur_node_info = cur_node_info.predecessor_info
@@ -638,7 +640,7 @@ def do_stabilize_on_random_node():
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
-    if done_stabilize_successor_cnt <= 3000:
+    if done_stabilize_successor_cnt <= 10000:
         node.stabilize_successor()
         done_stabilize_successor_cnt += 1
     else:
@@ -713,7 +715,7 @@ def do_get_on_random_node():
     lock_of_all_data.release()
 
 def node_join_th():
-    counter = 2
+    counter = 3
     while counter < 10:
         add_new_node()
         time.sleep(0.1) # sleep 100msec

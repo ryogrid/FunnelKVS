@@ -471,13 +471,13 @@ class ChordNode:
     # FingerTableに関するstabilize処理を行う
     # 一回の呼び出しでランダムに選択した1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
-    def stabilize_finger_table(self):
+    def stabilize_finger_table(self, idx):
         ChordUtil.dprint("stabilize_finger_table_1," + str(self.node_info.born_id) + "," +
               hex(self.node_info.node_id) + "," + self.node_info.address_str + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id))
 
         length = len(self.node_info.finger_table)
-        idx = random.randint(0, length - 1)
+        # idx = random.randint(0, length - 1)
         # FingerTableの各要素はインデックスを idx とすると 2^IDX 先までを担当する、もしくは
         # 担当するノードに最も近いノードが格納される
         update_id = ChordUtil.overflow_check_and_conv(self.node_info.node_id + 2**idx)
@@ -710,13 +710,12 @@ def do_stabilize_on_random_node():
     if done_stabilize_successor_cnt <= 10000:
         node.stabilize_successor()
         done_stabilize_successor_cnt += 1
+        ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
+                         + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+                         + str(done_stabilize_successor_cnt))
     else:
         check_nodes_connectivity()
         is_stabiize_finished = True
-
-    ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
-                     + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-                     + str(done_stabilize_successor_cnt))
 
     # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
@@ -726,17 +725,17 @@ def do_stabilize_on_random_node():
         ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
         ## 一気に更新してしまう
 
-        # # TODO: ランダムなため重複は生じるがほぼ全てのエントリが一気に更新されるようにしてみる
-        # for n in range(250):
-        #     ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-        #           + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-        #           + str(n))
-        #     node.stabilize_finger_table()
+        # TODO: テーブルの上から順に全て更新する
+        for idx in reversed(range(0, 160)):
+            ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+                  + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+                  + str(idx))
+            node.stabilize_finger_table(idx)
 
         # TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
         ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
             + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
-        node.stabilize_finger_table()
+        # node.stabilize_finger_table()
 
     # ロックの解放
     lock_of_all_data.release()

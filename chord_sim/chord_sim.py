@@ -541,19 +541,48 @@ class ChordNode:
             return None
 
         n_dash = self
+        # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
         #while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
         while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info.node_id, id):
             ChordUtil.dprint("find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," +
                   hex(n_dash.node_info.node_id))
             n_dash_found = n_dash.closest_preceding_finger(id)
+
             if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
                 # 見つかったノードが、n_dash と同じで、変わらなかった場合
                 # 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
                 # なってしまうため n_dash_found を探索結果として返す
+                ChordUtil.dprint(
+                    "find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
+                    + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                    + hex(n_dash_found.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(n_dash_found.node_info.node_id))
                 return n_dash_found
-            else:
-                n_dash = n_dash_found
 
+            # closelst_preceding_finger は id を通り越してしまったノードは返さない
+            # という前提の元で以下のチェックを行う
+            distance_old = ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, n_dash.node_info.node_id)
+            distance_found = ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, n_dash_found.node_info.node_id)
+            if distance_found < distance_old:
+                # 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
+                # 自ノードからはより遠い位置の値になっていくということのはずである
+                # 従って、そうなっていなかった場合は、繰り返しを継続しても意味が無く、最悪、無限ループになってしまう
+                # 可能性があるため、探索を打ち切り、古い方のノードを返す
+
+                ChordUtil.dprint(
+                    "find_predecessor_4," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
+                    + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                    + hex(n_dash.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.node_id))
+
+                return n_dash
+
+            ChordUtil.dprint(
+                "find_predecessor_5_n_dash_updated," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
+                + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + "->" + str(n_dash.node_info.born_id) + ","
+                + hex(n_dash.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.node_id))
+
+            # チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
+            # ノード情報 n_dash_foundに置き換える
+            n_dash = n_dash_found
 
         return n_dash
 

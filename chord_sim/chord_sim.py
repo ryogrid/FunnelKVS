@@ -720,22 +720,23 @@ def do_stabilize_on_random_node():
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
-    if done_stabilize_successor_cnt < 1000:
+    if done_stabilize_successor_cnt < 2000:
         for node in all_node_dict.values():
           node.stabilize_successor()
           done_stabilize_successor_cnt += 1
           ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                            + str(done_stabilize_successor_cnt))
-    elif done_stabilize_successor_cnt == 1000:
+    elif done_stabilize_successor_cnt == 2000:
         check_nodes_connectivity()
+        done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため
         #is_stabiize_finished = True
 
     # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
     # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
     # 実行は開始する
-    if done_stabilize_successor_cnt > 1000:
+    if done_stabilize_successor_cnt > 2000:
         ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
         ## 一気に更新してしまう
         for node in all_node_dict.values():

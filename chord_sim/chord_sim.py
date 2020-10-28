@@ -28,7 +28,7 @@ all_data_list : List['KeyValue'] = []
 # のデバッグ用IDを持たせるためのカウンタ
 already_born_node_num = 0
 
-is_stabiize_finished = False
+is_stabilize_finished = False
 
 lock_of_all_data = threading.Lock()
 
@@ -711,7 +711,7 @@ def add_new_node():
 def do_stabilize_on_random_node():
     global lock_of_all_data
     global done_stabilize_successor_cnt
-    global is_stabiize_finished
+    #global is_stabiize_finished
 
     # ロックの取得
     lock_of_all_data.acquire()
@@ -720,16 +720,16 @@ def do_stabilize_on_random_node():
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
-    if done_stabilize_successor_cnt <= 10000:
+    if done_stabilize_successor_cnt < 1000:
         for node in all_node_dict.values():
           node.stabilize_successor()
           done_stabilize_successor_cnt += 1
           ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                            + str(done_stabilize_successor_cnt))
-    else:
+    elif done_stabilize_successor_cnt == 1000:
         check_nodes_connectivity()
-        is_stabiize_finished = True
+        #is_stabiize_finished = True
 
     # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
@@ -807,21 +807,21 @@ def stabilize_th():
     # タイミングに達したら stabilize 処理は行われなくする
 
     time.sleep(2) # sleep 2sec
-    while is_stabiize_finished == False:
+    while is_stabilize_finished == False:
         do_stabilize_on_random_node()
         # 1秒に1000ノードを選択し処理が
         # 行われる程度の間隔に設定
         time.sleep(0.001) # sleep 5msec
 
 def data_put_th():
-    global is_stabiize_finished
+    global is_stabilize_finished
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
     time.sleep(120) # sleep 120sec
 
     # stabilizeを行うスレッドを動作させなくする
-    is_stabiize_finished = True
+    is_stabilize_finished = True
 
     while True:
         do_put_on_random_node()

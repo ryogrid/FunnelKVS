@@ -564,12 +564,12 @@ class ChordNode:
             if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
                 # 見つかったノードが、n_dash と同じで、変わらなかった場合
                 # 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
-                # なってしまうため n_dash_found を探索結果として返す
+                # なってしまうため、探索結果は無効としてNoneを返す
                 ChordUtil.dprint(
                     "find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
                     + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                     + hex(n_dash_found.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(n_dash_found.node_info.node_id))
-                return n_dash_found
+                return None
 
             # closelst_preceding_finger は id を通り越してしまったノードは返さない
             # という前提の元で以下のチェックを行う
@@ -579,14 +579,14 @@ class ChordNode:
                 # 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
                 # 自ノードからはより遠い位置の値になっていくということのはずである
                 # 従って、そうなっていなかった場合は、繰り返しを継続しても意味が無く、最悪、無限ループになってしまう
-                # 可能性があるため、探索を打ち切り、古い方のノードを返す
+                # 可能性があるため、探索を打ち切り、探索結果は無効としてNoneを返す
 
                 ChordUtil.dprint(
                     "find_predecessor_4," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
                     + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                     + hex(n_dash.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.node_id))
 
-                return n_dash
+                return None
 
             ChordUtil.dprint(
                 "find_predecessor_5_n_dash_updated," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
@@ -633,22 +633,11 @@ class ChordNode:
                       + ChordUtil.conv_id_to_ratio_str(entry.node_id))
                 return all_node_dict[entry.address_str]
 
-            # # なめていっている entry の node_id が探索対象のidより右回りで見た時にidより遠くに
-            # # なってしまった場合は探索を打ち切る
-            # if ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, id) \
-            #         < ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, entry.node_id):
-            #     ChordUtil.dprint("closest_preceding_finger_2")
-            #     break
-
-            # zantei_closest_node_info = entry
-
         ChordUtil.dprint("closest_preceding_finger_3")
-        # # 探索していった中で一番近かったノードを返す
-        # return all_node_dict[zantei_closest_node_info.address_str]
 
-        # # 自身のsuccessorが一番近いpredecessorである （参考スライドとは異なるがこうしてみる）
-        # return all_node_dict[self.node_info.successor_info.address_str]
-
+        # どんなに範囲を狭めても探索対象のIDを超えてしまうノードしか存在しなかった場合
+        # 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という
+        # ことになる
         return self
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
@@ -819,7 +808,7 @@ def data_put_th():
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    time.sleep(120) # sleep 120sec
+    time.sleep(180) # sleep 3min
 
     # stabilizeを行うスレッドを動作させなくする
     is_stabilize_finished = True
@@ -830,7 +819,7 @@ def data_put_th():
 
 def data_get_th():
     # 最初のputが行われるまで待つ
-    time.sleep(125) # sleep 125sec
+    time.sleep(185) # sleep 3min and 5sec
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec

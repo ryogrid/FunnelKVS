@@ -143,8 +143,9 @@ class ChordUtil:
     # 値が大きいエントリに入れるのは、担当ノードとしては、そのノードのsuccessorを
     # 用いるためである
     @classmethod
-    def calc_idx_of_ftable_from_node_id(cls, node_id : int) -> int:
-        log2_value = math.log2(node_id)
+    def calc_idx_of_ftable_from_node_id(cls, from_node_id : int, target_node_id : int) -> int:
+        distance : int = ChodUtil.calc_distance_between_nodes_right_mawari(from_node_id, target_node_id)
+        log2_value = math.log2(distance)
         ceiled_value = math.ceil(log2_value)
         # ChordUtil.dprint("calc_idx_of_ftable_from_node_id," + str(ceiled_value))
         # print("", flush=True, end="")
@@ -263,7 +264,7 @@ class ChordNode:
         #       finger_tableを用いて探索を行うことでエントリを埋めていくので、うまく動かない
         #       のではないかと思うので、node_idから求めた適切そうなエントリにひとまずsuccessorを
         #       設定しておいてみる
-        idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.successor_info.node_id)
+        idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, self.node_info.successor_info.node_id)
         self.node_info.finger_table[idx] = self.node_info.successor_info
 
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
@@ -367,7 +368,7 @@ class ChordNode:
         if distance_check < distance_cur:
             self.node_info.predecessor_info = node_info
             # TODO: あたらしいpredecessorも経路表に入れてしまう
-            idx = ChordUtil.calc_idx_of_ftable_from_node_id(node_info.node_id)
+            idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, node_info.node_id)
             self.node_info.finger_table[idx] = node_info
 
             ChordUtil.dprint("check_predecessor_3," + str(self.node_info.born_id) + ","
@@ -405,7 +406,7 @@ class ChordNode:
             # 処理を終了する
             successor_info.predecessor_info = self.node_info
             # TODO: successorの経路表に自身を入れてしまう
-            idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id)
+            idx = ChordUtil.calc_idx_of_ftable_from_node_id(successor_info.node_id, self.node_info.node_id)
             successor_info.finger_table[idx] = self.node_info
 
             ChordUtil.dprint("stabilize_successor_2," + str(self.node_info.born_id) + ","
@@ -450,7 +451,7 @@ class ChordNode:
 
                 self.node_info.successor_info = successor_obj.node_info.predecessor_info
                 # TODO: 新しいsuccessorも経路表に入れてしまう
-                idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.successor_info.node_id)
+                idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, self.node_info.successor_info.node_id)
                 self.node_info.finger_table[idx] = self.node_info.successor_info
 
                 # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ

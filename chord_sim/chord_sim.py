@@ -694,7 +694,7 @@ def add_new_node():
     # ロックの解放
     lock_of_all_data.release()
 
-# ランダムに選択したノードに stabilize のアクションをとらせる
+# all_node_id辞書のvaluesリスト内を順に選択したノードに stabilize のアクションをとらせる
 # やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
 def do_stabilize_on_random_node():
     global lock_of_all_data
@@ -704,16 +704,17 @@ def do_stabilize_on_random_node():
     # ロックの取得
     lock_of_all_data.acquire()
 
-    node = get_a_random_node()
+    # node = get_a_random_node()
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
     if done_stabilize_successor_cnt <= 10000:
-        node.stabilize_successor()
-        done_stabilize_successor_cnt += 1
-        ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
-                         + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-                         + str(done_stabilize_successor_cnt))
+        for node in all_node_dict.values():
+          node.stabilize_successor()
+          done_stabilize_successor_cnt += 1
+          ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
+                           + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+                           + str(done_stabilize_successor_cnt))
     else:
         check_nodes_connectivity()
         is_stabiize_finished = True
@@ -722,21 +723,21 @@ def do_stabilize_on_random_node():
     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
     # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
     # 実行は開始する
-    if done_stabilize_successor_cnt > 10000:
+    if done_stabilize_successor_cnt > 1000:
         ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
         ## 一気に更新してしまう
+        for node in all_node_dict.values():
+          # TODO: テーブルの上から順に全て更新する
+          for idx in reversed(range(0, 160)):
+              ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+                    + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+                    + str(idx))
+              node.stabilize_finger_table(idx)
 
-        # TODO: テーブルの上から順に全て更新する
-        for idx in reversed(range(0, 160)):
-            ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-                  + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-                  + str(idx))
-            node.stabilize_finger_table(idx)
-
-        # TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
-        ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
-        # node.stabilize_finger_table()
+          ## TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
+          # ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+          #    + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
+          ## node.stabilize_finger_table()
 
     # ロックの解放
     lock_of_all_data.release()

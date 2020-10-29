@@ -758,14 +758,14 @@ def do_stabilize_once_at_all_node():
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
-    if done_stabilize_successor_cnt < 100:
+    if done_stabilize_successor_cnt < 10:
         for node in all_node_dict.values():
           node.stabilize_successor()
           done_stabilize_successor_cnt += 1
           ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                            + str(done_stabilize_successor_cnt))
-    elif done_stabilize_successor_cnt == 100:
+    elif done_stabilize_successor_cnt == 10:
         check_nodes_connectivity()
         done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため
         #is_stabiize_finished = True
@@ -774,11 +774,10 @@ def do_stabilize_once_at_all_node():
     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
     # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
     # 実行は開始する
-    if done_stabilize_successor_cnt > 100:
-        ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
-        ## 一気に更新してしまう
+    if done_stabilize_successor_cnt > 10:
+        # 全てのノードについて処理を行う
         for node in all_node_dict.values():
-          # TODO: テーブルの上から順に全て更新する
+          # テーブルの上から順に全て更新する
           for idx in reversed(range(0, 160)):
               ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
                     + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
@@ -848,6 +847,8 @@ def do_get_on_random_node():
 #         time.sleep(0.001) # sleep 5msec
 
 def node_join_and_stabilize_th():
+    global done_stabilize_successor_cnt
+    global is_stabilize_finished
     counter = 3
     while counter < 10:
         add_new_node()
@@ -855,7 +856,7 @@ def node_join_and_stabilize_th():
         # を実行する
         # 実際の運用でもネットワークが安定した状態で後続のノードが入っているというのが通常なので（広域のシステムだと）、
         # それとは整合する処理の流れだと思われる
-        for n in range(300):
+        for n in range(20):
             # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
             # 実装されている
             do_stabilize_once_at_all_node()
@@ -866,24 +867,31 @@ def node_join_and_stabilize_th():
 
         counter += 1
 
+    is_stabilize_finished = True
+
 
 def data_put_th():
     global is_stabilize_finished
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    time.sleep(180) # sleep 3min
+    # time.sleep(180) # sleep 3min
+    while is_stabilize_finished == False:
+        time.sleep(1)
 
-    # stabilizeを行うスレッドを動作させなくする
-    is_stabilize_finished = True
+    # # stabilizeを行うスレッドを動作させなくする
+    # is_stabilize_finished = True
 
     while True:
         do_put_on_random_node()
         time.sleep(1) # sleep 1sec
 
 def data_get_th():
-    # 最初のputが行われるまで待つ
-    time.sleep(185) # sleep 3min and 5sec
+    # # 最初のputが行われるまで待つ
+    # time.sleep(185) # sleep 3min and 5sec
+    while is_stabilize_finished == False:
+        time.sleep(1)
+
     while True:
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec

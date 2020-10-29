@@ -695,9 +695,58 @@ def add_new_node():
     # ロックの解放
     lock_of_all_data.release()
 
+# # all_node_id辞書のvaluesリスト内を順に選択したノードに stabilize のアクションをとらせる
+# # やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
+# def do_stabilize_once_at_all_node():
+#     global lock_of_all_data
+#     global done_stabilize_successor_cnt
+#     #global is_stabiize_finished
+#
+#     # ロックの取得
+#     lock_of_all_data.acquire()
+#
+#     # node = get_a_random_node()
+#
+#     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
+#     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
+#     if done_stabilize_successor_cnt < 1500:
+#         for node in all_node_dict.values():
+#           node.stabilize_successor()
+#           done_stabilize_successor_cnt += 1
+#           ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
+#                            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+#                            + str(done_stabilize_successor_cnt))
+#     elif done_stabilize_successor_cnt == 1500:
+#         check_nodes_connectivity()
+#         done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため
+#         #is_stabiize_finished = True
+#
+#     # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
+#     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
+#     # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
+#     # 実行は開始する
+#     if done_stabilize_successor_cnt > 1500:
+#         ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
+#         ## 一気に更新してしまう
+#         for node in all_node_dict.values():
+#           # TODO: テーブルの上から順に全て更新する
+#           for idx in reversed(range(0, 160)):
+#               ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+#                     + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+#                     + str(idx))
+#               node.stabilize_finger_table(idx)
+#
+#           ## TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
+#           # ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+#           #    + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
+#           ## node.stabilize_finger_table()
+#
+#     # ロックの解放
+#     lock_of_all_data.release()
+
 # all_node_id辞書のvaluesリスト内を順に選択したノードに stabilize のアクションをとらせる
 # やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
-def do_stabilize_on_random_node():
+def do_stabilize_once_at_all_node():
     global lock_of_all_data
     global done_stabilize_successor_cnt
     #global is_stabiize_finished
@@ -709,14 +758,14 @@ def do_stabilize_on_random_node():
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
-    if done_stabilize_successor_cnt < 1500:
+    if done_stabilize_successor_cnt < 100:
         for node in all_node_dict.values():
           node.stabilize_successor()
           done_stabilize_successor_cnt += 1
           ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                            + str(done_stabilize_successor_cnt))
-    elif done_stabilize_successor_cnt == 1500:
+    elif done_stabilize_successor_cnt == 100:
         check_nodes_connectivity()
         done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため
         #is_stabiize_finished = True
@@ -725,7 +774,7 @@ def do_stabilize_on_random_node():
     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
     # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
     # 実行は開始する
-    if done_stabilize_successor_cnt > 1500:
+    if done_stabilize_successor_cnt > 100:
         ## テーブル長が160と長いので半分の80エントリ（ランダムに行うため重複した場合は80より少なくなる）は
         ## 一気に更新してしまう
         for node in all_node_dict.values():
@@ -735,11 +784,6 @@ def do_stabilize_on_random_node():
                     + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                     + str(idx))
               node.stabilize_finger_table(idx)
-
-          ## TODO: 一気にやってもどうせ失敗するので1エントリずつという基本に立ち戻ってみる
-          # ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-          #    + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id))
-          ## node.stabilize_finger_table()
 
     # ロックの解放
     lock_of_all_data.release()
@@ -784,24 +828,44 @@ def do_get_on_random_node():
     # ロックの解放
     lock_of_all_data.release()
 
-def node_join_th():
+# def node_join_th():
+#     counter = 3
+#     while counter < 10:
+#         add_new_node()
+#         time.sleep(0.1) # sleep 100msec
+#         counter += 1
+#
+# def stabilize_th():
+#     # 実システムではあり得ないが、デバッグプリントが見にくくなることを
+#     # 避けるため、一度ネットワークが構築され、安定状態になったと思われる
+#     # タイミングに達したら stabilize 処理は行われなくする
+#
+#     time.sleep(2) # sleep 2sec
+#     while is_stabilize_finished == False:
+#         do_stabilize_once_at_all_node()
+#         # 1秒に1000ノードを選択し処理が
+#         # 行われる程度の間隔に設定
+#         time.sleep(0.001) # sleep 5msec
+
+def node_join_and_stabilize_th():
     counter = 3
     while counter < 10:
         add_new_node()
-        time.sleep(0.1) # sleep 100msec
+        # 1ノード追加するごとに全ノードに対し一定回数 stabilize_successorを実行し、その後、一定回数、stablize_finger_table
+        # を実行する
+        # 実際の運用でもネットワークが安定した状態で後続のノードが入っているというのが通常なので（広域のシステムだと）、
+        # それとは整合する処理の流れだと思われる
+        for n in range(300):
+            # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
+            # 実装されている
+            do_stabilize_once_at_all_node()
+        # 次のwhileループの周回の際の do_stabilize_once_at_all_nodeのためにリセット
+        done_stabilize_successor_cnt = 0
+
+        #time.sleep(0.1) # sleep 100msec
+
         counter += 1
 
-def stabilize_th():
-    # 実システムではあり得ないが、デバッグプリントが見にくくなることを
-    # 避けるため、一度ネットワークが構築され、安定状態になったと思われる
-    # タイミングに達したら stabilize 処理は行われなくする
-
-    time.sleep(2) # sleep 2sec
-    while is_stabilize_finished == False:
-        do_stabilize_on_random_node()
-        # 1秒に1000ノードを選択し処理が
-        # 行われる程度の間隔に設定
-        time.sleep(0.001) # sleep 5msec
 
 def data_put_th():
     global is_stabilize_finished
@@ -842,11 +906,14 @@ def main():
     third_node = ChordNode(second_node.node_info.address_str, third_node=True)
     all_node_dict[third_node.node_info.address_str] = third_node
 
-    node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
-    node_join_th_handle.start()
+    # node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
+    # node_join_th_handle.start()
+    #
+    # stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
+    # stabilize_th_handle.start()
 
-    stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
-    stabilize_th_handle.start()
+    node_join_and_stabilize_th_handle = threading.Thread(target=node_join_and_stabilize_th, daemon=True)
+    node_join_and_stabilize_th_handle.start()
 
     data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     data_put_th_handle.start()

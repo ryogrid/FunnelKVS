@@ -84,7 +84,7 @@ class ChordUtil:
         if(slided_base_id < 0):
             # マイナスの値をとった場合は値0を通り越しているので
             # それにあった値に置き換える
-            slided_base_id = ID_MAX - slided_base_id
+            slided_base_id = ID_MAX + slided_base_id
 
         # あとは差をとって、符号を逆転させる（前方は値が小さくなる方向を意味するため）
         distance = -1 * (slided_target_id - slided_base_id)
@@ -110,7 +110,7 @@ class ChordUtil:
         if(slided_target_id < 0):
             # マイナスの値をとった場合は値0を通り越しているので
             # それにあった値に置き換える
-            slided_target_id = ID_MAX - slided_target_id
+            slided_target_id = ID_MAX + slided_target_id
 
         # あとは単純に差をとる
         distance = slided_target_id - slided_base_id

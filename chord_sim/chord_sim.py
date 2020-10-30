@@ -547,11 +547,11 @@ class ChordNode:
     #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
     def find_predecessor(self, id: int):
         ChordUtil.dprint("find_predecessor_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
-        if self.node_info.predecessor_info == None:
-            # predecessorが他ノードによる stabilize_successor によって埋まっていなければ
-            # 探索は行わず Noneを返す
-            ChordUtil.dprint("find_predecessor_2," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
-            return None
+        # if self.node_info.predecessor_info == None:
+        #     # predecessorが他ノードによる stabilize_successor によって埋まっていなければ
+        #     # 探索は行わず Noneを返す
+        #     ChordUtil.dprint("find_predecessor_2," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
+        #     return None
 
         n_dash = self
         # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
@@ -564,12 +564,12 @@ class ChordNode:
             if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
                 # 見つかったノードが、n_dash と同じで、変わらなかった場合
                 # 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
-                # なってしまうため、探索結果は無効としてNoneを返す
+                # なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
                 ChordUtil.dprint(
                     "find_predecessor_3," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
                     + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                     + hex(n_dash_found.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(n_dash_found.node_info.node_id))
-                return None
+                return n_dash_found
 
             # closelst_preceding_finger は id を通り越してしまったノードは返さない
             # という前提の元で以下のチェックを行う
@@ -776,12 +776,12 @@ def do_stabilize_once_at_all_node():
     # 実行は開始する
     if done_stabilize_successor_cnt > 100:
         # 全てのノードについて処理を行う
-        for node in all_node_dict.values():
-          # テーブルの下から順に全て更新する
-          # ただし、各ノードの更新するインデックスの範囲は1要素ずつ広げていく
-          # これによりsuccessorによるチェーンが正しく構築されていれば効率よく構築が行われる（はず）
-          for num in range(1, 160 + 1):
-              for idx in range(0, num):
+
+        # テーブルの下から順に全て更新する
+        # ただし、各ノードの更新するインデックスの範囲は1ずつ大きくなる方向にずらしていく
+        # これによりsuccessorによるチェーンが正しく構築されていれば効率よく構築が行われる（はず）
+        for idx in range(0, 160):
+            for node in all_node_dict.values():
                   ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
                         + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                         + str(idx))
@@ -818,6 +818,7 @@ def do_get_on_random_node():
 
     # まだ put が行われていなかったら何もせずに終了する
     if len(all_data_list) == 0:
+        lock_of_all_data.release()
         return
 
     target_data = ChordUtil.get_random_elem(all_data_list)
@@ -859,7 +860,7 @@ def node_join_and_stabilize_th():
         # を実行する
         # 実際の運用でもネットワークが安定した状態で後続のノードが入っているというのが通常なので（広域のシステムだと）、
         # それとは整合する処理の流れだと思われる
-        for n in range(103):
+        for n in range(101):
             # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
             # 実装されている
             do_stabilize_once_at_all_node()

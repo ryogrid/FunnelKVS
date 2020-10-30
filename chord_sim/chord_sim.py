@@ -758,14 +758,14 @@ def do_stabilize_once_at_all_node():
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
-    if done_stabilize_successor_cnt < 10:
+    if done_stabilize_successor_cnt < 100:
         for node in all_node_dict.values():
           node.stabilize_successor()
           done_stabilize_successor_cnt += 1
           ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                            + str(done_stabilize_successor_cnt))
-    elif done_stabilize_successor_cnt == 10:
+    elif done_stabilize_successor_cnt == 100:
         check_nodes_connectivity()
         done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため
         #is_stabiize_finished = True
@@ -850,13 +850,13 @@ def node_join_and_stabilize_th():
     global done_stabilize_successor_cnt
     global is_stabilize_finished
     counter = 3
-    while counter < 10:
+    while counter < 5:
         add_new_node()
         # 1ノード追加するごとに全ノードに対し一定回数 stabilize_successorを実行し、その後、一定回数、stablize_finger_table
         # を実行する
         # 実際の運用でもネットワークが安定した状態で後続のノードが入っているというのが通常なので（広域のシステムだと）、
         # それとは整合する処理の流れだと思われる
-        for n in range(20):
+        for n in range(110):
             # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
             # 実装されている
             do_stabilize_once_at_all_node()

@@ -266,13 +266,13 @@ class ChordNode:
 
         self.node_info.successor_info = successor.node_info
 
-        # TODO: 最低限、いくつかエントリが埋まっていないと、stabilize_finger_table自体が
-        #       finger_tableを用いて探索を行うことでエントリを埋めていくので、うまく動かない
-        #       のではないかと思うので、node_idから求めた適切そうなエントリにひとまずsuccessorを
-        #       設定しておいてみる
-        idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, self.node_info.successor_info.node_id)
-        if idx != -1:
-            self.node_info.finger_table[idx] = self.node_info.successor_info
+        # # TODO: 最低限、いくつかエントリが埋まっていないと、stabilize_finger_table自体が
+        # #       finger_tableを用いて探索を行うことでエントリを埋めていくので、うまく動かない
+        # #       のではないかと思うので、node_idから求めた適切そうなエントリにひとまずsuccessorを
+        # #       設定しておいてみる
+        # idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, self.node_info.successor_info.node_id)
+        # if idx != -1:
+        #     self.node_info.finger_table[idx] = self.node_info.successor_info
 
         # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
         ChordUtil.dprint("join," + str(self.node_info.born_id) + "," +
@@ -355,10 +355,10 @@ class ChordNode:
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                   + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
-            # TODO: はじめて設定するpredecessorを経路表に入れてしまう
-            idx = ChordUtil.calc_idx_of_ftable_from_node_id(node_info.node_id, self.node_info.predecessor_info.node_id)
-            if idx != -1:
-                self.node_info.finger_table[idx] = self.node_info.predecessor_info
+            # # TODO: はじめて設定するpredecessorを経路表に入れてしまう
+            # idx = ChordUtil.calc_idx_of_ftable_from_node_id(node_info.node_id, self.node_info.predecessor_info.node_id)
+            # if idx != -1:
+            #     self.node_info.finger_table[idx] = self.node_info.predecessor_info
 
             return
 
@@ -376,10 +376,10 @@ class ChordNode:
         # 経路表の情報を更新する
         if distance_check < distance_cur:
             self.node_info.predecessor_info = node_info
-            # TODO: あたらしいpredecessorも経路表に入れてしまう
-            idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, node_info.node_id)
-            if idx != -1:
-                self.node_info.finger_table[idx] = node_info
+            # # TODO: あたらしいpredecessorも経路表に入れてしまう
+            # idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, node_info.node_id)
+            # if idx != -1:
+            #     self.node_info.finger_table[idx] = node_info
 
             ChordUtil.dprint("check_predecessor_3," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
@@ -415,10 +415,10 @@ class ChordNode:
             # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
             # 処理を終了する
             successor_info.predecessor_info = self.node_info
-            # TODO: successorの経路表に自身を入れてしまう
-            idx = ChordUtil.calc_idx_of_ftable_from_node_id(successor_info.node_id, self.node_info.node_id)
-            if idx != -1:
-                successor_info.finger_table[idx] = self.node_info
+            # # TODO: successorの経路表に自身を入れてしまう
+            # idx = ChordUtil.calc_idx_of_ftable_from_node_id(successor_info.node_id, self.node_info.node_id)
+            # if idx != -1:
+            #     successor_info.finger_table[idx] = self.node_info
 
             ChordUtil.dprint("stabilize_successor_2," + str(self.node_info.born_id) + ","
                   + hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
@@ -461,10 +461,10 @@ class ChordNode:
                 # 自身の認識するsuccessorの情報を更新する
 
                 self.node_info.successor_info = successor_obj.node_info.predecessor_info
-                # TODO: 新しいsuccessorも経路表に入れてしまう
-                idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, self.node_info.successor_info.node_id)
-                if idx != -1:
-                    self.node_info.finger_table[idx] = self.node_info.successor_info
+                # # TODO: 新しいsuccessorも経路表に入れてしまう
+                # idx = ChordUtil.calc_idx_of_ftable_from_node_id(self.node_info.node_id, self.node_info.successor_info.node_id)
+                # if idx != -1:
+                #     self.node_info.finger_table[idx] = self.node_info.successor_info
 
                 # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                 # ば情報を更新してもらう
@@ -482,7 +482,7 @@ class ChordNode:
                                  + ChordUtil.conv_id_to_ratio_str(successor_obj.node_info.predecessor_info.node_id))
 
     # FingerTableに関するstabilize処理を行う
-    # 一回の呼び出しでランダムに選択した1エントリを更新する
+    # 一回の呼び出しで1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
     def stabilize_finger_table(self, idx):
         ChordUtil.dprint("stabilize_finger_table_1," + str(self.node_info.born_id) + "," +
@@ -579,14 +579,14 @@ class ChordNode:
                 # 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
                 # 自ノードからはより遠い位置の値になっていくということのはずである
                 # 従って、そうなっていなかった場合は、繰り返しを継続しても意味が無く、最悪、無限ループになってしまう
-                # 可能性があるため、探索を打ち切り、探索結果は無効としてNoneを返す
+                # 可能性があるため、探索を打ち切り、探索結果は古いn_dashを返す
 
                 ChordUtil.dprint(
                     "find_predecessor_4," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
                     + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
                     + hex(n_dash.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.node_id))
 
-                return None
+                return n_dash
 
             ChordUtil.dprint(
                 "find_predecessor_5_n_dash_updated," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
@@ -608,7 +608,7 @@ class ChordNode:
         # ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         # 順に見ていくようにする
         for entry in reversed(self.node_info.finger_table):
-            # ランダムに更新しているため埋まっていないエントリも存在し得る
+            # 埋まっていないエントリも存在し得る
             if entry == None:
                 ChordUtil.dprint("closest_preceding_finger_0," + str(self.node_info.born_id) + ","
                       + hex(self.node_info.node_id))
@@ -774,15 +774,18 @@ def do_stabilize_once_at_all_node():
     # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
     # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
     # 実行は開始する
-    if done_stabilize_successor_cnt > 10:
+    if done_stabilize_successor_cnt > 100:
         # 全てのノードについて処理を行う
         for node in all_node_dict.values():
-          # テーブルの上から順に全て更新する
-          for idx in reversed(range(0, 160)):
-              ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
-                    + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
-                    + str(idx))
-              node.stabilize_finger_table(idx)
+          # テーブルの下から順に全て更新する
+          # ただし、各ノードの更新するインデックスの範囲は1要素ずつ広げていく
+          # これによりsuccessorによるチェーンが正しく構築されていれば効率よく構築が行われる（はず）
+          for num in range(1, 160 + 1):
+              for idx in range(0, num):
+                  ChordUtil.dprint("do_stabilize_on_random_node__ftable," + str(node.node_info.born_id) + ","
+                        + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
+                        + str(idx))
+                  node.stabilize_finger_table(idx)
 
     # ロックの解放
     lock_of_all_data.release()
@@ -856,7 +859,7 @@ def node_join_and_stabilize_th():
         # を実行する
         # 実際の運用でもネットワークが安定した状態で後続のノードが入っているというのが通常なので（広域のシステムだと）、
         # それとは整合する処理の流れだと思われる
-        for n in range(110):
+        for n in range(103):
             # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
             # 実装されている
             do_stabilize_once_at_all_node()

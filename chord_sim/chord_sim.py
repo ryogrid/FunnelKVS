@@ -8,9 +8,19 @@ import datetime
 import math
 from typing import Dict, List, Any
 
-# 160bit符号なし整数の最大値
+ID_SPACE_BITS = 30 # 160 <- sha1の本来の値
+ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
+
+# # 160bit符号なし整数の最大値
+# # Chordネットワーク上のID空間の上限
+# ID_MAX = 2**ID_SPACE_BITS - 1
+
+# 30bit符号なし整数の最大値
 # Chordネットワーク上のID空間の上限
-ID_MAX = 2**160 - 1
+# TODO: 検証時の実行時間短縮のためにハッシュ関数で求めた値の代わりに乱数
+#       を用いているため bit数 が少なくなっている
+ID_MAX = 2**ID_SPACE_BITS - 1
+
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
@@ -40,8 +50,14 @@ class ChordUtil:
     # メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
     @classmethod
     def hash_str_to_int(cls, input_str : str) -> int:
-        hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
-        hash_id_num = int(hash_hex_str, 16)
+        # hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
+        # hash_id_num = int(hash_hex_str, 16)
+
+        # TODO: ID_SPACE_BITS ビットで表現できる符号なし整数をID空間とする.
+        #       通常、ID_SPACE_BITS は sha1 で 160 となるが、この検証コードでは
+        #       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
+        #       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
+        hash_id_num = random.randint(0, ID_SPACE_RANGE - 1)
         return hash_id_num
 
     # 与えたリストの要素のうち、ランダムに選択した1要素を返す
@@ -62,7 +78,7 @@ class ChordUtil:
         ret_id = id
         if id > ID_MAX:
             # 1を足すのは MAX より 1大きい値が 0 となるようにするため
-            ret_id = ID_MAX + 1
+            ret_id = id - (ID_MAX + 1)
         return id
 
     # TODO: idがID空間の最大値に対して何パーセントの位置かを適当な精度の浮動小数の文字列
@@ -190,7 +206,9 @@ class NodeInfo:
         # NodeInfoオブジェクトを要素として持つリスト
         # インデックスの小さい方から狭い範囲が格納される形で保持する
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
-        self.finger_table : List['NodeInfo'] = [None] * 160
+
+        # TODO: 現在は ID_SPACE_BITS が検証時の高速化のため30となっている
+        self.finger_table : List['NodeInfo'] = [None] * ID_SPACE_BITS
 
 class ChordNode:
 

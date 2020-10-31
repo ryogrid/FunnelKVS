@@ -21,6 +21,7 @@ ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 #       を用いているため bit数 を少なくしている
 ID_MAX = 2**ID_SPACE_BITS - 1
 
+NODE_NUM = 10
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
@@ -30,8 +31,8 @@ all_node_dict : Dict[str, 'ChordNode'] = {}
 # KeyValueオブジェクトを要素として持つ
 # 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
 # getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
-# に選び、そのkeyを用いて探索を行う. また value も一時的に保持しておき、取得できた内容と
-# 一致しているか確認する
+# に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
+# 照らし合わせられるようにする
 all_data_list : List['KeyValue'] = []
 
 # 検証を分かりやすくするために何ノード目として生成されたか
@@ -207,7 +208,7 @@ class NodeInfo:
         # インデックスの小さい方から狭い範囲が格納される形で保持する
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
 
-        # TODO: 現在は ID_SPACE_BITS が検証時の高速化のため30となっている
+        # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table : List['NodeInfo'] = [None] * ID_SPACE_BITS
 
 class ChordNode:
@@ -389,18 +390,6 @@ class ChordNode:
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
-        # TODO: ここでjoin時には分からなかった自身の担当範囲が決定し、自身がjoinする
-        #       までその範囲を担当していたノードから保持しているデータの委譲（コピーでも
-        #       良いはず）を受ける必要があるかもしれない.
-        #       　そうでなければ、successorを必要十分な数だけ複数持つことで委譲を不要
-        #       とするか、定期的にデータを委譲する処理を走らせるかしてデータへの到達性
-        #       を担保するのかもしれない.
-        #       　ただし、全ノードが揃って、stabilizeも十分に行われた後にしか
-        #       putを行わず、ノードの離脱が発生しないという条件であれば、保持データの
-        #       委譲は不要にでき、successorも増やすことなく到達性が担保できるはずである.
-        #       しかし、現実的にはそのようなシチュエーションは想定できないので、
-        #       本シミュレータをひとまず動かすための暫定実装でのみ許される条件であろう.
-
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         successor_info = self.node_info.successor_info
         if successor_info.predecessor_info == None:
@@ -494,8 +483,8 @@ class ChordNode:
               + ChordUtil.conv_id_to_ratio_str(found_node.node_info.node_id))
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
-    # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
-    #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
+    # TODO: 一通り動くようになったら、実システムと整合するよう、ノードに定義されたAPIを介して
+    #       情報をやりとりするするように書き換える必要あり
     def find_successor(self, id : int):
         ChordUtil.dprint("find_successor_1," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + ","
@@ -520,8 +509,8 @@ class ChordNode:
         return all_node_dict[n_dash.node_info.successor_info.address_str]
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
-    # TODO: あとで、実システムと整合するよう、ノードに定義されたAPIを介して情報をやりとりし、
-    #       ノードオブジェクトを直接得るのではなく、all_node_dictを介して得るようにする必要あり
+    # TODO: 一通り動くようになったら、実システムと整合するよう、ノードに定義されたAPIを介して
+    #       情報をやりとりするするように書き換える必要あり
     def find_predecessor(self, id: int):
         ChordUtil.dprint("find_predecessor_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id))
 
@@ -681,7 +670,7 @@ def do_stabilize_once_at_all_node():
     # node = get_a_random_node()
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
-    #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてみる
+    #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてある
     if done_stabilize_successor_cnt < 100:
         for node in all_node_dict.values():
           node.stabilize_successor()
@@ -694,10 +683,9 @@ def do_stabilize_once_at_all_node():
         done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため
         # is_stabiize_finished = True
 
-    # ネットワーク上のノードにおいて、successorとpredeessorの情報が適切に設定された
-    # 状態とならないと、stabilize_finger_talbleはほどんと意味を成さずに終了してしまう
-    # ため、stabilize_successorが十分に呼び出された後で stabilize_finger_tableの
-    # 実行は開始する
+    # ネットワーク上のノードにおいて、successorの情報が適切に設定された状態とならないと、
+    # stabilize_finger_talbleはほどんと意味を成さずに終了してしまう場合が多いと思われるため
+    # successor（とpredecessor）に関するstabilizeが十分に成されるまで待つ
     if done_stabilize_successor_cnt > 100:
         # 全てのノードについて処理を行う
 
@@ -774,16 +762,18 @@ def do_get_on_random_node():
 #         # 行われる程度の間隔に設定
 #         time.sleep(0.001) # sleep 5msec
 
+# TODO: 一通り動いたら、実システムに合うように、ネットワーク上に存在するノードを母集団として重複が起きない形で
+#       全ノードをランダムに選択していって処理するようにしなければならない
 def node_join_and_stabilize_th():
     global done_stabilize_successor_cnt
     global is_stabilize_finished
     counter = 3
-    while counter < 5:
+    while counter < NODE_NUM:
         add_new_node()
         # 1ノード追加するごとに全ノードに対し一定回数 stabilize_successorを実行し、その後、一定回数、stablize_finger_table
         # を実行する
-        # 実際の運用でもネットワークが安定した状態で後続のノードが入っているというのが通常なので（広域のシステムだと）、
-        # それとは整合する処理の流れだと思われる
+        # 実システムでもネットワークが安定した状態で後続のノードが入ってくるというのが（多分）通常と思われるので
+        # それとは整合する処理の流れだと思われる（二種のstabilizeを分けているのはおかしいが）
         for n in range(101): # stabilize_successor batch 100times, stabilize_finger_table batch 2times
             # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
             # 実装されている
@@ -803,26 +793,38 @@ def data_put_th():
 
     #全ノードがネットワークに参加し十分に stabilize処理が行われた
     #状態になるまで待つ
-    # time.sleep(180) # sleep 3min
     while is_stabilize_finished == False:
         time.sleep(1)
-
-    # # stabilizeを行うスレッドを動作させなくする
-    # is_stabilize_finished = True
 
     while True:
         do_put_on_random_node()
         time.sleep(1) # sleep 1sec
 
 def data_get_th():
-    # # 最初のputが行われるまで待つ
-    # time.sleep(185) # sleep 3min and 5sec
     while is_stabilize_finished == False:
         time.sleep(1)
 
     while True:
+        # 内部でデータのputが一度も行われていなければreturnしてくるので
+        # putを行うスレッドと同時に動作を初めても問題ない
         do_get_on_random_node()
         time.sleep(1) # sleep 1sec
+
+# TODO: 現状は全ノードが揃って、stabilizeも十分に行われた後にしか
+#       putもgetも行われず、ノードの離脱も発生しない実装となっており、
+#       そのような条件を前提とした実装も存在するが、実システムでデータへの到達性を
+#       担保するためにはデータの委譲やレプリケーション、またそれらの相手として
+#       successorを複数にするといったことが必要と思われる
+#       　少なくとも、オンプレでデータストアとして使うといったユースケースを想定した
+#       としても一定数のノード数でChordネットワークが安定した後にもノードのjoinやreave
+#       は低頻度ながら起きることは想定しなければならない（=起きた場合でもデータの到達性
+#       が担保される設計にし、それを検証しなければならない）
+#       　以下のような変更必要だろう
+#       　　・joinとstabilizeを継続的に実行させるようににする
+#          ・データの委譲やレプリケーションのためのインターフェースを各ノードに追加し定期的
+#          　に実行させる
+#          ・定期的にノードを離脱させるためのインタフェースを各ノードに追加し、一定頻度で
+#            離脱を発生させる
 
 def main():
     global all_node_dict

@@ -281,33 +281,34 @@ class ChordNode:
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
-    def global_put(self, key_str : str, value_str : str):
+    def global_put(self, data_id : int, value_str : str):
         # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
-        data_id = ChordUtil.hash_str_to_int(key_str)
+
+        #data_id = ChordUtil.hash_str_to_int(key_str)
         target_node = self.find_successor(data_id)
         if target_node == None:
             ChordUtil.dprint("global_put_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
-                  + hex(data_id) + "," + key_str + "," + value_str)
+                  + hex(data_id) + ","  + value_str)
             return
 
-        target_node.put(key_str, value_str)
+        target_node.put(data_id, value_str)
         ChordUtil.dprint("global_put_2," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + hex(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
-              + str(data_id) + "," + key_str + "," + value_str)
+              + hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)  + ", " + value_str)
 
-    def put(self, key_str : str, value_str : str):
-        key_id_str = str(ChordUtil.hash_str_to_int(key_str))
+    def put(self, data_id : int, value_str : str):
+        key_id_str = str(data_id)
         self.stored_data[key_id_str] = value_str
-        ChordUtil.dprint("put," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + key_id_str + "," + key_str + "," + value_str)
+        ChordUtil.dprint("put," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + key_id_str + "," + value_str)
 
     # 得られた value の文字列を返す
     def global_get(self, data_id : int, key_str : str):
       # resolve ID to address of a node which is assigned ID range the ID is included to
         # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
         ChordUtil.dprint("global_get_0," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
-                         + hex(data_id) + "," + key_str)
+                         + hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id) + "," + key_str)
 
         target_node = self.find_successor(data_id)
         if target_node == None:
@@ -320,7 +321,7 @@ class ChordNode:
         ChordUtil.dprint("global_get_2," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + hex(target_node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(target_node.node_info.node_id) + ","
-              + key_id_str + "," + key_str + "," + got_value_str)
+              + key_id_str + "," + "," + ChordUtil.conv_id_to_ratio_str(data_id) +"," +  key_str + "," + got_value_str)
         return got_value_str
 
     # 得られた value の文字列を返す
@@ -498,7 +499,8 @@ class ChordNode:
     def find_successor(self, id : int):
         ChordUtil.dprint("find_successor_1," + str(self.node_info.born_id) + ","
               + hex(self.node_info.node_id) + ","
-              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + "," + hex(id))
+              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+              + hex(id) + "," + ChordUtil.conv_id_to_ratio_str(id))
 
         n_dash = self.find_predecessor(id)
         if n_dash == None:
@@ -513,7 +515,7 @@ class ChordNode:
               + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.successor_info.node_id) + ","
-              + hex(id))
+              + hex(id) + "," + ChordUtil.conv_id_to_ratio_str(id))
 
         return all_node_dict[n_dash.node_info.successor_info.address_str]
 
@@ -560,8 +562,11 @@ class ChordNode:
 
             ChordUtil.dprint(
                 "find_predecessor_5_n_dash_updated," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
-                + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + "->" + str(n_dash.node_info.born_id) + ","
-                + hex(n_dash.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(n_dash.node_info.node_id))
+                + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ""
+                + str(n_dash_found.node_info.born_id) + "," + hex(n_dash_found.node_info.node_id) + ","
+                + ChordUtil.conv_id_to_ratio_str(n_dash_found.node_info.node_id)
+                + "->" + str(n_dash_found.node_info.born_id) + "," + hex(n_dash_found.node_info.node_id) + ","
+                + ChordUtil.conv_id_to_ratio_str(n_dash_found.node_info.node_id))
 
             # チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
             # ノード情報 n_dash_foundに置き換える
@@ -721,7 +726,7 @@ def do_put_on_random_node():
     # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyとvalueに用いる
     kv_data = KeyValue(unixtime_str, unixtime_str)
     node = get_a_random_node()
-    node.global_put(kv_data.key, kv_data.value)
+    node.global_put(kv_data.data_id, kv_data.value)
     all_data_list.append(kv_data)
 
     # ロックの解放

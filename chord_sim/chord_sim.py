@@ -774,7 +774,7 @@ def node_join_and_stabilize_th():
         # を実行する
         # 実システムでもネットワークが安定した状態で後続のノードが入ってくるというのが（多分）通常と思われるので
         # それとは整合する処理の流れだと思われる（二種のstabilizeを分けているのはおかしいが）
-        for n in range(101): # stabilize_successor batch 100times, stabilize_finger_table batch 2times
+        for n in range(103): # stabilize_successor batch 100times, stabilize_finger_table batch 2times
             # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
             # 実装されている
             do_stabilize_once_at_all_node()

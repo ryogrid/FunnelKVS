@@ -11,6 +11,9 @@ from typing import Dict, List, Any
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
+STABILIZE_SUCCESSOR_BATCH_TIMES = 100
+STABILIZE_FTABLE_BATCH_TIMES = 1
+
 # # 160bit符号なし整数の最大値
 # # Chordネットワーク上のID空間の上限
 # ID_MAX = 2**ID_SPACE_BITS - 1
@@ -241,8 +244,8 @@ class ChordNode:
             first_node = all_node_dict[node_address]
             first_node.node_info.successor_info = self.node_info
 
-            # 1番目にネットワークに参加したノードをpredecessorとして設定しておく
-            self.node_info.predecessor_info = first_node.node_info
+            # # 1番目にネットワークに参加したノードをpredecessorとして設定しておく
+            # self.node_info.predecessor_info = first_node.node_info
 
             # succesor は Noneのまま終了する
             return
@@ -254,17 +257,18 @@ class ChordNode:
             second_node = all_node_dict[node_address]
             second_node.node_info.successor_info = self.node_info
 
-            # 2番目にネットワークに参加したノードをpredecessorとして設定しておく
-            self.node_info.predecessor_info = second_node.node_info
+            # # 2番目にネットワークに参加したノードをpredecessorとして設定しておく
+            # self.node_info.predecessor_info = second_node.node_info
 
             # 1番目にネットワークに参加したノードをsuccessorとして設定しておく
             first_node_info = second_node.node_info.predecessor_info
             self.node_info.successor_info = first_node_info
 
-            # 自身を1番目にネットワークに参加したノードのpredecessorとして設定しておく
-            first_node_info.predecessor_info = self.node_info
 
-            # ここまでの処理で3ノードによる円環状のネットワークができたことになる、はず
+            # # 自身を1番目にネットワークに参加したノードのpredecessorとして設定しておく
+            # first_node_info.predecessor_info = self.node_info
+
+            # ここまでの処理でsuccessorだけ見れば3ノードによる円環状のネットワークができたことになる、はず
         else:
             self.join(node_address)
 
@@ -671,14 +675,14 @@ def do_stabilize_once_at_all_node():
 
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてある
-    if done_stabilize_successor_cnt < 1000:
+    if done_stabilize_successor_cnt < STABILIZE_SUCCESSOR_BATCH_TIMES:
         for node in all_node_dict.values():
           node.stabilize_successor()
           done_stabilize_successor_cnt += 1
           ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                            + str(done_stabilize_successor_cnt))
-    elif done_stabilize_successor_cnt == 1000:
+    elif done_stabilize_successor_cnt == STABILIZE_SUCCESSOR_BATCH_TIMES:
         check_nodes_connectivity()
         done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため
         # is_stabiize_finished = True
@@ -686,7 +690,7 @@ def do_stabilize_once_at_all_node():
     # ネットワーク上のノードにおいて、successorの情報が適切に設定された状態とならないと、
     # stabilize_finger_talbleはほどんと意味を成さずに終了してしまう場合が多いと思われるため
     # successor（とpredecessor）に関するstabilizeが十分に成されるまで待つ
-    if done_stabilize_successor_cnt > 1000:
+    if done_stabilize_successor_cnt > STABILIZE_SUCCESSOR_BATCH_TIMES:
         # 全てのノードについて処理を行う
 
         # テーブルの下から順に全て更新する
@@ -774,7 +778,7 @@ def node_join_and_stabilize_th():
         # を実行する
         # 実システムでもネットワークが安定した状態で後続のノードが入ってくるというのが（多分）通常と思われるので
         # それとは整合する処理の流れだと思われる（二種のstabilizeを分けているのはおかしいが）
-        for n in range(1001): # stabilize_successor batch 100times, stabilize_finger_table batch 2times
+        for n in range(STABILIZE_SUCCESSOR_BATCH_TIMES + STABILIZE_FTABLE_BATCH_TIMES):
             # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
             # 実装されている
             do_stabilize_once_at_all_node()

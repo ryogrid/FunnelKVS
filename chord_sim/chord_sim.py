@@ -48,6 +48,10 @@ lock_of_all_data = threading.Lock()
 
 done_stabilize_successor_cnt = 0
 
+# 最初の3ノードのうち3番目のノードが最初のノードを
+# 参照できるようにするためのズル
+g_first_node_info = None
+
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
     # アルゴリズムはSHA1, 160bitで表現される正の整数となる
@@ -219,6 +223,7 @@ class ChordNode:
     # join時の処理もコンストラクタで行う
     def __init__(self, node_address : str, first_node = False, second_node = False, third_node = False):
         global already_born_node_num
+        global g_first_node_info
 
         self.node_info = NodeInfo()
         # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
@@ -261,9 +266,9 @@ class ChordNode:
             # self.node_info.predecessor_info = second_node.node_info
 
             # 1番目にネットワークに参加したノードをsuccessorとして設定しておく
-            first_node_info = second_node.node_info.predecessor_info
-            self.node_info.successor_info = first_node_info
-
+            #first_node_info = second_node.node_info.predecessor_info
+            #self.node_info.successor_info = first_node_info
+            self.node_info.successor_info = g_first_node_info
 
             # # 自身を1番目にネットワークに参加したノードのpredecessorとして設定しておく
             # first_node_info.predecessor_info = self.node_info
@@ -832,6 +837,7 @@ def data_get_th():
 
 def main():
     global all_node_dict
+    global g_first_node_info
 
     # 再現性のため乱数シードを固定
     # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで
@@ -841,6 +847,8 @@ def main():
     # 最初の3ノードはここで登録する
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
     all_node_dict[first_node.node_info.address_str] = first_node
+    g_first_node_info = first_node.node_info
+
     time.sleep(0.5)
     second_node = ChordNode(first_node.node_info.address_str, second_node=True)
     all_node_dict[second_node.node_info.address_str] = second_node

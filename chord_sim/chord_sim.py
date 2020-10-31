@@ -11,7 +11,7 @@ from typing import Dict, List, Any
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
-STABILIZE_SUCCESSOR_BATCH_TIMES = 100
+STABILIZE_SUCCESSOR_BATCH_TIMES = 20
 STABILIZE_FTABLE_BATCH_TIMES = 1
 
 # # 160bit符号なし整数の最大値
@@ -678,10 +678,10 @@ def do_stabilize_once_at_all_node():
     if done_stabilize_successor_cnt < STABILIZE_SUCCESSOR_BATCH_TIMES:
         for node in all_node_dict.values():
           node.stabilize_successor()
-          done_stabilize_successor_cnt += 1
           ChordUtil.dprint("do_stabilize_on_random_node__successor," + str(node.node_info.born_id) + ","
                            + hex(node.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(node.node_info.node_id) + ","
                            + str(done_stabilize_successor_cnt))
+        done_stabilize_successor_cnt += 1
     elif done_stabilize_successor_cnt == STABILIZE_SUCCESSOR_BATCH_TIMES:
         check_nodes_connectivity()
         done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため

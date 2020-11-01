@@ -24,7 +24,7 @@ STABILIZE_FTABLE_BATCH_TIMES = 1
 #       を用いているため bit数 を少なくしている
 ID_MAX = ID_SPACE_RANGE - 1
 
-NODE_NUM = 10
+NODE_NUM = 100
 PUT_DATA_NUM = 100
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ

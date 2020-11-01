@@ -44,7 +44,6 @@ all_data_list : List['KeyValue'] = []
 already_born_node_num = 0
 
 is_stabilize_finished = False
-is_put_finished = False
 
 lock_of_all_data = threading.Lock()
 
@@ -591,11 +590,15 @@ class ChordNode:
             # という前提の元で以下のチェックを行う
             distance_old = ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, n_dash.node_info.node_id)
             distance_found = ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, n_dash_found.node_info.node_id)
-            if distance_found < distance_old:
+            distance_data_id = ChordUtil.calc_distance_between_nodes_right_mawari(self.node_info.node_id, id)
+            if distance_found < distance_old and not (distance_old >= distance_data_id):
                 # 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
                 # 自ノードからはより遠い位置の値になっていくということのはずである
                 # 従って、そうなっていなかった場合は、繰り返しを継続しても意味が無く、最悪、無限ループになってしまう
                 # 可能性があるため、探索を打ち切り、探索結果は古いn_dashを返す
+                # ただし、古い n_dash が 一回目の探索の場合 self であり、同じ node_idの距離は ID_SPACE_RANGE となるようにしている
+                # ため、上記の条件が常に成り立ってしまう. 従って、その場合は例外とする（n_dashが更新される場合は、更新されたn_dashのnode_idが
+                # 探索対象のデータのid を通り越すことは無い）
 
                 ChordUtil.dprint(
                     "find_predecessor_4," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","

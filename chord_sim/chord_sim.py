@@ -22,7 +22,7 @@ STABILIZE_FTABLE_BATCH_TIMES = 1
 # Chordネットワーク上のID空間の上限
 # TODO: 検証時の実行時間短縮のためにハッシュ関数で求めた値の代わりに乱数
 #       を用いているため bit数 を少なくしている
-ID_MAX = 2**ID_SPACE_BITS - 1
+ID_MAX = ID_SPACE_RANGE - 1
 
 NODE_NUM = 10
 
@@ -48,9 +48,9 @@ lock_of_all_data = threading.Lock()
 
 done_stabilize_successor_cnt = 0
 
-# 最初の3ノードのうち3番目のノードが最初のノードを
-# 参照できるようにするためのズル
-g_first_node_info = None
+# # 最初の3ノードのうち3番目のノードが最初のノードを
+# # 参照できるようにするためのズル
+# g_first_node_info = None
 
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
@@ -101,6 +101,11 @@ class ChordUtil:
     # ここで前方とは、IDの値が小さくなる方向である
     @classmethod
     def calc_distance_between_nodes_left_mawari(cls, base_id : int, target_id : int) -> int:
+        # TODO: successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
+        #       距離0と考えることもできるが、一周分を距離として返す
+        if base_id == target_id:
+            return ID_SPACE_RANGE - 1
+
         # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
         # 同じ数だけずらす
         slided_target_id = 0
@@ -127,6 +132,11 @@ class ChordUtil:
     # ここで後方とは、IDの値が大きくなる方向である
     @classmethod
     def calc_distance_between_nodes_right_mawari(cls, base_id : int, target_id : int) -> int:
+        # TODO: successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
+        #       距離0と考えることもできるが、一周分を距離として返す
+        if base_id == target_id:
+            return ID_SPACE_RANGE - 1
+
         # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
         # 同じ数だけずらす
         slided_base_id = 0
@@ -221,9 +231,10 @@ class NodeInfo:
 class ChordNode:
 
     # join時の処理もコンストラクタで行う
-    def __init__(self, node_address : str, first_node = False, second_node = False, third_node = False):
+    #def __init__(self, node_address : str, first_node = False, second_node = False, third_node = False):
+    def __init__(self, node_address: str, first_node=False):
         global already_born_node_num
-        global g_first_node_info
+        # global g_first_node_info
 
         self.node_info = NodeInfo()
         # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
@@ -239,56 +250,67 @@ class ChordNode:
         if first_node:
             # 最初の1ノードの場合
 
-            # successorを None のまま終了する
+            # successorは自身として終了する
+            self.node_info.successor_info = self.node_info
             return
-        elif second_node:
-            # 2番目にネットワークに参加するノードの場合
 
-            # 1番目にネットワークに参加したノードはsuccessorを持たない状態となって
-            # いるため自身をsuccessorとして設定しておく
-            first_node = all_node_dict[node_address]
-            first_node.node_info.successor_info = self.node_info
+            # # successorを None のまま終了する
+            # return
 
-            # # 1番目にネットワークに参加したノードをpredecessorとして設定しておく
-            # self.node_info.predecessor_info = first_node.node_info
-
-            # succesor は Noneのまま終了する
-            return
-        elif third_node:
-            # 3番目にネットワークに参加するノードの場合
-
-            # 2番目にネットワークに参加したノードはsuccessorを持たない状態となって
-            # いるため自身をsuccessorとして設定しておく
-            second_node = all_node_dict[node_address]
-            second_node.node_info.successor_info = self.node_info
-
-            # # 2番目にネットワークに参加したノードをpredecessorとして設定しておく
-            # self.node_info.predecessor_info = second_node.node_info
-
-            # 1番目にネットワークに参加したノードをsuccessorとして設定しておく
-            #first_node_info = second_node.node_info.predecessor_info
-            #self.node_info.successor_info = first_node_info
-            self.node_info.successor_info = g_first_node_info
-
-            # # 自身を1番目にネットワークに参加したノードのpredecessorとして設定しておく
-            # first_node_info.predecessor_info = self.node_info
-
-            # ここまでの処理でsuccessorだけ見れば3ノードによる円環状のネットワークができたことになる、はず
+        # elif second_node:
+        #     # 2番目にネットワークに参加するノードの場合
+        #
+        #     # 1番目にネットワークに参加したノードはsuccessorを持たない状態となって
+        #     # いるため自身をsuccessorとして設定しておく
+        #     first_node = all_node_dict[node_address]
+        #     first_node.node_info.successor_info = self.node_info
+        #
+        #     # # 1番目にネットワークに参加したノードをpredecessorとして設定しておく
+        #     # self.node_info.predecessor_info = first_node.node_info
+        #
+        #     # succesor は Noneのまま終了する
+        #     return
+        # elif third_node:
+        #     # 3番目にネットワークに参加するノードの場合
+        #
+        #     # 2番目にネットワークに参加したノードはsuccessorを持たない状態となって
+        #     # いるため自身をsuccessorとして設定しておく
+        #     second_node = all_node_dict[node_address]
+        #     second_node.node_info.successor_info = self.node_info
+        #
+        #     # # 2番目にネットワークに参加したノードをpredecessorとして設定しておく
+        #     # self.node_info.predecessor_info = second_node.node_info
+        #
+        #     # 1番目にネットワークに参加したノードをsuccessorとして設定しておく
+        #     #first_node_info = second_node.node_info.predecessor_info
+        #     #self.node_info.successor_info = first_node_info
+        #     self.node_info.successor_info = g_first_node_info
+        #
+        #     # # 自身を1番目にネットワークに参加したノードのpredecessorとして設定しておく
+        #     # first_node_info.predecessor_info = self.node_info
+        #
+        #     # ここまでの処理でsuccessorだけ見れば3ノードによる円環状のネットワークができたことになる、はず
         else:
             self.join(node_address)
 
     # node_addressに対応するノードをsuccessorとして設定する
     def join(self, node_address : str):
         # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報をやりとりするようにする必要あり
-        successor = all_node_dict[node_address]
 
+        # successor = all_node_dict[node_address]
+        # self.node_info.successor_info = successor.node_info
+
+        tyukai_node = all_node_dict[node_address]
+        # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
+        successor = tyukai_node.global_query_node(self.node_info.node_id)
         self.node_info.successor_info = successor.node_info
 
-        # 自ノードの生成ID、自ノードのID（16進表現)、仲介ノード（初期ノード、successorとして設定される）のID(16進表現)
-        ChordUtil.dprint("join," + str(self.node_info.born_id) + "," +
-              hex(self.node_info.node_id) + "," + hex(self.node_info.successor_info.node_id) + ","
-              + self.node_info.address_str + "," + self.node_info.successor_info.address_str + ","
-              + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+        # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
+        ChordUtil.dprint("join," + str(self.node_info.born_id) + ","
+              + hex(self.node_info.node_id) + "," + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+              + str(tyukai_node.node_info.born_id) + "," + hex(tyukai_node.node_info.node_id) + ","
+              + ChordUtil.conv_id_to_ratio_str(tyukai_node.node_info.node_id) + ","
+              + str(self.node_info.successor_info.born_id) + "," + hex(self.node_info.successor_info.node_id) + ","
               + ChordUtil.conv_id_to_ratio_str(self.node_info.successor_info.node_id))
 
     def global_put(self, data_id : int, value_str : str):
@@ -344,6 +366,28 @@ class ChordNode:
 
         ChordUtil.dprint("get," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + "," + id_str + "," + ret_value_str)
         return ret_value_str
+
+    # node_id をデータのIDとして見た際にそれを担当するノード
+    # を返す
+    # joinする際の適切な位置を求めるために利用される
+    def global_query_node(self, node_id : int) -> 'ChordNode':
+        # 注: 現状、ここでは対象のChordNordオブジェクトを直接取得してしまっており、正確にはアドレスの解決ではない
+        ChordUtil.dprint("global_query_node_0," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
+                         + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                         + hex(node_id) + "," + ChordUtil.conv_id_to_ratio_str(node_id))
+
+        found_node = self.find_successor(node_id)
+        if found_node == None:
+            ChordUtil.dprint("global_query_node_1," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
+                  + hex(node_id))
+            raise Exception("appropriate node is not found.")
+
+        ChordUtil.dprint("global_query_node_2," + str(self.node_info.born_id) + "," + hex(self.node_info.node_id) + ","
+                         + ChordUtil.conv_id_to_ratio_str(self.node_info.node_id) + ","
+                         + str(found_node.node_info.born_id) + "," + hex(found_node.node_info.node_id) + ","
+                         + ChordUtil.conv_id_to_ratio_str(found_node.node_info.node_id)
+                         + hex(node_id) + "," + ChordUtil.conv_id_to_ratio_str(node_id))
+        return found_node
 
     # TODO: global_delete (ひとまずglobal_getとglobal_putだけ実装するので後で良い）
     def global_delete(self, key_str):
@@ -776,8 +820,11 @@ def do_get_on_random_node():
 def node_join_and_stabilize_th():
     global done_stabilize_successor_cnt
     global is_stabilize_finished
-    counter = 3
-    while counter < NODE_NUM:
+
+    # counter = 1
+
+    # while added_node_cnt < NODE_NUM:
+    while already_born_node_num < NODE_NUM:
         add_new_node()
         # 1ノード追加するごとに全ノードに対し一定回数 stabilize_successorを実行し、その後、一定回数、stablize_finger_table
         # を実行する
@@ -791,8 +838,7 @@ def node_join_and_stabilize_th():
         done_stabilize_successor_cnt = 0
 
         #time.sleep(0.1) # sleep 100msec
-
-        counter += 1
+        # counter += 1
 
     is_stabilize_finished = True
 
@@ -837,24 +883,27 @@ def data_get_th():
 
 def main():
     global all_node_dict
-    global g_first_node_info
+    # global g_first_node_info
 
     # 再現性のため乱数シードを固定
     # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで
     # スイッチするかは実行毎に異なる可能性があるため、あまり意味はないかもしれない
     random.seed(1337)
 
-    # 最初の3ノードはここで登録する
+    # 最初の1ノードはここで登録する
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
     all_node_dict[first_node.node_info.address_str] = first_node
-    g_first_node_info = first_node.node_info
+    # 1ノードしかいなくても stabilize処理は走らせる
+    do_stabilize_once_at_all_node()
 
-    time.sleep(0.5)
-    second_node = ChordNode(first_node.node_info.address_str, second_node=True)
-    all_node_dict[second_node.node_info.address_str] = second_node
-    time.sleep(0.5)
-    third_node = ChordNode(second_node.node_info.address_str, third_node=True)
-    all_node_dict[third_node.node_info.address_str] = third_node
+    # g_first_node_info = first_node.node_info
+    #
+    # time.sleep(0.5)
+    # second_node = ChordNode(first_node.node_info.address_str, second_node=True)
+    # all_node_dict[second_node.node_info.address_str] = second_node
+    # time.sleep(0.5)
+    # third_node = ChordNode(second_node.node_info.address_str, third_node=True)
+    # all_node_dict[third_node.node_info.address_str] = third_node
 
     # node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     # node_join_th_handle.start()

@@ -25,6 +25,7 @@ STABILIZE_FTABLE_BATCH_TIMES = 1
 ID_MAX = ID_SPACE_RANGE - 1
 
 NODE_NUM = 10
+PUT_DATA_NUM = 100
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
@@ -43,6 +44,7 @@ all_data_list : List['KeyValue'] = []
 already_born_node_num = 0
 
 is_stabilize_finished = False
+is_put_finished = False
 
 lock_of_all_data = threading.Lock()
 
@@ -851,19 +853,26 @@ def data_put_th():
     while is_stabilize_finished == False:
         time.sleep(1)
 
-    while True:
+    #while True:
+    while len(all_data_list) < PUT_DATA_NUM:
         do_put_on_random_node()
-        time.sleep(1) # sleep 1sec
+        # time.sleep(1) # sleep 1sec
 
 def data_get_th():
     while is_stabilize_finished == False:
         time.sleep(1)
 
+    # put処理を行うスレッドが規定数のデータのputを終えるまで待つ
+    while len(all_data_list) < PUT_DATA_NUM:
+        time.sleep(0.5)
+
     while True:
         # 内部でデータのputが一度も行われていなければreturnしてくるので
         # putを行うスレッドと同時に動作を初めても問題ない
         do_get_on_random_node()
-        time.sleep(1) # sleep 1sec
+        # エンドレスで行うのでデバッグプリントのサイズが大きくなり過ぎないよう
+        # sleepを挟む
+        time.sleep(1) # sleep 500msec
 
 # TODO: 現状は全ノードが揃って、stabilizeも十分に行われた後にしか
 #       putもgetも行われず、ノードの離脱も発生しない実装となっており、

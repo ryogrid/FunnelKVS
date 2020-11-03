@@ -43,11 +43,7 @@ all_data_list : List['KeyValue'] = []
 # のデバッグ用IDを持たせるためのカウンタ
 already_born_node_num = 0
 
-is_stabilize_finished = False
-
 lock_of_all_data = threading.Lock()
-
-done_stabilize_successor_cnt = 0
 
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
@@ -268,6 +264,8 @@ class ChordNode:
         tyukai_node = all_node_dict[node_address]
         # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
         successor = tyukai_node.global_query_node(self.node_info.node_id)
+        # TODO: successorが None でないかチェックし、Noneであった場合は一定時間待ってから
+        #       global_query_nodeの呼び出しをリトライするようにする
         self.node_info.successor_info = successor.node_info
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
@@ -278,6 +276,7 @@ class ChordNode:
     def global_put(self, data_id : int, value_str : str):
         target_node = self.find_successor(data_id)
         if target_node == None:
+            # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
             ChordUtil.dprint("global_put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id))
             return
@@ -300,11 +299,14 @@ class ChordNode:
 
         target_node = self.find_successor(data_id)
         if target_node == None:
+            # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
             ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                   + ChordUtil.gen_debug_str_of_data(data_id))
             return
 
         got_value_str = target_node.get(data_id)
+        # TODO: 返ってきた値が "QUERIED_KEY_WAS_NOT_FOUND" だった場合、target_nodeから
+        #       一定数のsuccessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
         ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
               + ChordUtil.gen_debug_str_of_data(data_id) + "," + got_value_str)
@@ -617,13 +619,24 @@ def add_new_node():
 # やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
 def do_stabilize_once_at_all_node():
     global lock_of_all_data
-    global done_stabilize_successor_cnt
+
+    done_stabilize_successor_cnt = 0
 
     # ロックの取得
     lock_of_all_data.acquire()
 
-    # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
-    #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてある
+    # TODO: ロックの取得と解放をしながらループを回すことで他のスレッドも動作できるように
+    #        しながら2種類のstabilizeを実行していく
+    #        どちらを実行するかは乱数で決定する。
+    #        それぞれの実行回数はそれぞれのBATCH_TIMESになるようにし、そのために
+    #        実行済み回数を変数に保持しておき、実行済み回数に到達していたらcontinue
+    #        するようにする. 両者が到達していたらこの関数呼び出しを抜ける
+    #        このために、処理ブロックが3つあるif文を書く
+    #        はじめは両者が必要回数実行回数済みでないかを確認する条件で、残りは乱数で
+    #        選択された処理を試みるものである（既に実行回数が必要回数に到達していたら
+    #        continueする。乱数を引く前にそれぞれの実行回数をチェックして、必要回数
+    #        に到達している方があったら乱数を引かず、他方が実行されるようにした方が
+    #        いいだろう。というか、そこで両者が終了しているかチェックした方がいい気がする）
     if done_stabilize_successor_cnt < STABILIZE_SUCCESSOR_BATCH_TIMES:
         node_list = list(all_node_dict.values())
         shuffled_node_list = random.sample(node_list, len(node_list))
@@ -698,66 +711,23 @@ def do_get_on_random_node():
     # ロックの解放
     lock_of_all_data.release()
 
-# def node_join_th():
-#     counter = 3
-#     while counter < 10:
-#         add_new_node()
-#         time.sleep(0.1) # sleep 100msec
-#         counter += 1
-#
-# def stabilize_th():
-#     # 実システムではあり得ないが、デバッグプリントが見にくくなることを
-#     # 避けるため、一度ネットワークが構築され、安定状態になったと思われる
-#     # タイミングに達したら stabilize 処理は行われなくする
-#
-#     time.sleep(2) # sleep 2sec
-#     while is_stabilize_finished == False:
-#         do_stabilize_once_at_all_node()
-#         # 1秒に1000ノードを選択し処理が
-#         # 行われる程度の間隔に設定
-#         time.sleep(0.001) # sleep 5msec
-
-# TODO: 一通り動いたら、実システムに合うように、ネットワーク上に存在するノードを母集団として重複が起きない形で
-#       全ノードをランダムに選択していって処理するようにしなければならない
-def node_join_and_stabilize_th():
-    global done_stabilize_successor_cnt
-    global is_stabilize_finished
-
+def node_join_th():
     while already_born_node_num < NODE_NUM:
         add_new_node()
-        # 1ノード追加するごとに全ノードに対し一定回数 stabilize_successorを実行し、その後、一定回数、stablize_finger_table
-        # を実行する
-        # 実システムでもネットワークが安定した状態で後続のノードが入ってくるというのが（多分）通常と思われるので
-        # それとは整合する処理の流れだと思われる（二種のstabilizeを分けているのはおかしいが）
-        for n in range(STABILIZE_SUCCESSOR_BATCH_TIMES + STABILIZE_FTABLE_BATCH_TIMES):
-            # ループのうち、最初の一定回数は stabilize_successorが走り、残りはstabilize_finger_tableが走るように
-            # 実装されている
-            do_stabilize_once_at_all_node()
-        # 次のwhileループの周回の際の do_stabilize_once_at_all_nodeのためにリセット
-        done_stabilize_successor_cnt = 0
+        time.sleep(1)  # sleep 1sec
 
-    is_stabilize_finished = True
+def stabilize_th():
+    while True:
+        # 内部で適宜ロックを解放することで他のスレッドの処理も行えるようにしつつ
+        # 呼び出し時点でのノードリストを対象に stabilize 処理を行う
+        do_stabilize_once_at_all_node()
 
 def data_put_th():
-    global is_stabilize_finished
-
-    #全ノードがネットワークに参加し十分に stabilize処理が行われた
-    #状態になるまで待つ
-    while is_stabilize_finished == False:
-        time.sleep(1)
-
-    while len(all_data_list) < PUT_DATA_NUM:
+    while True:
         do_put_on_random_node()
-        # time.sleep(1) # sleep 1sec
+        time.sleep(1)  # sleep 1sec
 
 def data_get_th():
-    while is_stabilize_finished == False:
-        time.sleep(1)
-
-    # put処理を行うスレッドが規定数のデータのputを終えるまで待つ
-    while len(all_data_list) < PUT_DATA_NUM:
-        time.sleep(0.5)
-
     while True:
         # 内部でデータのputが一度も行われていなければreturnしてくるので
         # putを行うスレッドと同時に動作を初めても問題ないようにはなっている
@@ -793,17 +763,17 @@ def main():
     # 最初の1ノードはここで登録する
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
     all_node_dict[first_node.node_info.address_str] = first_node
-    # 1ノードしかいなくても stabilize処理は走らせる
-    do_stabilize_once_at_all_node()
+    # # 1ノードしかいなくても stabilize処理は走らせる
+    # do_stabilize_once_at_all_node()
 
-    # node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
-    # node_join_th_handle.start()
-    #
-    # stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
-    # stabilize_th_handle.start()
+    node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
+    node_join_th_handle.start()
 
-    node_join_and_stabilize_th_handle = threading.Thread(target=node_join_and_stabilize_th, daemon=True)
-    node_join_and_stabilize_th_handle.start()
+    stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
+    stabilize_th_handle.start()
+
+    # node_join_and_stabilize_th_handle = threading.Thread(target=node_join_and_stabilize_th, daemon=True)
+    # node_join_and_stabilize_th_handle.start()
 
     data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     data_put_th_handle.start()

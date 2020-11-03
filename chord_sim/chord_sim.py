@@ -625,7 +625,10 @@ def do_stabilize_once_at_all_node():
     # TODO: 実システムではあり得ないが、stabilize_successor と stabilize_finger_table
     #       が同じChordネットワーク初期化後の同じ時間帯に動作しないようにしてある
     if done_stabilize_successor_cnt < STABILIZE_SUCCESSOR_BATCH_TIMES:
-        for node in all_node_dict.values():
+        node_list = list(all_node_dict.values())
+        shuffled_node_list = random.sample(node_list, len(node_list))
+        #for node in all_node_dict.values():
+        for node in shuffled_node_list:
           node.stabilize_successor()
           ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                            + str(done_stabilize_successor_cnt))
@@ -644,7 +647,10 @@ def do_stabilize_once_at_all_node():
         # ただし、各ノードの更新するインデックスの範囲は1ずつ大きくなる方向にずらしていく
         # これによりsuccessorによるチェーンが正しく構築されていれば効率よく構築が行われる（はず）
         for idx in range(0, ID_SPACE_BITS):
-            for node in all_node_dict.values():
+            node_list = list(all_node_dict.values())
+            shuffled_node_list = random.sample(node_list, len(node_list))
+            # for node in all_node_dict.values():
+            for node in shuffled_node_list:
                   ChordUtil.dprint("do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                         + str(idx))
                   node.stabilize_finger_table(idx)

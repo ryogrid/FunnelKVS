@@ -615,61 +615,76 @@ def add_new_node():
     # ロックの解放
     lock_of_all_data.release()
 
-# all_node_id辞書のvaluesリスト内を順に選択したノードに stabilize のアクションをとらせる
-# やりとりを行う側（つまりChordNodeクラス）にそのためのメソッドを定義する必要がありそう
+# all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 def do_stabilize_once_at_all_node():
     global lock_of_all_data
 
     done_stabilize_successor_cnt = 0
+    done_stabilize_ftable_cnt = 0
 
-    # ロックの取得
-    lock_of_all_data.acquire()
+    node_list = list(all_node_dict.values())
 
-    # TODO: ロックの取得と解放をしながらループを回すことで他のスレッドも動作できるように
-    #        しながら2種類のstabilizeを実行していく
-    #        どちらを実行するかは乱数で決定する。
-    #        それぞれの実行回数はそれぞれのBATCH_TIMESになるようにし、そのために
-    #        実行済み回数を変数に保持しておき、実行済み回数に到達していたらcontinue
-    #        するようにする. 両者が到達していたらこの関数呼び出しを抜ける
-    #        このために、処理ブロックが3つあるif文を書く
-    #        はじめは両者が必要回数実行回数済みでないかを確認する条件で、残りは乱数で
-    #        選択された処理を試みるものである（既に実行回数が必要回数に到達していたら
-    #        continueする。乱数を引く前にそれぞれの実行回数をチェックして、必要回数
-    #        に到達している方があったら乱数を引かず、他方が実行されるようにした方が
-    #        いいだろう。というか、そこで両者が終了しているかチェックした方がいい気がする）
-    if done_stabilize_successor_cnt < STABILIZE_SUCCESSOR_BATCH_TIMES:
-        node_list = list(all_node_dict.values())
-        shuffled_node_list = random.sample(node_list, len(node_list))
-        #for node in all_node_dict.values():
-        for node in shuffled_node_list:
-          node.stabilize_successor()
-          ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                           + str(done_stabilize_successor_cnt))
-        done_stabilize_successor_cnt += 1
-    elif done_stabilize_successor_cnt == STABILIZE_SUCCESSOR_BATCH_TIMES:
-        check_nodes_connectivity()
-        done_stabilize_successor_cnt += 1 # check_nodes_connectivity が複数回実行されないようにするため
+    # 各リストはpopメソッドで要素を取り出して利用されていく
+    # 同じノードは複数回利用されるため、その分コピーしておく（参照がコピーされるだけ）
+    shuffled_node_list_successor = random.sample(node_list, len(node_list))
+    shuffled_node_list_successor = shuffled_node_list_successor * STABILIZE_SUCCESSOR_BATCH_TIMES
+    shuffled_node_list_ftable = random.sample(node_list, len(node_list))
+    shuffled_node_list_ftable = shuffled_node_list_ftable * STABILIZE_FTABLE_BATCH_TIMES
 
-    # ネットワーク上のノードにおいて、successorの情報が適切に設定された状態とならないと、
-    # stabilize_finger_talbleはほどんと意味を成さずに終了してしまう場合が多いと思われるため
-    # successor（とpredecessor）に関するstabilizeが十分に成されるまで待つ
-    if done_stabilize_successor_cnt > STABILIZE_SUCCESSOR_BATCH_TIMES:
-        # 全てのノードについて処理を行う
+    cur_node_num = len(node_list)
+    selected_operation = "" # "successor" or "ftable"
 
-        # テーブルの下から順に全て更新する
-        # ただし、各ノードの更新するインデックスの範囲は1ずつ大きくなる方向にずらしていく
-        # これによりsuccessorによるチェーンが正しく構築されていれば効率よく構築が行われる（はず）
-        for idx in range(0, ID_SPACE_BITS):
-            node_list = list(all_node_dict.values())
-            shuffled_node_list = random.sample(node_list, len(node_list))
-            # for node in all_node_dict.values():
-            for node in shuffled_node_list:
-                  ChordUtil.dprint("do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    while True:
+        # ロックの取得
+        lock_of_all_data.acquire()
+
+        try:
+            # まず行う処理を決定する
+            if done_stabilize_successor_cnt >= STABILIZE_SUCCESSOR_BATCH_TIMES * cur_node_num \
+                and done_stabilize_ftable_cnt >= STABILIZE_FTABLE_BATCH_TIMES * cur_node_num:
+                # 関数呼び出し時点で存在した全ノードについて、2種双方が規定回数の stabilze処理を完了したため
+                # 関数を終了する
+
+                # ノードの接続状況をデバッグ出力
+                check_nodes_connectivity()
+                return
+            elif done_stabilize_successor_cnt >= STABILIZE_SUCCESSOR_BATCH_TIMES * cur_node_num:
+                # 一方は完了しているので他方を実行する
+                selected_operation = "ftable"
+            elif done_stabilize_ftable_cnt >= STABILIZE_FTABLE_BATCH_TIMES * cur_node_num:
+                # 一方は完了しているので他方を実行する
+                selected_operation = "successor"
+            else:
+                # どちらも完了していない
+                zero_or_one = random.randint(0,1)
+
+                if zero_or_one == 0:
+                    selected_operation = "successor"
+                else: # 1
+                    selected_operation = "ftable"
+
+
+            # 選択された処理を実行する
+            if selected_operation == "successor":
+                node = shuffled_node_list_successor.pop()
+                node.stabilize_successor()
+                ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                                   + str(done_stabilize_successor_cnt))
+                done_stabilize_successor_cnt += 1
+            else: # "ftable"
+                node = shuffled_node_list_ftable.pop()
+                # 対象ノードについてテーブルの下から順に全て更新する
+                for idx in range(0, ID_SPACE_BITS):
+                    ChordUtil.dprint(
+                        "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                         + str(idx))
-                  node.stabilize_finger_table(idx)
+                    node.stabilize_finger_table(idx)
+                done_stabilize_ftable_cnt += 1
+        finally:
+            # ロックの解放
+            lock_of_all_data.release()
 
-    # ロックの解放
-    lock_of_all_data.release()
+
 
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
 # アドレスをよろしく解決し、見つかったノードにputの操作を依頼する
@@ -745,12 +760,17 @@ def data_get_th():
 #       としても一定数のノード数でChordネットワークが安定した後にもノードのjoinやreave
 #       は低頻度ながら起きることは想定しなければならない（=起きた場合でもデータの到達性
 #       が担保される設計にし、それを検証しなければならない）
-#       　以下のような変更必要だろう
-#       　　・joinとstabilizeを継続的に実行させるようににする
+#       　以下のような変更が必要だろう
+#       　　・join、stabilize、put、getを継続的かつ並列に実行させるようにする
+#          ・getを行う際に探索した結果見つかったノードが対象のデータを保持していなかった場合に
+#            successorを一定数まで順に見ていくようにする（新規ノードの参加により担当範囲が
+#            分割された場合の考慮）
 #          ・データの委譲やレプリケーションのためのインターフェースを各ノードに追加し定期的
 #          　に実行させる
 #          ・定期的にノードを離脱させるためのインタフェースを各ノードに追加し、一定頻度で
 #            離脱を発生させる
+#          ・successorを複数にする（ノードが離脱した場合でもget時やレプリケーション時にsuccessor
+#           を辿っていけるようにするため）
 
 def main():
     global all_node_dict

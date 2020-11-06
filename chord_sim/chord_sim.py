@@ -82,8 +82,8 @@ class ChordUtil:
             ret_id = id - (ID_MAX + 1)
         return ret_id
 
-    # TODO: idがID空間の最大値に対して何パーセントの位置かを適当な精度の浮動小数の文字列
-    #       にして返す
+    # idがID空間の最大値に対して何パーセントの位置かを適当な精度の浮動小数の文字列
+    # にして返す
     @classmethod
     def conv_id_to_ratio_str(cls, id : int) -> str:
         ratio = (id / ID_MAX) * 100.0
@@ -94,8 +94,8 @@ class ChordUtil:
     # ここで前方とは、IDの値が小さくなる方向である
     @classmethod
     def calc_distance_between_nodes_left_mawari(cls, base_id : int, target_id : int) -> int:
-        # TODO: successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
-        #       距離0と考えることもできるが、一周分を距離として返す
+        # successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
+        # 距離0と考えることもできるが、一周分を距離として返す
         if base_id == target_id:
             return ID_SPACE_RANGE - 1
 
@@ -125,8 +125,8 @@ class ChordUtil:
     # ここで後方とは、IDの値が大きくなる方向である
     @classmethod
     def calc_distance_between_nodes_right_mawari(cls, base_id : int, target_id : int) -> int:
-        # TODO: successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
-        #       距離0と考えることもできるが、一周分を距離として返す
+        # successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
+        # 距離0と考えることもできるが、一周分を距離として返す
         if base_id == target_id:
             return ID_SPACE_RANGE - 1
 
@@ -279,7 +279,8 @@ class ChordNode:
             # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
             ChordUtil.dprint("global_put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id))
-            return
+            raise Exception("appropriate node is not found.")
+            # return
 
         target_node.put(data_id, value_str)
         ChordUtil.dprint("global_put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -302,7 +303,8 @@ class ChordNode:
             # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
             ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                   + ChordUtil.gen_debug_str_of_data(data_id))
-            return
+            raise Exception("appropriate node is not found.")
+            # return
 
         got_value_str = target_node.get(data_id)
         # TODO: 返ってきた値が "QUERIED_KEY_WAS_NOT_FOUND" だった場合、target_nodeから
@@ -333,6 +335,7 @@ class ChordNode:
 
         found_node = self.find_successor(node_id)
         if found_node == None:
+            # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
             ChordUtil.dprint("global_query_node_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(node_id))
             raise Exception("appropriate node is not found.")
@@ -343,13 +346,12 @@ class ChordNode:
 
         return found_node
 
-    # TODO: global_delete (ひとまずglobal_getとglobal_putだけ実装するので後で良い）
-    def global_delete(self, key_str):
-        print("not implemented yet")
-        
-    # TODO: delete (ひとまずgetとputだけ実装するので後で良い）
-    def delete(self, key_str):
-        print("not implemented yet")
+    # TODO: Deleteの実装
+    # def global_delete(self, key_str):
+    #     print("not implemented yet")
+    #
+    # def delete(self, key_str):
+    #     print("not implemented yet")
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
@@ -456,8 +458,6 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_node(found_node.node_info))
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
-    # TODO: 一通り動くようになったら、実システムと整合するよう、ノードに定義されたAPIを介して
-    #       情報をやりとりするするように書き換える必要あり
     def find_successor(self, id : int):
         ChordUtil.dprint("find_successor_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_data(id))
@@ -476,8 +476,6 @@ class ChordNode:
         return all_node_dict[n_dash.node_info.successor_info.address_str]
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
-    # TODO: 一通り動くようになったら、実システムと整合するよう、ノードに定義されたAPIを介して
-    #       情報をやりとりするするように書き換える必要あり
     def find_predecessor(self, id: int):
         ChordUtil.dprint("find_predecessor_1," + ChordUtil.gen_debug_str_of_node(self.node_info))
 
@@ -750,27 +748,6 @@ def data_get_th():
         # エンドレスで行うのでデバッグプリントのサイズが大きくなり過ぎないよう
         # sleepを挟む
         time.sleep(1) # sleep 1sec
-
-# TODO: 現状は全ノードが揃って、stabilizeも十分に行われた後にしか
-#       putもgetも行われず、ノードの離脱も発生しない実装となっており、
-#       そのような条件を前提とした実装も存在するが、実システムでデータへの到達性を
-#       担保するためにはデータの委譲やレプリケーション、またそれらの相手として
-#       successorを複数にするといったことが必要と思われる
-#       　少なくとも、オンプレでデータストアとして使うといったユースケースを想定した
-#       としても一定数のノード数でChordネットワークが安定した後にもノードのjoinやreave
-#       は低頻度ながら起きることは想定しなければならない（=起きた場合でもデータの到達性
-#       が担保される設計にし、それを検証しなければならない）
-#       　以下のような変更が必要だろう
-#       　　・join、stabilize、put、getを継続的かつ並列に実行させるようにする
-#          ・getを行う際に探索した結果見つかったノードが対象のデータを保持していなかった場合に
-#            successorを一定数まで順に見ていくようにする（新規ノードの参加により担当範囲が
-#            分割された場合の考慮）
-#          ・データの委譲やレプリケーションのためのインターフェースを各ノードに追加し定期的
-#          　に実行させる
-#          ・定期的にノードを離脱させるためのインタフェースを各ノードに追加し、一定頻度で
-#            離脱を発生させる
-#          ・successorを複数にする（ノードが離脱した場合でもget時やレプリケーション時にsuccessor
-#           を辿っていけるようにするため）
 
 def main():
     global all_node_dict

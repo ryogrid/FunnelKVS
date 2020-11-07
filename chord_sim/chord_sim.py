@@ -750,7 +750,7 @@ def do_get_on_random_node():
 def node_join_th():
     while already_born_node_num < NODE_NUM:
         add_new_node()
-        time.sleep(1)  # sleep 1sec
+        time.sleep(3)  # sleep 3sec
 
 def stabilize_th():
     while True:
@@ -761,7 +761,7 @@ def stabilize_th():
 def data_put_th():
     while True:
         do_put_on_random_node()
-        time.sleep(1)  # sleep 1sec
+        time.sleep(5)  # sleep 5sec
 
 def data_get_th():
     while True:
@@ -770,7 +770,7 @@ def data_get_th():
         do_get_on_random_node()
         # エンドレスで行うのでデバッグプリントのサイズが大きくなり過ぎないよう
         # sleepを挟む
-        time.sleep(1) # sleep 1sec
+        time.sleep(5) # sleep 5sec
 
 def main():
     global all_node_dict

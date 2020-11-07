@@ -12,7 +12,7 @@ ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
 STABILIZE_SUCCESSOR_BATCH_TIMES = 20
-STABILIZE_FTABLE_BATCH_TIMES = 1
+STABILIZE_FTABLE_BATCH_TIMES = 2
 
 # # 160bit符号なし整数の最大値
 # # Chordネットワーク上のID空間の上限
@@ -719,6 +719,10 @@ def do_stabilize_once_at_all_node():
                     # 全ノードについて同一インデックスのエントリの更新が済んだので
                     # 次のインデックスに移る
                     cur_ftable_idx += 1
+
+                if cur_ftable_idx >= ID_SPACE_BITS:
+                    # 全インデックスのエントリの更新が終わったらまた0からスタートする
+                    cur_ftable_idx = 0
 
                 # # 対象ノードについてテーブルの下から順に全て更新する
                 # for idx in range(0, ID_SPACE_BITS):

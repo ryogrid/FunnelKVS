@@ -163,24 +163,24 @@ class ChordUtil:
         else:
             return False
 
-    # successor, predecessorを経路表に入れる際に適切なエントリに入れるために
-    # 対応するインデックスを求めて返す
-    # 設定するインデックスは node_id より値が大きくてもっとも近いエントリの
-    # インデックスとなる
-    # 値が大きいエントリに入れるのは、担当ノードとしては、そのノードのsuccessorを
-    # 用いるためである
-    @classmethod
-    def calc_idx_of_ftable_from_node_id(cls, from_node_id : int, target_node_id : int) -> int:
-        distance : int = ChordUtil.calc_distance_between_nodes_right_mawari(from_node_id, target_node_id)
-        if distance == 0:
-            # 同じノードを比較しており、2^0である 1 よりも距離が小さいので、finger_tableには入れない
-            # ようにさせる
-            return -1
-
-        log2_value = math.log2(distance)
-        ceiled_value = math.floor(log2_value)
-
-        return ceiled_value - 1 # 0オリジンのため
+    # # あるノードを経路表に入れる際に適切なエントリに入れるために
+    # # 対応するインデックスを求めて返す
+    # # 設定するインデックスは node_id より値が大きくてもっとも近いエントリの
+    # # インデックスとなる
+    # # 値が大きいエントリに入れるのは、担当ノードとしては、そのノードのsuccessorを
+    # # 用いるためである
+    # @classmethod
+    # def calc_idx_of_ftable_from_node_id(cls, from_node_id : int, target_node_id : int) -> int:
+    #     distance : int = ChordUtil.calc_distance_between_nodes_right_mawari(from_node_id, target_node_id)
+    #     if distance == 0:
+    #         # 同じノードを比較しており、2^0である 1 よりも距離が小さいので、finger_tableには入れない
+    #         # ようにさせる
+    #         return -1
+    #
+    #     log2_value = math.log2(distance)
+    #     ceiled_value = math.floor(log2_value)
+    #
+    #     return ceiled_value - 1 # 0オリジンのため
 
     @classmethod
     def dprint(cls, print_str : str):
@@ -410,6 +410,16 @@ class ChordNode:
         ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
 
+        # firstノードに対する考慮（ノード作成時に自身をsuccesorに設定しているために自身だけ
+        # でsuccessorチェーンのループを作ったままになってしまうことを回避する）
+        if self.node_info.predecessor_info != None and (self.node_info.node_id == self.node_info.successor_info.node_id):
+            ChordUtil.dprint("stabilize_successor_1_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
+            # secondノードがjoin済みであれば、当該ノードのstabilize_successorによって
+            # secondノードがpredecessorとして設定されているはずなので、succesorをそちら
+            # に張り替える
+            self.node_info.successor_info = self.node_info.predecessor_info
+
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         successor_info = self.node_info.successor_info
         if successor_info.predecessor_info == None:
@@ -600,7 +610,9 @@ def check_nodes_connectivity():
     cur_node_info : NodeInfo = get_a_random_node().node_info
     ChordUtil.print_no_lf("check_nodes_connectivity__succ")
     print(",", flush=True, end="")
-    while counter < 20:
+    all_node_num = len(list(all_node_dict.values()))
+
+    while counter < all_node_num * 2:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
         cur_node_info = cur_node_info.successor_info
         if cur_node_info == None:
@@ -613,7 +625,7 @@ def check_nodes_connectivity():
     cur_node_info = get_a_random_node().node_info
     ChordUtil.print_no_lf("check_nodes_connectivity__pred")
     print(",", flush=True, end="")
-    while counter < 20:
+    while counter < all_node_num * 2:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
         cur_node_info = cur_node_info.predecessor_info
         if cur_node_info == None:
@@ -783,6 +795,7 @@ def main():
     # 最初の1ノードはここで登録する
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
     all_node_dict[first_node.node_info.address_str] = first_node
+    time.sleep(0.5) #次に生成するノードが同一のアドレス文字列を持つことを避けるため
     # # 1ノードしかいなくても stabilize処理は走らせる
     # do_stabilize_once_at_all_node()
 

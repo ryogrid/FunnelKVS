@@ -662,10 +662,11 @@ def do_stabilize_once_at_all_node():
     shuffled_node_list_successor = random.sample(node_list, len(node_list))
     shuffled_node_list_successor = shuffled_node_list_successor * STABILIZE_SUCCESSOR_BATCH_TIMES
     shuffled_node_list_ftable = random.sample(node_list, len(node_list))
-    shuffled_node_list_ftable = shuffled_node_list_ftable * STABILIZE_FTABLE_BATCH_TIMES
+    shuffled_node_list_ftable = shuffled_node_list_ftable * (STABILIZE_FTABLE_BATCH_TIMES * ID_SPACE_BITS)
 
     cur_node_num = len(node_list)
     selected_operation = "" # "successor" or "ftable"
+    cur_ftable_idx = 0
 
     while True:
         # ロックの取得
@@ -674,7 +675,7 @@ def do_stabilize_once_at_all_node():
         try:
             # まず行う処理を決定する
             if done_stabilize_successor_cnt >= STABILIZE_SUCCESSOR_BATCH_TIMES * cur_node_num \
-                and done_stabilize_ftable_cnt >= STABILIZE_FTABLE_BATCH_TIMES * cur_node_num:
+                and done_stabilize_ftable_cnt >= STABILIZE_FTABLE_BATCH_TIMES * cur_node_num * ID_SPACE_BITS:
                 # 関数呼び出し時点で存在した全ノードについて、2種双方が規定回数の stabilze処理を完了したため
                 # 関数を終了する
 
@@ -684,7 +685,7 @@ def do_stabilize_once_at_all_node():
             elif done_stabilize_successor_cnt >= STABILIZE_SUCCESSOR_BATCH_TIMES * cur_node_num:
                 # 一方は完了しているので他方を実行する
                 selected_operation = "ftable"
-            elif done_stabilize_ftable_cnt >= STABILIZE_FTABLE_BATCH_TIMES * cur_node_num:
+            elif done_stabilize_ftable_cnt >= STABILIZE_FTABLE_BATCH_TIMES * cur_node_num * ID_SPACE_BITS:
                 # 一方は完了しているので他方を実行する
                 selected_operation = "successor"
             else:
@@ -696,7 +697,6 @@ def do_stabilize_once_at_all_node():
                 else: # 1
                     selected_operation = "ftable"
 
-
             # 選択された処理を実行する
             if selected_operation == "successor":
                 node = shuffled_node_list_successor.pop()
@@ -705,14 +705,28 @@ def do_stabilize_once_at_all_node():
                                    + str(done_stabilize_successor_cnt))
                 done_stabilize_successor_cnt += 1
             else: # "ftable"
+                # 1ノードの1エントリを更新する
+                # 更新するエントリのインデックスはこの関数の呼び出し時点の全ノード
+                # で共通に0からインクリメントされていく
                 node = shuffled_node_list_ftable.pop()
-                # 対象ノードについてテーブルの下から順に全て更新する
-                for idx in range(0, ID_SPACE_BITS):
-                    ChordUtil.dprint(
-                        "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                        + str(idx))
-                    node.stabilize_finger_table(idx)
+                ChordUtil.dprint(
+                    "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                    + str(cur_ftable_idx))
+                node.stabilize_finger_table(cur_ftable_idx)
                 done_stabilize_ftable_cnt += 1
+
+                if done_stabilize_ftable_cnt % cur_node_num == 0:
+                    # 全ノードについて同一インデックスのエントリの更新が済んだので
+                    # 次のインデックスに移る
+                    cur_ftable_idx += 1
+
+                # # 対象ノードについてテーブルの下から順に全て更新する
+                # for idx in range(0, ID_SPACE_BITS):
+                #     ChordUtil.dprint(
+                #         "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                #         + str(idx))
+                #     node.stabilize_finger_table(idx)
+                # done_stabilize_ftable_cnt += 1
         finally:
             # ロックの解放
             lock_of_all_data.release()

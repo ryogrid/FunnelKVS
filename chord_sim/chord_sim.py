@@ -272,7 +272,7 @@ class ChordNode:
 
         tyukai_node = all_node_dict[node_address]
         # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
-        successor = tyukai_node.global_query_node(self.node_info.node_id)
+        successor = tyukai_node.search_node(self.node_info.node_id)
         self.node_info.successor_info = successor.node_info
 
         # successorから自身が担当することになるID範囲のデータを受け取り、格納する
@@ -286,14 +286,7 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
 
     def global_put(self, data_id : int, value_str : str):
-        target_node = self.find_successor(data_id)
-        if target_node == None:
-            # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
-            ChordUtil.dprint("global_put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_data(data_id))
-            raise Exception("appropriate node is not found.")
-            # return
-
+        target_node = self.search_node(data_id)
         target_node.put(data_id, value_str)
         ChordUtil.dprint("global_put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
@@ -310,14 +303,7 @@ class ChordNode:
         ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
-        target_node = self.find_successor(data_id)
-        if target_node == None:
-            # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
-            ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                  + ChordUtil.gen_debug_str_of_data(data_id))
-            raise Exception("appropriate node was not found.")
-            # return
-
+        target_node = self.search_node(data_id)
         got_value_str = target_node.get(data_id)
 
         # TODO: 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
@@ -356,23 +342,21 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
         return ret_value_str
 
-    # node_id をデータのIDとして見た際にそれを担当するノードを返す
-    # joinする際の適切な位置を求めるために利用される
-    #（data_idがjoinしてくる新規ノードのものの場合は、当該ノードの successor になるノードが返ることになる）
-    def global_query_node(self, node_id : int) -> 'ChordNode':
-        ChordUtil.dprint("global_query_node_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_data(node_id))
+    # some_id をChordネットワーク上で担当するノードを返す
+    def search_node(self, some_id : int) -> 'ChordNode':
+        ChordUtil.dprint("search_node_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                         + ChordUtil.gen_debug_str_of_data(some_id))
 
-        found_node = self.find_successor(node_id)
+        found_node = self.find_successor(some_id)
         if found_node == None:
             # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
-            ChordUtil.dprint("global_query_node_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_data(node_id))
+            ChordUtil.dprint("search_node_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(some_id))
             raise Exception("appropriate node is not found.")
 
-        ChordUtil.dprint("global_query_node_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        ChordUtil.dprint("search_node_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(found_node.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_data(node_id))
+                         + ChordUtil.gen_debug_str_of_data(some_id))
 
         return found_node
 

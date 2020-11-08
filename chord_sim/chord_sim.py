@@ -206,7 +206,10 @@ class KeyValue:
         self.key : str = key
         self.value : str = value
         # keyのハッシュ値
-        self.data_id : int = ChordUtil.hash_str_to_int(key)
+        if key == None:
+            self.data_id = None
+        else:
+            self.data_id : int = ChordUtil.hash_str_to_int(key)
 
 class NodeInfo:
 
@@ -236,8 +239,7 @@ class ChordNode:
     # レスポンスがあった際に、持っていないか辿っていくsuccessorの上限数
     GLOBAL_GET_SUCCESSOR_TRY_MAX_NODES = 5
 
-    # join時の処理もコンストラクタで行う
-    #def __init__(self, node_address : str, first_node = False, second_node = False, third_node = False):
+    # join処理もコンストラクタで行ってしまう
     def __init__(self, node_address: str, first_node=False):
         global already_born_node_num
         # global g_first_node_info
@@ -258,6 +260,8 @@ class ChordNode:
 
             # successorは自身として終了する
             self.node_info.successor_info = self.node_info
+            # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+            # データの委譲は必要ない
             return
         else:
             self.join(node_address)
@@ -269,9 +273,12 @@ class ChordNode:
         tyukai_node = all_node_dict[node_address]
         # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
         successor = tyukai_node.global_query_node(self.node_info.node_id)
-        # TODO: successorが None でないかチェックし、Noneであった場合は一定時間待ってから
-        #       global_query_nodeの呼び出しをリトライするようにする
         self.node_info.successor_info = successor.node_info
+
+        # successorから自身が担当することになるID範囲のデータを受け取り、格納する
+        tantou_data_list : List['KeyValue'] = successor.get_copies_of_my_tantou_data(self.node_info.node_id)
+        for key_value in tantou_data_list:
+            self.stored_data[str(key_value.data_id)] = key_value.value
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
         ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -338,7 +345,7 @@ class ChordNode:
         return got_value_str
 
     # 得られた value の文字列を返す
-    def get(self, data_id : int):
+    def get(self, data_id : int) -> str:
         ret_value_str = None
         try:
             ret_value_str = self.stored_data[str(data_id)]
@@ -375,6 +382,22 @@ class ChordNode:
     #
     # def delete(self, key_str):
     #     print("not implemented yet")
+
+    # TODO: 自身が保持しているデータを一部取り除いて返す.
+    #       取り除くデータは反時計周りに辿った際に自身の node_id と 引数 node_id の
+    #       の間に data_id が位置するデータである.
+    #       　join呼び出し時、新たに参加してきた新規ノードに、successorとなる自身が、担当から外れる
+    #       範囲のデータの委譲（ここではコピー）を行うために、新規ノードから呼び出される形で用いられる.
+    #       　なお、Chordでは仕組み上、経路表の更新の早かったパスと遅かったパスで、同一の data_id
+    #       に対する担当ノードの探索結果が異なるタイミングが発生し得るが、新規ノードの参加直後において
+    #       は、本メソッド呼び出しにおける自身と呼び出し元の新規ノードの2つで異なる場合が考えられる.
+    #       その場合において、本メソッドが上述のようにコピーする形で委譲処理を行っているため、一方が保持
+    #       するデータが更新されていた場合に、データの一貫性が崩れる可能性がある点に注意が必要である.
+    #       　正しくは、データはコピーするのではなく引き渡してしまう（保持しているデータは削除する）べき
+    #       だが、ひとまず、（global_getの発行元がリトライなどを行わない前提で、）global_get で
+    #       データ取得に失敗するケースを無くすため、保持しているデータの削除は行わない
+    def get_copies_of_my_tantou_data(self, node_id : int) -> List['KeyValue']:
+        raise Exception("not implemented yet")
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる

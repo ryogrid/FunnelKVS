@@ -368,7 +368,7 @@ class ChordNode:
     #     print("not implemented yet")
 
     # TODO: 自身が保持しているデータを一部取り除いて返す.
-    #       取り除くデータは反時計周りに辿った際に自身の node_id と 引数 node_id の
+    #       取り除くデータは時計周りに辿った際に 引数 node_id と 自身の node_id
     #       の間に data_id が位置するデータである.
     #       　join呼び出し時、新たに参加してきた新規ノードに、successorとなる自身が、担当から外れる
     #       範囲のデータの委譲（ここではコピー）を行うために、新規ノードから呼び出される形で用いられる.
@@ -381,7 +381,23 @@ class ChordNode:
     #       だが、ひとまず、（global_getの発行元がリトライなどを行わない前提で、）global_get で
     #       データ取得に失敗するケースを無くすため、保持しているデータの削除は行わない
     def get_copies_of_my_tantou_data(self, node_id : int) -> List['KeyValue']:
-        raise Exception("not implemented yet")
+        ret_datas : List['KeyValue'] = []
+        for key, value in self.stored_data.items():
+            data_id : int = int(key)
+
+            # Chordネットワークを右回りにたどった時に、データの id (data_id) が呼び出し元の node_id から
+            # 自身の node_id の間に位置する場合は、そのデータの担当は自身から変わらないため、渡すデータから
+            # 除外する
+            if ChordUtil.exist_between_two_nodes_right_mawari(node_id, self.node_info.node_id, data_id):
+                continue
+
+            # 文字列の参照をそのまま用いてしまうが、文字列はイミュータブルであるため
+            # 問題ない
+            item = KeyValue(None, value)
+            item.data_id = data_id
+            ret_datas.append(item)
+
+        return ret_datas
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる

@@ -192,9 +192,10 @@ class ChordUtil:
         print(print_str, end="")
 
     @classmethod
-    def gen_debug_str_of_node(cls, node_info : 'NodeInfo') -> str:
-        return str(node_info.born_id) + "," + hex(node_info.node_id) + "," \
-               + ChordUtil.conv_id_to_ratio_str(node_info.node_id)
+    def gen_debug_str_of_node(cls, node_info : Optional['NodeInfo']) -> str:
+        casted_info : 'NodeInfo' = cast('NodeInfo' ,node_info)
+        return str(casted_info.born_id) + "," + hex(casted_info.node_id) + "," \
+               + ChordUtil.conv_id_to_ratio_str(casted_info.node_id)
 
     @classmethod
     def gen_debug_str_of_data(cls, data_id : int) -> str:
@@ -228,7 +229,7 @@ class NodeInfo:
         # そのような情報が必要な場合はChordNodeオブジェクトから参照し、
         # 必要であれば、その際に下のフィールドにdeepcopyを設定しなおさ
         # なければならない.
-        self.successor_info : 'NodeInfo' = None
+        self.successor_info : Optional['NodeInfo'] = None
         self.predecessor_info : Optional['NodeInfo'] = None
 
         # NodeInfoオブジェクトを要素として持つリスト
@@ -244,7 +245,7 @@ class NodeInfo:
         ret_node_info.node_id = copy.copy(self.node_id)
         ret_node_info.address_str = copy.copy(self.address_str)
         ret_node_info.born_id = copy.copy(self.born_id)
-        ret_node_info.successor_info = NodeInfo()
+        ret_node_info.successor_info = None
         ret_node_info.predecessor_info = None
 
         return ret_node_info
@@ -252,8 +253,14 @@ class NodeInfo:
     # 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
     # ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
     # を返す.
-    # あるノードの node_info を他のノードが取得し保持する際に利用されることを想定
-    # する.
+    # 上述の考慮により、コピーした NodeInfoオブジェクト の successor_infoと
+    # predecessor_infoは deepcopy の対象ではあるが、それらの中の同名のフィールド
+    # にはNoneが設定される. これにより、あるノードがコピーされた NodeInfo を保持
+    # した場合、predecessor や successorは辿ることができるが、その先は辿ることが
+    # 直接的にはできないことになる（predecessor や successorの ChordNodeオブジェクト
+    # を引いてやれば可能）
+    # 用途としては、あるノードの node_info を他のノードが取得し保持する際に利用される
+    # ことを想定して実装されている.
     def get_partial_deepcopy(self) -> 'NodeInfo':
         ret_node_info : 'NodeInfo' = NodeInfo()
 
@@ -349,7 +356,7 @@ class ChordNode:
             # 最初は処理の都合上、最初にgetをかけたノードを設定する
             cur_successor = target_node
             while tried_node_num < ChordNode.GLOBAL_GET_SUCCESSOR_TRY_MAX_NODES:
-                cur_successor = all_node_dict[cur_successor.node_info.successor_info.address_str]
+                cur_successor = all_node_dict[cast('NodeInfo',cur_successor.node_info.successor_info).address_str]
                 got_value_str = cur_successor.get(data_id)
                 tried_node_num += 1
                 ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -580,7 +587,7 @@ class ChordNode:
         n_dash = self
         # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
         #while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
-        while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info.node_id, id):
+        while not ChordUtil.exist_between_two_nodes_right_mawari(cast('NodeInfo',n_dash.node_info).node_id, cast('NodeInfo', n_dash.node_info.successor_info).node_id, id):
             ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
             n_dash_found = n_dash.closest_preceding_finger(id)
@@ -679,7 +686,13 @@ def check_nodes_connectivity():
 
     while counter < all_node_num * 2:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
-        cur_node_info = cur_node_info.successor_info
+
+        #cur_node_info = cur_node_info.successor_info
+
+        # 各ノードはsuccessorの情報を保持しているが、successorのsuccessorは保持しないようになって
+        # いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
+        # 得ることに対応する形とする
+        cur_node_info = all_node_dict[cur_node_info.address_str].node_info.successor_info
         if cur_node_info == None:
             break
         counter += 1

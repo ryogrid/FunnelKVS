@@ -396,7 +396,7 @@ class ChordNode:
             # TODO: ノード探索が失敗した場合は、一定時間を空けてリトライするようにする
             ChordUtil.dprint("search_node_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(some_id))
-            raise Exception("appropriate node is not found.")
+            raise Exception("appropriate node was not found.")
 
         ChordUtil.dprint("search_node_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(found_node.node_info) + ","

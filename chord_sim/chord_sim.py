@@ -244,7 +244,7 @@ class NodeInfo:
             return None
         
         casted_node_info : 'NodeInfo' = cast('NodeInfo', node_info)
-        ret_node_info : Optional['NodeInfo'] = NodeInfo()
+        ret_node_info : 'NodeInfo' = NodeInfo()
 
         ret_node_info.node_id = copy.copy(casted_node_info.node_id)
         ret_node_info.address_str = copy.copy(casted_node_info.address_str)

@@ -193,7 +193,7 @@ class ChordUtil:
 
     @classmethod
     def gen_debug_str_of_node(cls, node_info : Optional['NodeInfo']) -> str:
-        casted_info : 'NodeInfo' = cast('NodeInfo' ,node_info)
+        casted_info : 'NodeInfo' = cast('NodeInfo', node_info)
         return str(casted_info.born_id) + "," + hex(casted_info.node_id) + "," \
                + ChordUtil.conv_id_to_ratio_str(casted_info.node_id)
 
@@ -239,12 +239,16 @@ class NodeInfo:
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table : List['NodeInfo'] = [None] * ID_SPACE_BITS
 
-    def get_partial_deepcopy_inner(self, node_info : 'NodeInfo' = None) -> 'NodeInfo':
-        ret_node_info : 'NodeInfo' = NodeInfo()
+    def get_partial_deepcopy_inner(self, node_info : Optional['NodeInfo']) -> Optional['NodeInfo']:
+        if node_info == None:
+            return None
+        
+        casted_node_info : 'NodeInfo' = cast('NodeInfo', node_info)
+        ret_node_info : Optional['NodeInfo'] = NodeInfo()
 
-        ret_node_info.node_id = copy.copy(self.node_id)
-        ret_node_info.address_str = copy.copy(self.address_str)
-        ret_node_info.born_id = copy.copy(self.born_id)
+        ret_node_info.node_id = copy.copy(casted_node_info.node_id)
+        ret_node_info.address_str = copy.copy(casted_node_info.address_str)
+        ret_node_info.born_id = copy.copy(casted_node_info.born_id)
         ret_node_info.successor_info = None
         ret_node_info.predecessor_info = None
 
@@ -268,10 +272,7 @@ class NodeInfo:
         ret_node_info.address_str = copy.copy(self.address_str)
         ret_node_info.born_id = copy.copy(self.born_id)
         ret_node_info.successor_info = self.get_partial_deepcopy_inner(self.successor_info)
-        if self.predecessor_info == None:
-            ret_node_info.predecessor_info = None
-        else:
-            ret_node_info.predecessor_info = self.get_partial_deepcopy_inner(self.predecessor_info)
+        ret_node_info.predecessor_info = self.get_partial_deepcopy_inner(self.predecessor_info)
 
         return ret_node_info
 

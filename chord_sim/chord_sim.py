@@ -485,7 +485,7 @@ class ChordNode:
             # secondノードがjoin済みであれば、当該ノードのstabilize_successorによって
             # secondノードがpredecessorとして設定されているはずなので、succesorをそちら
             # に張り替える
-            self.node_info.successor_info = self.node_info.predecessor_info
+            self.node_info.successor_info = self.node_info.predecessor_info.get_partial_deepcopy()
 
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         # 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない

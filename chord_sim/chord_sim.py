@@ -309,6 +309,10 @@ class ChordNode:
             self.node_info.successor_info = self.node_info
             # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
             # データの委譲は必要ない
+
+            # joinの処理の中でsuccessorをfinger_tableのインデックス0に設定する
+            # が、first nodeは stabilize_successorでsuccessorを張り替える
+            # 際にその処理を行う
             return
         else:
             self.join(node_address)
@@ -326,6 +330,9 @@ class ChordNode:
         tantou_data_list : List['KeyValue'] = successor.get_copies_of_my_tantou_data(self.node_info.node_id)
         for key_value in tantou_data_list:
             self.stored_data[str(key_value.data_id)] = key_value.value
+
+        # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
+        self.node_info.finger_table[0] = self.node_info.successor_info.get_partial_deepcopy()
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
         ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -489,6 +496,8 @@ class ChordNode:
             # secondノードがpredecessorとして設定されているはずなので、succesorをそちら
             # に張り替える
             self.node_info.successor_info = self.node_info.predecessor_info.get_partial_deepcopy()
+            # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
+            self.node_info.finger_table[0] = self.node_info.successor_info.get_partial_deepcopy()
 
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         # 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない

@@ -12,7 +12,7 @@ from typing import Dict, List, Any, Optional, cast
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
-STABILIZE_SUCCESSOR_BATCH_TIMES = 20
+STABILIZE_SUCCESSOR_BATCH_TIMES = 10 #20
 STABILIZE_FTABLE_BATCH_TIMES = 1
 
 # # 160bit符号なし整数の最大値

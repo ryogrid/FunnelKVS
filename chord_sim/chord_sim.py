@@ -12,7 +12,7 @@ from typing import Dict, List, Any, Optional, cast
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
-STABILIZE_SUCCESSOR_BATCH_TIMES = 10 #20
+STABILIZE_SUCCESSOR_BATCH_TIMES = 20 #10 #20
 STABILIZE_FTABLE_BATCH_TIMES = 1
 
 # # 160bit符号なし整数の最大値
@@ -25,8 +25,8 @@ STABILIZE_FTABLE_BATCH_TIMES = 1
 #       を用いているため bit数 を少なくしている
 ID_MAX = ID_SPACE_RANGE - 1
 
-NODE_NUM = 100
-PUT_DATA_NUM = 100
+NODE_NUM = 1000
+# PUT_DATA_NUM = 100
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
@@ -871,7 +871,7 @@ def do_get_on_random_node():
 def node_join_th():
     while already_born_node_num < NODE_NUM:
         add_new_node()
-        time.sleep(3)  # sleep 3sec
+        time.sleep(1)  # sleep 1sec # sleep 3sec
 
 def stabilize_th():
     while True:

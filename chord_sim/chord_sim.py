@@ -909,7 +909,7 @@ def stabilize_th():
 def data_put_th():
     while True:
         do_put_on_random_node()
-        time.sleep(5)  # sleep 5sec
+        time.sleep(1)  # sleep 1sec
 
 def data_get_th():
     while True:
@@ -918,7 +918,7 @@ def data_get_th():
         do_get_on_random_node()
         # エンドレスで行うのでデバッグプリントのサイズが大きくなり過ぎないよう
         # sleepを挟む
-        time.sleep(5) # sleep 5sec
+        time.sleep(1) # sleep 1sec
 
 def main():
     global all_node_dict

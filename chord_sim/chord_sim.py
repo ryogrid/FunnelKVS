@@ -394,6 +394,7 @@ class ChordNode:
                 ChordNode.need_getting_retry_node = None
             else:
                 # リトライに失敗した（何もしない）
+                ChordUtil.dprint("global_get_2_5,retry failed")
                 pass
 
         # 取得に失敗した場合はリトライに必要な情報をクラス変数に設定しておく

@@ -286,6 +286,11 @@ class ChordNode:
     # レスポンスがあった際に、持っていないか辿っていくsuccessorの上限数
     GLOBAL_GET_SUCCESSOR_TRY_MAX_NODES = 5
 
+    # 取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
+    # なお、このシミュレータの実装上、このフィールドは一つのデータだけ保持できれば良い
+    need_getting_retry_data_id : int = -1
+    need_getting_retry_node : Optional['ChordNode'] = None
+
     # join処理もコンストラクタで行ってしまう
     def __init__(self, node_address: str, first_node=False):
         global already_born_node_num
@@ -378,6 +383,23 @@ class ChordNode:
                     # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
                     # 後方に位置するsuccessorを辿ることでデータを取得することができた
                     break
+
+        # リトライを試みたであろう時の処理
+        if ChordNode.need_getting_retry_data_id != -1:
+            if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+                # リトライに成功した
+                ChordUtil.dprint("global_get_2_5,retry success")
+                # リトライは不要なためクリア
+                ChordNode.need_getting_retry_data_id = -1
+                ChordNode.need_getting_retry_node = None
+            else:
+                # リトライに失敗した（何もしない）
+                pass
+
+        # 取得に失敗した場合はリトライに必要な情報をクラス変数に設定しておく
+        if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+            ChordNode.need_getting_retry_data_id = data_id
+            ChordNode.need_getting_retry_node = self
 
         ChordUtil.dprint("global_get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
@@ -859,10 +881,15 @@ def do_get_on_random_node():
         lock_of_all_data.release()
         return
 
-    target_data = ChordUtil.get_random_elem(all_data_list)
-    target_data_id = target_data.data_id
+    if ChordNode.need_getting_retry_data_id != -1:
+        # doing retry
+        target_data_id = ChordNode.need_getting_retry_data_id
+        node = cast('ChordNode', ChordNode.need_getting_retry_node)
+    else:
+        target_data = ChordUtil.get_random_elem(all_data_list)
+        target_data_id = target_data.data_id
+        node = get_a_random_node()
 
-    node = get_a_random_node()
     node.global_get(target_data_id)
 
     # ロックの解放

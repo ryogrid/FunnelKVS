@@ -331,8 +331,8 @@ class ChordNode:
         successor = tyukai_node.search_node(self.node_info.node_id)
         self.node_info.successor_info = successor.node_info.get_partial_deepcopy()
 
-        # successorから自身が担当することになるID範囲のデータを受け取り、格納する
-        tantou_data_list : List['KeyValue'] = successor.get_copies_of_my_tantou_data(self.node_info.node_id)
+        # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
+        tantou_data_list : List['KeyValue'] = successor.get_copies_of_my_tantou_data(self.node_info.node_id, False)
         for key_value in tantou_data_list:
             self.stored_data[str(key_value.data_id)] = key_value.value
 
@@ -377,24 +377,24 @@ class ChordNode:
         target_node = self.search_node(data_id)
         got_value_str = target_node.get(data_id)
 
-        # TODO: 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
-        #       一定数のsuccessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
-        if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-            tried_node_num = 0
-            # 最初は処理の都合上、最初にgetをかけたノードを設定する
-            cur_successor = target_node
-            while tried_node_num < ChordNode.GLOBAL_GET_SUCCESSOR_TRY_MAX_NODES:
-                cur_successor = ChordUtil.get_node_by_address(cast('NodeInfo',cur_successor.node_info.successor_info).address_str)
-                got_value_str = cur_successor.get(data_id)
-                tried_node_num += 1
-                ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                                 + got_value_str + "," + str(tried_node_num))
-                if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-                    # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
-                    # 後方に位置するsuccessorを辿ることでデータを取得することができた
-                    break
+        # # TODO: 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
+        # #       一定数のsuccessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
+        # if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+        #     tried_node_num = 0
+        #     # 最初は処理の都合上、最初にgetをかけたノードを設定する
+        #     cur_successor = target_node
+        #     while tried_node_num < ChordNode.GLOBAL_GET_SUCCESSOR_TRY_MAX_NODES:
+        #         cur_successor = ChordUtil.get_node_by_address(cast('NodeInfo',cur_successor.node_info.successor_info).address_str)
+        #         got_value_str = cur_successor.get(data_id)
+        #         tried_node_num += 1
+        #         ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        #                          + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
+        #                          + ChordUtil.gen_debug_str_of_data(data_id) + ","
+        #                          + got_value_str + "," + str(tried_node_num))
+        #         if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+        #             # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
+        #             # 後方に位置するsuccessorを辿ることでデータを取得することができた
+        #             break
 
         # リトライを試みたであろう時の処理
         if ChordNode.need_getting_retry_data_id != -1:
@@ -469,7 +469,7 @@ class ChordNode:
     #       　正しくは、データはコピーするのではなく引き渡してしまう（保持しているデータは削除する）べき
     #       だが、ひとまず、（global_getの発行元がリトライなどを行わない前提で、）global_get で
     #       データ取得に失敗するケースを無くすため、保持しているデータの削除は行わない
-    def get_copies_of_my_tantou_data(self, node_id : int) -> List['KeyValue']:
+    def get_copies_of_my_tantou_data(self, node_id : int, rest_copy : bool = True) -> List['KeyValue']:
         ret_datas : List['KeyValue'] = []
         for key, value in self.stored_data.items():
             data_id : int = int(key)
@@ -485,6 +485,11 @@ class ChordNode:
             item = KeyValue(None, value)
             item.data_id = data_id
             ret_datas.append(item)
+
+        # データを委譲する際に元々持っていたノードからは削除するよう指定されていた場合
+        if rest_copy == False:
+            for kv in ret_datas:
+                del self.stored_data[str(kv.data_id)]
 
         return ret_datas
 

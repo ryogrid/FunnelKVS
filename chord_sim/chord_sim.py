@@ -339,6 +339,18 @@ class ChordNode:
         # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
         self.node_info.finger_table[0] = self.node_info.successor_info.get_partial_deepcopy()
 
+        # successorから見たpredecessorおよび、自身から見たpredecessorの情報は
+        # このタイミングで更新可能なはずなのでここで一度stabilize_successorを呼び出してしまう
+        self.stabilize_successor()
+
+        # 上記のstabilize_successorの呼び出しにより、successorが元々 predecessor の情報を保持
+        # していた場合は、自身にそのノードが predecessor として設定されているはず
+        # そして、その場合、自身の predecessor には自身を successorとして認識してもらわないと困る
+        # のでそこの確認処理を行わせる
+        if self.node_info.predecessor_info != None:
+            predecessor_node = ChordUtil.get_node_by_address(cast('NodeInfo', self.node_info.predecessor_info).address_str)
+            predecessor_node.stabilize_successor()
+
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
         ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","

@@ -35,7 +35,22 @@ class NodeInfo:
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table: List['NodeInfo'] = [None] * gval.ID_SPACE_BITS
 
-    def get_partial_deepcopy_inner(self, node_info_list: List['NodeInfo']) -> List['NodeInfo']:
+    def get_partial_deepcopy_inner(self, node_info: Optional['NodeInfo']) -> Optional['NodeInfo']:
+        if node_info == None:
+            return None
+
+        casted_node_info: 'NodeInfo' = cast('NodeInfo', node_info)
+        ret_node_info: 'NodeInfo' = NodeInfo()
+
+        ret_node_info.node_id = copy.copy(casted_node_info.node_id)
+        ret_node_info.address_str = copy.copy(casted_node_info.address_str)
+        ret_node_info.born_id = copy.copy(casted_node_info.born_id)
+        ret_node_info.successor_info_list = []
+        ret_node_info.predecessor_info = None
+
+        return ret_node_info
+
+    def get_partial_deepcopy_list_inner(self, node_info_list: List['NodeInfo']) -> List['NodeInfo']:
         ret_list : List['NodeInfo'] = []
 
         for node_info in node_info_list:
@@ -68,7 +83,7 @@ class NodeInfo:
         ret_node_info.node_id = copy.copy(self.node_id)
         ret_node_info.address_str = copy.copy(self.address_str)
         ret_node_info.born_id = copy.copy(self.born_id)
-        ret_node_info.successor_info_list = self.get_partial_deepcopy_inner(self.successor_info_list)
+        ret_node_info.successor_info_list = self.get_partial_deepcopy_list_inner(self.successor_info_list)
         ret_node_info.predecessor_info = self.get_partial_deepcopy_inner(self.predecessor_info)
 
         return ret_node_info

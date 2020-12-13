@@ -3,7 +3,7 @@
 from typing import Dict, List, Any, Optional, cast
 
 import gval
-from node_info import *
+from node_info import NodeInfo
 from chord_util import *
 
 class ChordNode:
@@ -35,7 +35,7 @@ class ChordNode:
             # 最初の1ノードの場合
 
             # successorは自身として終了する
-            self.node_info.successor_info = self.node_info
+            self.node_info.successor_info_list.append(self.node_info)
             # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
             # データの委譲は必要ない
 
@@ -53,7 +53,7 @@ class ChordNode:
         tyukai_node = ChordUtil.get_node_by_address(node_address)
         # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
         successor = tyukai_node.search_node(self.node_info.node_id)
-        self.node_info.successor_info = successor.node_info.get_partial_deepcopy()
+        self.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
 
         # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
         tantou_data_list : List['KeyValue'] = successor.get_copies_of_my_tantou_data(self.node_info.node_id, False)
@@ -61,7 +61,7 @@ class ChordNode:
             self.stored_data[str(key_value.data_id)] = key_value.value
 
         # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        self.node_info.finger_table[0] = self.node_info.successor_info.get_partial_deepcopy()
+        self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
 
         # successorから見たpredecessorおよび、自身から見たpredecessorの情報は
         # このタイミングで更新可能なはずなのでここで一度stabilize_successorを呼び出してしまう
@@ -78,7 +78,7 @@ class ChordNode:
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
         ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
+                         + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
     def global_put(self, data_id : int, value_str : str):
         target_node = self.search_node(data_id)
@@ -217,13 +217,13 @@ class ChordNode:
             # 経路情報に設定し、処理を終了する
             self.node_info.predecessor_info = node_info.get_partial_deepcopy()
             ChordUtil.dprint("check_predecessor_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                  + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info) + ","
+                  + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
                   + ChordUtil.gen_debug_str_of_node(self.node_info.predecessor_info))
 
             return
 
         ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-              + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
+              + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
         distance_check = ChordUtil.calc_distance_between_nodes_left_mawari(self.node_info.node_id, id)
         distance_cur = ChordUtil.calc_distance_between_nodes_left_mawari(self.node_info.node_id, cast('NodeInfo',self.node_info.predecessor_info).node_id)
@@ -234,32 +234,32 @@ class ChordNode:
             self.node_info.predecessor_info = node_info.get_partial_deepcopy()
 
             ChordUtil.dprint("check_predecessor_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                  + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info) + ","
+                  + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
                   + ChordUtil.gen_debug_str_of_node(self.node_info.predecessor_info))
 
     # successorおよびpredicessorに関するstabilize処理を行う
     # predecessorはこの呼び出しで初めて設定される
     def stabilize_successor(self):
         ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-              + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
+              + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
         # firstノードに対する考慮（ノード作成時に自身をsuccesorに設定しているために自身だけ
         # でsuccessorチェーンのループを作ったままになってしまうことを回避する）
-        if self.node_info.predecessor_info != None and (self.node_info.node_id == self.node_info.successor_info.node_id):
+        if self.node_info.predecessor_info != None and (self.node_info.node_id == self.node_info.successor_info_list[0].node_id):
             ChordUtil.dprint("stabilize_successor_1_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
+                             + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
             # secondノードがjoin済みであれば、当該ノードのstabilize_successorによって
             # secondノードがpredecessorとして設定されているはずなので、succesorをそちら
             # に張り替える
-            self.node_info.successor_info = self.node_info.predecessor_info.get_partial_deepcopy()
+            self.node_info.successor_info_list[0] = self.node_info.predecessor_info.get_partial_deepcopy()
             # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-            self.node_info.finger_table[0] = self.node_info.successor_info.get_partial_deepcopy()
+            self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
 
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         # 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない
         # 場合があるため、successorのChordNodeオブジェクトを引いて、そこから最新のnode_info
         # の参照を得る
-        successor = ChordUtil.get_node_by_address(self.node_info.successor_info.address_str)
+        successor = ChordUtil.get_node_by_address(self.node_info.successor_info_list[0].address_str)
         successor_info = successor.node_info
         # successor_info = self.node_info.successor_info
         if successor_info.predecessor_info == None:
@@ -268,11 +268,11 @@ class ChordNode:
             successor_info.predecessor_info = self.node_info.get_partial_deepcopy()
 
             ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
+                             + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
             return
 
         ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info))
+                         + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
         pred_id_of_successor = successor_info.predecessor_info.node_id
 
@@ -300,15 +300,15 @@ class ChordNode:
                 # successorから自身に対して前方向にたどった場合の経路中に存在する場合
                 # 自身の認識するsuccessorの情報を更新する
 
-                self.node_info.successor_info = successor_obj.node_info.predecessor_info.get_partial_deepcopy()
+                self.node_info.successor_info_list[0] = successor_obj.node_info.predecessor_info.get_partial_deepcopy()
 
                 # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                 # ば情報を更新してもらう
-                new_successor_obj = ChordUtil.get_node_by_address(self.node_info.successor_info.address_str)
+                new_successor_obj = ChordUtil.get_node_by_address(self.node_info.successor_info_list[0].address_str)
                 new_successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
 
                 ChordUtil.dprint("stabilize_successor_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
                                  + ChordUtil.gen_debug_str_of_node(new_successor_obj.node_info))
 
     # FingerTableに関するstabilize処理を行う
@@ -344,10 +344,10 @@ class ChordNode:
 
         ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
                          + ChordUtil.gen_debug_str_of_data(id))
 
-        return ChordUtil.get_node_by_address(n_dash.node_info.successor_info.address_str)
+        return ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
     def find_predecessor(self, id: int):
@@ -356,7 +356,7 @@ class ChordNode:
         n_dash = self
         # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
         #while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
-        while not ChordUtil.exist_between_two_nodes_right_mawari(cast('NodeInfo',n_dash.node_info).node_id, cast('NodeInfo', n_dash.node_info.successor_info).node_id, id):
+        while not ChordUtil.exist_between_two_nodes_right_mawari(cast('NodeInfo',n_dash.node_info).node_id, cast('NodeInfo', n_dash.node_info.successor_info_list[0]).node_id, id):
             ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
             n_dash_found = n_dash.closest_preceding_finger(id)

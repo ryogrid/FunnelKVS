@@ -39,7 +39,7 @@ def check_nodes_connectivity():
         # 各ノードはsuccessorの情報を保持しているが、successorのsuccessorは保持しないようになって
         # いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         # 得ることに対応する形とする
-        cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info
+        cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
         if cur_node_info == None:
             break
         counter += 1

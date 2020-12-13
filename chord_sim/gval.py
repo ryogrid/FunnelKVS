@@ -11,6 +11,9 @@ ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 STABILIZE_SUCCESSOR_BATCH_TIMES = 20 #10 #20
 STABILIZE_FTABLE_BATCH_TIMES = 1
 
+# 一時的にこれより短くなる場合もある
+SUCCESSOR_LIST_NORMAL_LEN = 3
+
 # # 160bit符号なし整数の最大値
 # # Chordネットワーク上のID空間の上限
 # ID_MAX = 2**ID_SPACE_BITS - 1

@@ -21,7 +21,11 @@ class NodeInfo:
         # そのような情報が必要な場合はChordNodeオブジェクトから参照し、
         # 必要であれば、その際に下のフィールドにdeepcopyを設定しなおさ
         # なければならない.
-        self.successor_info: Optional['NodeInfo'] = None
+        #self.successor_info: Optional['NodeInfo'] = None
+
+        # 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
+        # ように制御する
+        self.successor_info_list: List['NodeInfo'] = []
         self.predecessor_info: Optional['NodeInfo'] = None
 
         # NodeInfoオブジェクトを要素として持つリスト
@@ -31,20 +35,21 @@ class NodeInfo:
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table: List['NodeInfo'] = [None] * gval.ID_SPACE_BITS
 
-    def get_partial_deepcopy_inner(self, node_info: Optional['NodeInfo']) -> Optional['NodeInfo']:
-        if node_info == None:
-            return None
+    def get_partial_deepcopy_inner(self, node_info_list: List['NodeInfo']) -> List['NodeInfo']:
+        ret_list : List['NodeInfo'] = []
 
-        casted_node_info: 'NodeInfo' = cast('NodeInfo', node_info)
-        ret_node_info: 'NodeInfo' = NodeInfo()
+        for node_info in node_info_list:
+            set_node_info: 'NodeInfo' = NodeInfo()
 
-        ret_node_info.node_id = copy.copy(casted_node_info.node_id)
-        ret_node_info.address_str = copy.copy(casted_node_info.address_str)
-        ret_node_info.born_id = copy.copy(casted_node_info.born_id)
-        ret_node_info.successor_info = None
-        ret_node_info.predecessor_info = None
+            set_node_info.node_id = copy.copy(node_info.node_id)
+            set_node_info.address_str = copy.copy(node_info.address_str)
+            set_node_info.born_id = copy.copy(node_info.born_id)
+            set_node_info.successor_info_list = []
+            set_node_info.predecessor_info = None
 
-        return ret_node_info
+            ret_list.append(set_node_info)
+
+        return ret_list
 
     # 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
     # ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
@@ -63,7 +68,7 @@ class NodeInfo:
         ret_node_info.node_id = copy.copy(self.node_id)
         ret_node_info.address_str = copy.copy(self.address_str)
         ret_node_info.born_id = copy.copy(self.born_id)
-        ret_node_info.successor_info = self.get_partial_deepcopy_inner(self.successor_info)
+        ret_node_info.successor_info_list = self.get_partial_deepcopy_inner(self.successor_info_list)
         ret_node_info.predecessor_info = self.get_partial_deepcopy_inner(self.predecessor_info)
 
         return ret_node_info

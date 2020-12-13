@@ -5,7 +5,6 @@ from typing import Dict, List, Any, Optional, cast
 import gval
 from node_info import *
 from chord_util import *
-import chord_sim
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"

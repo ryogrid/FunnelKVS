@@ -6,9 +6,9 @@ import random
 from typing import Dict, List, Any, Optional, cast
 
 import gval
+from node_info import *
 from chord_node import *
 from chord_util import *
-from node_info import *
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す

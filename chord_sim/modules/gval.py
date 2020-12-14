@@ -1,8 +1,8 @@
 # coding:utf-8
 
 import threading
-from . import chord_node as cn
-from . import chord_util as cu
+from .chord_node import ChordNode
+from .chord_util import ChordUtil, KeyValue
 from typing import Dict, List, Any, Optional, cast
 
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
@@ -29,7 +29,7 @@ NODE_NUM = 1000
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
-all_node_dict : Dict[str, cn.ChordNode] = {}
+all_node_dict : Dict[str, ChordNode] = {}
 
 # DHT上で保持されている全てのデータが保持されているリスト
 # KeyValueオブジェクトを要素として持つ
@@ -37,7 +37,7 @@ all_node_dict : Dict[str, cn.ChordNode] = {}
 # getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
 # に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
 # 照らし合わせられるようにする
-all_data_list : List[cu.KeyValue] = []
+all_data_list : List[KeyValue] = []
 
 # 検証を分かりやすくするために何ノード目として生成されたか
 # のデバッグ用IDを持たせるためのカウンタ

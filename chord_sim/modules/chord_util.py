@@ -5,11 +5,9 @@ import random
 import datetime
 from typing import Dict, List, Any, Optional, cast
 
-from . import chord_node as cn
 from . import gval
-from . import node_info as ni
-
-
+from .chord_node import *
+from .node_info import NodeInfo
 
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
@@ -157,8 +155,8 @@ class ChordUtil:
         print(print_str, end="")
 
     @classmethod
-    def gen_debug_str_of_node(cls, node_info : Optional[ni.NodeInfo]) -> str:
-        casted_info : ni.NodeInfo = cast(ni.NodeInfo, node_info)
+    def gen_debug_str_of_node(cls, node_info : Optional[NodeInfo]) -> str:
+        casted_info : NodeInfo = cast(NodeInfo, node_info)
         return str(casted_info.born_id) + "," + hex(casted_info.node_id) + "," \
                + ChordUtil.conv_id_to_ratio_str(casted_info.node_id)
 
@@ -167,7 +165,7 @@ class ChordUtil:
         return hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)
 
     @classmethod
-    def get_node_by_address(cls, address : str) -> 'cn.ChordNode':
+    def get_node_by_address(cls, address : str) -> 'ChordNode':
         return gval.all_node_dict[address]
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる

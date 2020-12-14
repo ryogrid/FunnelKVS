@@ -3,7 +3,7 @@
 import copy
 from typing import Dict, List, Any, Optional, cast
 
-from . import gval as gval
+from . import gval
 
 class NodeInfo:
 

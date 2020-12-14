@@ -10,8 +10,8 @@ class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
 
     # global_get内で探索した担当ノードにgetをかけて、データを持っていないと
-    # レスポンスがあった際に、持っていないか辿っていくsuccessorの上限数
-    GLOBAL_GET_SUCCESSOR_TRY_MAX_NODES = 5
+    # レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
+    GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES = 5
 
     # 取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
     # なお、このシミュレータの実装上、このフィールドは一つのデータだけ保持できれば良い
@@ -101,24 +101,64 @@ class ChordNode:
         target_node = self.search_node(data_id)
         got_value_str = target_node.get(data_id)
 
-        # # TODO: 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
-        # #       一定数のsuccessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
-        # if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        #     tried_node_num = 0
-        #     # 最初は処理の都合上、最初にgetをかけたノードを設定する
-        #     cur_successor = target_node
-        #     while tried_node_num < ChordNode.GLOBAL_GET_SUCCESSOR_TRY_MAX_NODES:
-        #         cur_successor = ChordUtil.get_node_by_address(cast('NodeInfo',cur_successor.node_info.successor_info).address_str)
-        #         got_value_str = cur_successor.get(data_id)
-        #         tried_node_num += 1
-        #         ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                          + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
-        #                          + ChordUtil.gen_debug_str_of_data(data_id) + ","
-        #                          + got_value_str + "," + str(tried_node_num))
-        #         if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        #             # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
-        #             # 後方に位置するsuccessorを辿ることでデータを取得することができた
-        #             break
+        # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
+        # 一定数の predecessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
+        if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+            tried_node_num = 0
+            # 最初は処理の都合上、最初にgetをかけたノードを設定する
+            cur_predecessor = target_node
+            while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
+                if cur_predecessor.node_info.predecessor_info == None:
+                    ChordUtil.dprint("global_get_1,predecessor is None")
+                    break
+                cur_predecessor = ChordUtil.get_node_by_address(cast('NodeInfo',cur_predecessor.node_info.predecessor_info).address_str)
+                got_value_str = cur_predecessor.get(data_id)
+                tried_node_num += 1
+                ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                                 + got_value_str + "," + str(tried_node_num))
+                if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+                    # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
+                    # 前方に位置するpredecessorを辿ることでデータを取得することができた
+                    ChordUtil.dprint("global_get_1_1," + "data found at predecessor,"
+                                     + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
+                    break
+                else:
+                    # できなかった
+                    ChordUtil.dprint("global_get_1_1," + "data not found at predecessor,"
+                                     + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
+                    break
+
+        # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
+        # 一定数の successor を辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
+        if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+            tried_node_num = 0
+            # 最初は処理の都合上、最初にgetをかけたノードを設定する
+            cur_successor = target_node
+            while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
+                cur_successor = ChordUtil.get_node_by_address(cast('NodeInfo',cur_successor.node_info.successor_info_list[0]).address_str)
+                got_value_str = cur_successor.get(data_id)
+                tried_node_num += 1
+                ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(cur_successor.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                                 + got_value_str + "," + str(tried_node_num))
+                if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+                    # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
+                    # 後方に位置するsuccessorを辿ることでデータを取得することができた
+                    ChordUtil.dprint("global_get_2_1," + "data found at successor,"
+                                     + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))
+                    break
+                else:
+                    # できなかった
+                    ChordUtil.dprint("global_get_2_1," + "data not found at successor,"
+                                     + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))
+                    break
 
         # リトライを試みたであろう時の処理
         if ChordNode.need_getting_retry_data_id != -1:

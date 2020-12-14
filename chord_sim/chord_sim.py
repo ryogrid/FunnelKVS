@@ -5,14 +5,14 @@ import time
 import random
 from typing import Dict, List, Any, Optional, cast
 
-import gval
-from node_info import *
-from chord_node import *
-from chord_util import *
+import modules.gval as gval
+from modules.node_info import NodeInfo
+from modules.chord_util import ChordUtil, KeyValue
+from modules.chord_node import ChordNode
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す
-def get_a_random_node() -> 'ChordNode':
+def get_a_random_node() -> ChordNode:
     key_list : List[str] = list(gval.all_node_dict.keys())
     selected_key : str = ChordUtil.get_random_elem(key_list)
     return ChordUtil.get_node_by_address(selected_key)

@@ -3,7 +3,7 @@
 import copy
 from typing import Dict, List, Any, Optional, cast
 
-import gval
+from . import gval as gval
 
 class NodeInfo:
 
@@ -25,22 +25,22 @@ class NodeInfo:
 
         # 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
         # ように制御する
-        self.successor_info_list: List['NodeInfo'] = []
-        self.predecessor_info: Optional['NodeInfo'] = None
+        self.successor_info_list: List[NodeInfo] = []
+        self.predecessor_info: Optional[NodeInfo] = None
 
         # NodeInfoオブジェクトを要素として持つリスト
         # インデックスの小さい方から狭い範囲が格納される形で保持する
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
 
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
-        self.finger_table: List['NodeInfo'] = [None] * gval.ID_SPACE_BITS
+        self.finger_table: List[NodeInfo] = [None] * gval.ID_SPACE_BITS
 
     def get_partial_deepcopy_inner(self, node_info: Optional['NodeInfo']) -> Optional['NodeInfo']:
         if node_info == None:
             return None
 
-        casted_node_info: 'NodeInfo' = cast('NodeInfo', node_info)
-        ret_node_info: 'NodeInfo' = NodeInfo()
+        casted_node_info: NodeInfo = cast(NodeInfo, node_info)
+        ret_node_info: NodeInfo = NodeInfo()
 
         ret_node_info.node_id = copy.copy(casted_node_info.node_id)
         ret_node_info.address_str = copy.copy(casted_node_info.address_str)
@@ -51,10 +51,10 @@ class NodeInfo:
         return ret_node_info
 
     def get_partial_deepcopy_list_inner(self, node_info_list: List['NodeInfo']) -> List['NodeInfo']:
-        ret_list : List['NodeInfo'] = []
+        ret_list : List[NodeInfo] = []
 
         for node_info in node_info_list:
-            set_node_info: 'NodeInfo' = NodeInfo()
+            set_node_info: NodeInfo = NodeInfo()
 
             set_node_info.node_id = copy.copy(node_info.node_id)
             set_node_info.address_str = copy.copy(node_info.address_str)
@@ -78,7 +78,7 @@ class NodeInfo:
     # 用途としては、あるノードの node_info を他のノードが取得し保持する際に利用される
     # ことを想定して実装されている.
     def get_partial_deepcopy(self) -> 'NodeInfo':
-        ret_node_info: 'NodeInfo' = NodeInfo()
+        ret_node_info: NodeInfo = NodeInfo()
 
         ret_node_info.node_id = copy.copy(self.node_id)
         ret_node_info.address_str = copy.copy(self.address_str)

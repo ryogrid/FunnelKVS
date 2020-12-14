@@ -3,11 +3,13 @@
 import time
 import random
 import datetime
-from typing import Dict, List, Any, Optional, cast
+from typing import Dict, List, Any, Optional, cast, TYPE_CHECKING
 
 from . import gval
-from .chord_node import *
 from .node_info import NodeInfo
+
+if TYPE_CHECKING:
+    from .chord_node import ChordNode
 
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す

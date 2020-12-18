@@ -95,12 +95,22 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
     # 得られた value の文字列を返す
-    def global_get(self, data_id : int):
+    def global_get(self, data_id : int) -> str:
         ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
         target_node = self.search_node(data_id)
         got_value_str = target_node.get(data_id)
+
+        # if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+        #     # 他のリカバー方法を試す前に、successorでglobal_getを発行してみる
+        #     successor_node = ChordUtil.get_node_by_address(self.node_info.successor_info_list[0].address_str)
+        #     got_value_str_succ = successor_node.global_get(data_id)
+        #     if got_value_str_succ == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+        #         ChordUtil.dprint("global_get_0_5," + ChordUtil.gen_debug_str_of_node(successor_node.node_info) + "global_get at successor is failed too")
+        #     else:
+        #         ChordUtil.dprint("global_get_0_5," + ChordUtil.gen_debug_str_of_node(successor_node.node_info) + "global_get at successor is successed")
+        #         got_value_str = got_value_str_succ
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
         # 一定数の predecessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする

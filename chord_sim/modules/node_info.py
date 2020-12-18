@@ -33,7 +33,7 @@ class NodeInfo:
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
 
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
-        self.finger_table: List[NodeInfo] = [None] * gval.ID_SPACE_BITS
+        self.finger_table: List[Optional[List[NodeInfo]]] = [None] * gval.ID_SPACE_BITS
 
     def get_partial_deepcopy_inner(self, node_info: Optional['NodeInfo']) -> Optional['NodeInfo']:
         if node_info == None:

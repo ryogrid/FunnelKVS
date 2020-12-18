@@ -61,7 +61,8 @@ class ChordNode:
             self.stored_data[str(key_value.data_id)] = key_value.value
 
         # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
+        # self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
+        self.node_info.finger_table[0] = ChordUtil.get_deepcopy_of_successor_list(self.node_info.successor_info_list)
 
         # successorから見たpredecessorおよび、自身から見たpredecessorの情報は
         # このタイミングで更新可能なはずなのでここで一度stabilize_successorを呼び出してしまう
@@ -130,7 +131,6 @@ class ChordNode:
                     ChordUtil.dprint("global_get_1_1," + "data not found at predecessor,"
                                      + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
-                    break
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
         # 一定数の successor を辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
@@ -158,7 +158,6 @@ class ChordNode:
                     ChordUtil.dprint("global_get_2_1," + "data not found at successor,"
                                      + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))
-                    break
 
         # リトライを試みたであろう時の処理
         if ChordNode.need_getting_retry_data_id != -1:
@@ -294,7 +293,8 @@ class ChordNode:
             # に張り替える
             self.node_info.successor_info_list[0] = self.node_info.predecessor_info.get_partial_deepcopy()
             # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-            self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
+            #self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
+            self.node_info.finger_table[0] = ChordUtil.get_deepcopy_of_successor_list(self.node_info.successor_info_list)
 
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         # 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない
@@ -367,7 +367,11 @@ class ChordNode:
             ChordUtil.dprint("stabilize_finger_table_2," + ChordUtil.gen_debug_str_of_node(self.node_info))
             return
 
-        self.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
+        #self.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
+
+        # TODO: finger_tableのエントリを引数に、found_nodeの生死を確認し、適切なノードに対応するsuccessorListを取得する
+        #       メソッドを定義しそれを利用する形に置き換える必要あり
+        self.node_info.finger_table[idx] = ChordUtil.get_deepcopy_of_successor_list([found_node.node_info])
 
         ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(found_node.node_info))
@@ -445,14 +449,38 @@ class ChordNode:
         # finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
         # ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         # 順に見ていくようにする
-        for entry in reversed(self.node_info.finger_table):
+
+        # for entry in reversed(self.node_info.finger_table):
+        #     # 埋まっていないエントリも存在し得る
+        #     if entry == None:
+        #         ChordUtil.dprint("closest_preceding_finger_0," + ChordUtil.gen_debug_str_of_node(self.node_info))
+        #         continue
+        #
+        #     ChordUtil.dprint("closest_preceding_finger_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        #           + ChordUtil.gen_debug_str_of_node(entry))
+        #
+        #     # テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
+        #     # それを返す
+        #     # (大きな範囲を見た場合、探索対象のIDが自身のIDとエントリが保持しているノードのIDの中に含まれて
+        #     #  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
+        #     #  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
+        #     #  見つけるという処理になっていると思われる）
+        #     # #if self.node_info.node_id < entry.node_id and entry.node_id <= id:
+        #     if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, entry.node_id):
+        #         ChordUtil.dprint("closest_preceding_finger_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        #                          + ChordUtil.gen_debug_str_of_node(entry))
+        #         return ChordUtil.get_node_by_address(entry.address_str)
+
+        for slist in reversed(self.node_info.finger_table):
             # 埋まっていないエントリも存在し得る
-            if entry == None:
+            if slist == None:
                 ChordUtil.dprint("closest_preceding_finger_0," + ChordUtil.gen_debug_str_of_node(self.node_info))
                 continue
 
+            casted_slist = cast(List[NodeInfo], slist)
+
             ChordUtil.dprint("closest_preceding_finger_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                  + ChordUtil.gen_debug_str_of_node(entry))
+                  + ChordUtil.gen_debug_str_of_node(casted_slist[0]))
 
             # テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
             # それを返す
@@ -461,10 +489,10 @@ class ChordNode:
             #  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
             #  見つけるという処理になっていると思われる）
             # #if self.node_info.node_id < entry.node_id and entry.node_id <= id:
-            if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, entry.node_id):
+            if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, casted_slist[0].node_id):
                 ChordUtil.dprint("closest_preceding_finger_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(entry))
-                return ChordUtil.get_node_by_address(entry.address_str)
+                                 + ChordUtil.gen_debug_str_of_node(casted_slist[0]))
+                return ChordUtil.get_node_by_address(casted_slist[0].address_str)
 
         ChordUtil.dprint("closest_preceding_finger_3")
 

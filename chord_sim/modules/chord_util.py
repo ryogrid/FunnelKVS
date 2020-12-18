@@ -6,10 +6,11 @@ import datetime
 from typing import Dict, List, Any, Optional, cast, TYPE_CHECKING
 
 from . import gval
-from .node_info import NodeInfo
+
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
+    from .node_info import NodeInfo
 
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
@@ -157,8 +158,8 @@ class ChordUtil:
         print(print_str, end="")
 
     @classmethod
-    def gen_debug_str_of_node(cls, node_info : Optional[NodeInfo]) -> str:
-        casted_info : NodeInfo = cast(NodeInfo, node_info)
+    def gen_debug_str_of_node(cls, node_info : Optional['NodeInfo']) -> str:
+        casted_info : 'NodeInfo' = cast('NodeInfo', node_info)
         return str(casted_info.born_id) + "," + hex(casted_info.node_id) + "," \
                + ChordUtil.conv_id_to_ratio_str(casted_info.node_id)
 
@@ -177,8 +178,8 @@ class ChordUtil:
             raise NodeIsDownedExectiopn()
 
     @classmethod
-    def get_deepcopy_of_successor_list(cls, slist : List[NodeInfo]) -> List[NodeInfo]:
-        ret_list : List[NodeInfo] = []
+    def get_deepcopy_of_successor_list(cls, slist : List['NodeInfo']) -> List['NodeInfo']:
+        ret_list : List['NodeInfo'] = []
         for node_info in slist:
             ret_list.append(node_info.get_partial_deepcopy())
 

@@ -11,7 +11,17 @@ if TYPE_CHECKING:
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
+JOIN_INTERVAL_SEC = 0.5
+PUT_INTERVAL_SEC = 0.5
+GET_INTERVAL_SEC = 0.5
+
+# 全ノードがstabilize_successorを実行することを1バッチとした際に
+# stabilize処理担当のスレッドにより呼び出されるstabilize処理を行わせる
+# メソッドの一回の呼び出しで何バッチが実行されるか
 STABILIZE_SUCCESSOR_BATCH_TIMES = 20 #10 #20
+# 全ノードがstabilize_finger_tableを複数回呼びされることで、finger_tableの全要素を更新
+# することを1バッチとした際に、stabilize処理担当のスレッドにより呼び出されるstabilize処理
+# を行わせるメソッドの一回の呼び出しで何バッチが実行されるか
 STABILIZE_FTABLE_BATCH_TIMES = 2 #1
 
 # 一時的にこれより短くなる場合もある
@@ -27,7 +37,7 @@ SUCCESSOR_LIST_NORMAL_LEN = 3
 #       を用いているため bit数 を少なくしている
 ID_MAX = ID_SPACE_RANGE - 1
 
-NODE_NUM = 1000
+NODE_NUM_MAX = 1000
 # PUT_DATA_NUM = 100
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ

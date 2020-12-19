@@ -27,36 +27,71 @@ def check_nodes_connectivity():
     counter : int = 0
     # まずはsuccessor方向に辿る
     cur_node_info : NodeInfo = get_a_random_node().node_info
-    ChordUtil.print_no_lf("check_nodes_connectivity__succ")
-    print(",", flush=True, end="")
+    start_node_info : NodeInfo = cur_node_info
     all_node_num = len(list(gval.all_node_dict.values()))
+    ChordUtil.print_no_lf("check_nodes_connectivity__succ,all_node_num=" + str(all_node_num) + ",already_born_node_num=" + str(gval.already_born_node_num))
+    print(",", flush=True, end="")
 
-    while counter < all_node_num * 2:
+    while counter < all_node_num:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
-
-        #cur_node_info = cur_node_info.successor_info
 
         # 各ノードはsuccessorの情報を保持しているが、successorのsuccessorは保持しないようになって
         # いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         # 得ることに対応する形とする
         cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
         if cur_node_info == None:
-            break
+            print("", flush=True, end="")
+            raise Exception("no successor having node was detected!")
         counter += 1
     print("")
+
+    # 2ノード目が参加して以降をチェック対象とする
+    # successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
+    # チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
+    if all_node_num >=2 and cur_node_info.node_id != start_node_info.node_id:
+        ChordUtil.dprint("check_nodes_connectivity_succ_err,chain does not include all node. all_node_num = "
+                         + str(all_node_num) + ","
+                         + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
+        print("", flush=True, end="")
+        raise Exception("SUCCESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
 
     # 続いてpredecessor方向に辿る
     counter = 0
     cur_node_info = get_a_random_node().node_info
-    ChordUtil.print_no_lf("check_nodes_connectivity__pred")
+    start_node_info = cur_node_info
+    ChordUtil.print_no_lf("check_nodes_connectivity__pred,all_node_num=" + str(all_node_num) + ",already_born_node_num=" + str(gval.already_born_node_num))
     print(",", flush=True, end="")
-    while counter < all_node_num * 2:
+    while counter < all_node_num:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
         cur_node_info = cur_node_info.predecessor_info
+
+        # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
+        # 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が
+        # あり得るため、余裕を持たせて5ノード目以降からチェックする
         if cur_node_info == None:
-            break
+            if all_node_num >= 5:
+                print("", flush=True, end="")
+                raise Exception("no predecessor having node was detected!")
+            else:
+                # 後続の処理は走らないようにする
+                return
+
         counter += 1
     print("")
+
+    # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
+    # 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が
+    # あり得るため、余裕を持たせて5ノード目以降からチェックする
+    # successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
+    # チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
+    if all_node_num >=5 and cur_node_info.node_id != start_node_info.node_id:
+        ChordUtil.dprint("check_nodes_connectivity_succ_err,chain does not include all node. all_node_num = "
+                         + str(all_node_num) + ","
+                         + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info)
+                         , flush=True)
+        raise Exception("PREDECESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
 
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
@@ -199,9 +234,9 @@ def do_get_on_random_node():
     gval.lock_of_all_data.release()
 
 def node_join_th():
-    while gval.already_born_node_num < gval.NODE_NUM:
+    while gval.already_born_node_num < gval.NODE_NUM_MAX:
         add_new_node()
-        time.sleep(1)  # sleep 1sec # sleep 3sec
+        time.sleep(gval.JOIN_INTERVAL_SEC)
 
 def stabilize_th():
     while True:
@@ -212,7 +247,7 @@ def stabilize_th():
 def data_put_th():
     while True:
         do_put_on_random_node()
-        time.sleep(1)  # sleep 1sec
+        time.sleep(gval.PUT_INTERVAL_SEC)
 
 def data_get_th():
     while True:
@@ -221,7 +256,7 @@ def data_get_th():
         do_get_on_random_node()
         # エンドレスで行うのでデバッグプリントのサイズが大きくなり過ぎないよう
         # sleepを挟む
-        time.sleep(1) # sleep 1sec
+        time.sleep(gval.GET_INTERVAL_SEC)
 
 def main():
     # 再現性のため乱数シードを固定

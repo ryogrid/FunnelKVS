@@ -234,7 +234,9 @@ class ChordNode:
     # 取り除くデータは時計周りに辿った際に 引数 node_id と 自身の node_id
     # の間に data_id が位置するデータである.
     # join呼び出し時、新たに参加してきた新規ノードに、successorとなる自身が、担当から外れる
-    # 範囲のデータの委譲（ここではコピー）を行うために、新規ノードから呼び出される形で用いられる.
+    # 範囲のデータの委譲を行うために、新規ノードから呼び出される形で用いられる.
+    # rest_copy引数によってコピーを渡すだけか、完全に委譲してしまい自身のデータストアからは渡したデータを削除
+    # するかどうか選択できる
     def get_copies_of_my_tantou_data(self, node_id : int, rest_copy : bool = True) -> List[KeyValue]:
         ret_datas : List[KeyValue] = []
         for key, value in self.stored_data.items():
@@ -298,13 +300,25 @@ class ChordNode:
         if self.node_info.predecessor_info != None and (self.node_info.node_id == self.node_info.successor_info_list[0].node_id):
             ChordUtil.dprint("stabilize_successor_1_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
-            # secondノードがjoin済みであれば、当該ノードのstabilize_successorによって
+            # secondノードがjoin済みであった場合、当該ノードのstabilize_successorによって
             # secondノードがpredecessorとして設定されているはずなので、succesorをそちら
             # に張り替える
-            self.node_info.successor_info_list[0] = self.node_info.predecessor_info.get_partial_deepcopy()
-            # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-            #self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
-            self.node_info.finger_table[0] = ChordUtil.get_deepcopy_of_successor_list(self.node_info.successor_info_list)
+            if self.node_info.predecessor_info != None:
+                self.node_info.successor_info_list[0] = self.node_info.predecessor_info.get_partial_deepcopy()
+
+                # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
+                # self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
+                self.node_info.finger_table[0] = ChordUtil.get_deepcopy_of_successor_list(
+                    self.node_info.successor_info_list)
+
+                # この修正を入れた時点での実装だと、secondノードがjoinした際、secondノードの predecessor が未設定の
+                # 状態になっているはずであり、それは正常な状態でないため、自身を設定する
+                second_node = ChordUtil.get_node_by_address(self.node_info.predecessor_info.address_str)
+                second_node.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+                return
+            else:
+                # secondノードがまだjoinしてきていない
+                return
 
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         # 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない
@@ -377,10 +391,8 @@ class ChordNode:
             ChordUtil.dprint("stabilize_finger_table_2," + ChordUtil.gen_debug_str_of_node(self.node_info))
             return
 
-        #self.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
-
         # TODO: finger_tableのエントリを引数に、found_nodeの生死を確認し、適切なノードに対応するsuccessorListを取得する
-        #       メソッドを定義しそれを利用する形に置き換える必要あり
+        #       メソッドを定義し、それを利用する形に置き換える必要あり
         self.node_info.finger_table[idx] = ChordUtil.get_deepcopy_of_successor_list([found_node.node_info])
 
         ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","

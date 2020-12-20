@@ -15,6 +15,7 @@ from modules.chord_node import ChordNode
 def get_a_random_node() -> ChordNode:
     key_list : List[str] = list(gval.all_node_dict.keys())
     selected_key : str = ChordUtil.get_random_elem(key_list)
+    # TODO: キーが必ず存在するので、例外が発生することはない
     return ChordUtil.get_node_by_address(selected_key)
 
 # stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
@@ -38,6 +39,7 @@ def check_nodes_connectivity():
         # 各ノードはsuccessorの情報を保持しているが、successorのsuccessorは保持しないようになって
         # いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         # 得ることに対応する形とする
+        # TODO: 例外発生時はreturnしてしまって良い
         cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
         if cur_node_info == None:
             print("", flush=True, end="")
@@ -64,6 +66,7 @@ def check_nodes_connectivity():
     print(",", flush=True, end="")
     while counter < all_node_num:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
+        # TODO: 例外発生時はreturnしてしまって良い
         cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
 
         # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で

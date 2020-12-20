@@ -64,7 +64,7 @@ def check_nodes_connectivity():
     print(",", flush=True, end="")
     while counter < all_node_num:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
-        cur_node_info = cur_node_info.predecessor_info
+        cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
 
         # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
         # 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が

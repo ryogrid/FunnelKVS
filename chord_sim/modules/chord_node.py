@@ -36,7 +36,7 @@ class ChordNode:
 
             # successorとpredecessorは自身として終了する
             self.node_info.successor_info_list.append(self.node_info)
-            self.node_info.predecessor_info = self.node_info
+            self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
 
             # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
             # データの委譲は必要ない

@@ -1,6 +1,6 @@
 # coding:utf-8
 
-from typing import Dict, List, Any, Optional, cast
+from typing import Dict, List, Optional, cast
 
 import modules.gval as gval
 from .node_info import NodeInfo
@@ -41,10 +41,6 @@ class ChordNode:
             # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
             # データの委譲は必要ない
 
-            # # joinの処理の中でsuccessorをfinger_tableのインデックス0に設定する
-            # # が、first nodeは stabilize_successorでsuccessorを張り替える
-            # # 際にその処理を行う
-
             return
         else:
             self.join(node_address)
@@ -77,18 +73,6 @@ class ChordNode:
             # fingerテーブルの0番エントリも強制的に設定する
             tyukai_node.node_info.finger_table[0] = [self.node_info.get_partial_deepcopy()]
         else:
-            # # successorから見たpredecessorおよび、自身から見たpredecessorの情報は
-            # # このタイミングで更新可能なはずなのでここで一度stabilize_successorを呼び出してしまう
-            # self.stabilize_successor()
-            #
-            # # 上記のstabilize_successorの呼び出しにより、successorが元々 predecessor の情報を保持
-            # # していた場合は、自身にそのノードが predecessor として設定されているはず
-            # # そして、その場合、自身の predecessor には自身を successorとして認識してもらわないと困る
-            # # のでそこの確認処理を行わせる
-            # if self.node_info.predecessor_info != None:
-            #     predecessor_node = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
-            #     predecessor_node.stabilize_successor()
-
             # 強制的に自身を既存のチェーンに挿入する
             # successorは predecessorの 情報を必ず持っていることを前提とする
             self.node_info.predecessor_info = cast(NodeInfo, successor.node_info.predecessor_info).get_partial_deepcopy()
@@ -121,16 +105,6 @@ class ChordNode:
 
         target_node = self.search_node(data_id)
         got_value_str = target_node.get(data_id)
-
-        # if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        #     # 他のリカバー方法を試す前に、successorでglobal_getを発行してみる
-        #     successor_node = ChordUtil.get_node_by_address(self.node_info.successor_info_list[0].address_str)
-        #     got_value_str_succ = successor_node.global_get(data_id)
-        #     if got_value_str_succ == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        #         ChordUtil.dprint("global_get_0_5," + ChordUtil.gen_debug_str_of_node(successor_node.node_info) + "global_get at successor is failed too")
-        #     else:
-        #         ChordUtil.dprint("global_get_0_5," + ChordUtil.gen_debug_str_of_node(successor_node.node_info) + "global_get at successor is successed")
-        #         got_value_str = got_value_str_succ
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
         # 一定数の predecessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
@@ -284,16 +258,6 @@ class ChordNode:
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
     def check_predecessor(self, id : int, node_info : NodeInfo):
-        # if self.node_info.predecessor_info == None:
-        #     # 未設定状態なので確認するまでもなく、predecessorらしいと判断し
-        #     # 経路情報に設定し、処理を終了する
-        #     self.node_info.predecessor_info = node_info.get_partial_deepcopy()
-        #     ChordUtil.dprint("check_predecessor_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #           + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
-        #           + ChordUtil.gen_debug_str_of_node(self.node_info.predecessor_info))
-        #
-        #     return
-
         ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
@@ -315,42 +279,12 @@ class ChordNode:
         ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
-        # # firstノードに対する考慮（ノード作成時に自身をsuccesorに設定しているために自身だけ
-        # # でsuccessorチェーンのループを作ったままになってしまうことを回避する）
-        # if self.node_info.predecessor_info != None and (self.node_info.node_id == self.node_info.successor_info_list[0].node_id):
-        #     ChordUtil.dprint("stabilize_successor_1_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                      + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
-        #     # このルートに入っていることはsecondノードがjoin済みであることを意味する.
-        #     # 当該ノードのstabilize_successorによってsecondノードがpredecessorとして設定されているはずなので、succesorをそちら
-        #     # に張り替える
-        #     self.node_info.successor_info_list[0] = self.node_info.predecessor_info.get_partial_deepcopy()
-        #
-        #     # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        #     # self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
-        #     self.node_info.finger_table[0] = ChordUtil.get_deepcopy_of_successor_list(
-        #         self.node_info.successor_info_list)
-        #
-        #     # この修正を入れた時点での実装だと、secondノードがjoinした際、secondノードの predecessor が未設定の
-        #     # 状態になっているはずであり、それは正常な状態でないため、自身を設定する
-        #     second_node = ChordUtil.get_node_by_address(self.node_info.predecessor_info.address_str)
-        #     second_node.node_info.predecessor_info = self.node_info.get_partial_d eepcopy()
-        #     return
-
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
         # 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない
         # 場合があるため、successorのChordNodeオブジェクトを引いて、そこから最新のnode_info
         # の参照を得る
         successor = ChordUtil.get_node_by_address(self.node_info.successor_info_list[0].address_str)
         successor_info = successor.node_info
-
-        # if successor_info.predecessor_info == None:
-        #     # successor が predecessor を未設定であった場合は自身を predecessor として保持させて
-        #     # 処理を終了する
-        #     successor_info.predecessor_info = self.node_info.get_partial_deepcopy()
-        #
-        #     ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                      + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
-        #     return
 
         ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
@@ -438,7 +372,6 @@ class ChordNode:
 
         n_dash = self
         # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
-        #while not (n_dash.node_info.predecessor_info.node_id < id and id <= n_dash.node_info.successor_info.node_id):
         while not ChordUtil.exist_between_two_nodes_right_mawari(cast(NodeInfo,n_dash.node_info).node_id, cast(NodeInfo, n_dash.node_info.successor_info_list[0]).node_id, id):
             ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
@@ -487,28 +420,6 @@ class ChordNode:
         # finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
         # ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         # 順に見ていくようにする
-
-        # for entry in reversed(self.node_info.finger_table):
-        #     # 埋まっていないエントリも存在し得る
-        #     if entry == None:
-        #         ChordUtil.dprint("closest_preceding_finger_0," + ChordUtil.gen_debug_str_of_node(self.node_info))
-        #         continue
-        #
-        #     ChordUtil.dprint("closest_preceding_finger_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #           + ChordUtil.gen_debug_str_of_node(entry))
-        #
-        #     # テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
-        #     # それを返す
-        #     # (大きな範囲を見た場合、探索対象のIDが自身のIDとエントリが保持しているノードのIDの中に含まれて
-        #     #  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
-        #     #  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
-        #     #  見つけるという処理になっていると思われる）
-        #     # #if self.node_info.node_id < entry.node_id and entry.node_id <= id:
-        #     if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, entry.node_id):
-        #         ChordUtil.dprint("closest_preceding_finger_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                          + ChordUtil.gen_debug_str_of_node(entry))
-        #         return ChordUtil.get_node_by_address(entry.address_str)
-
         for slist in reversed(self.node_info.finger_table):
             # 埋まっていないエントリも存在し得る
             if slist == None:

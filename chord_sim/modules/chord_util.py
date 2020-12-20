@@ -3,10 +3,9 @@
 import time
 import random
 import datetime
-from typing import Dict, List, Any, Optional, cast, TYPE_CHECKING
+from typing import List, Any, Optional, cast, TYPE_CHECKING
 
 from . import gval
-
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode

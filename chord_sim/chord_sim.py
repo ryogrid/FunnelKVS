@@ -3,7 +3,7 @@
 import threading
 import time
 import random
-from typing import Dict, List, Any, Optional, cast
+from typing import List, cast
 
 import modules.gval as gval
 from modules.node_info import NodeInfo
@@ -179,13 +179,6 @@ def do_stabilize_once_at_all_node():
                     # 全インデックスのエントリの更新が終わったらまた0からスタートする
                     cur_ftable_idx = 0
 
-                # # 対象ノードについてテーブルの下から順に全て更新する
-                # for idx in range(0, ID_SPACE_BITS):
-                #     ChordUtil.dprint(
-                #         "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                #         + str(idx))
-                #     node.stabilize_finger_table(idx)
-                # done_stabilize_ftable_cnt += 1
         finally:
             # ロックの解放
             gval.lock_of_all_data.release()
@@ -268,17 +261,12 @@ def main():
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
     gval.all_node_dict[first_node.node_info.address_str] = first_node
     time.sleep(0.5) #次に生成するノードが同一のアドレス文字列を持つことを避けるため
-    # # 1ノードしかいなくても stabilize処理は走らせる
-    # do_stabilize_once_at_all_node()
 
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()
 
     stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
     stabilize_th_handle.start()
-
-    # node_join_and_stabilize_th_handle = threading.Thread(target=node_join_and_stabilize_th, daemon=True)
-    # node_join_and_stabilize_th_handle.start()
 
     data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     data_put_th_handle.start()

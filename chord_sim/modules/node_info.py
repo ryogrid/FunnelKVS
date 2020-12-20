@@ -1,10 +1,9 @@
 # coding:utf-8
 
 import copy
-from typing import Dict, List, Any, Optional, cast
+from typing import List, Optional
 
 from . import gval
-from .chord_util import ChordUtil
 
 class NodeInfo:
 
@@ -16,17 +15,17 @@ class NodeInfo:
         # 何ノード目として生成されたかの値
         self.born_id: int = None
 
-        # NodeInfoオブジェクトを保持.
+        # 以下の2つはNodeInfoオブジェクトを保持.
         # ある時点で取得したものが保持されており、変化する場合のあるフィールド
         # の内容は最新の内容となっているとは限らないため注意が必要.
         # そのような情報が必要な場合はChordNodeオブジェクトから参照し、
         # 必要であれば、その際に下のフィールドにdeepcopyを設定しなおさ
         # なければならない.
-        #self.successor_info: Optional['NodeInfo'] = None
 
         # 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
         # ように制御する
         self.successor_info_list: List[NodeInfo] = []
+        # join後はNoneになることのないように制御される
         self.predecessor_info: Optional[NodeInfo] = None
 
         # NodeInfoオブジェクトを要素として持つリスト
@@ -35,21 +34,6 @@ class NodeInfo:
 
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table: List[Optional[List[NodeInfo]]] = [None] * gval.ID_SPACE_BITS
-
-    # def get_partial_deepcopy_inner(self, node_info: Optional['NodeInfo']) -> Optional['NodeInfo']:
-    #     if node_info == None:
-    #         return None
-    #
-    #     casted_node_info: NodeInfo = cast(NodeInfo, node_info)
-    #     ret_node_info: NodeInfo = NodeInfo()
-    #
-    #     ret_node_info.node_id = copy.copy(casted_node_info.node_id)
-    #     ret_node_info.address_str = copy.copy(casted_node_info.address_str)
-    #     ret_node_info.born_id = copy.copy(casted_node_info.born_id)
-    #     ret_node_info.successor_info_list = []
-    #     ret_node_info.predecessor_info = None
-    #
-    #     return ret_node_info
 
     # 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
     # ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
@@ -69,7 +53,6 @@ class NodeInfo:
         ret_node_info.address_str = copy.copy(self.address_str)
         ret_node_info.born_id = copy.copy(self.born_id)
         ret_node_info.successor_info_list = []
-        #ret_node_info.predecessor_info = self.get_partial_deepcopy_inner(self.predecessor_info)
         ret_node_info.predecessor_info = None
 
         return ret_node_info

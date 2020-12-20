@@ -1,7 +1,7 @@
 # coding:utf-8
 
 import threading
-from typing import Dict, List, Any, Optional, cast, TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
@@ -11,9 +11,9 @@ if TYPE_CHECKING:
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
-JOIN_INTERVAL_SEC = 1
-PUT_INTERVAL_SEC = 1
-GET_INTERVAL_SEC = 1
+JOIN_INTERVAL_SEC = 0.5
+PUT_INTERVAL_SEC = 0.5
+GET_INTERVAL_SEC = 0.5
 
 # 全ノードがstabilize_successorを実行することを1バッチとした際に
 # stabilize処理担当のスレッドにより呼び出されるstabilize処理を行わせる
@@ -38,7 +38,6 @@ SUCCESSOR_LIST_NORMAL_LEN = 3
 ID_MAX = ID_SPACE_RANGE - 1
 
 NODE_NUM_MAX = 1000
-# PUT_DATA_NUM = 100
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している

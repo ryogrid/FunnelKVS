@@ -4,6 +4,7 @@ import copy
 from typing import Dict, List, Any, Optional, cast
 
 from . import gval
+from .chord_util import ChordUtil
 
 class NodeInfo:
 
@@ -35,36 +36,20 @@ class NodeInfo:
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table: List[Optional[List[NodeInfo]]] = [None] * gval.ID_SPACE_BITS
 
-    def get_partial_deepcopy_inner(self, node_info: Optional['NodeInfo']) -> Optional['NodeInfo']:
-        if node_info == None:
-            return None
-
-        casted_node_info: NodeInfo = cast(NodeInfo, node_info)
-        ret_node_info: NodeInfo = NodeInfo()
-
-        ret_node_info.node_id = copy.copy(casted_node_info.node_id)
-        ret_node_info.address_str = copy.copy(casted_node_info.address_str)
-        ret_node_info.born_id = copy.copy(casted_node_info.born_id)
-        ret_node_info.successor_info_list = []
-        ret_node_info.predecessor_info = None
-
-        return ret_node_info
-
-    def get_partial_deepcopy_list_inner(self, node_info_list: List['NodeInfo']) -> List['NodeInfo']:
-        ret_list : List[NodeInfo] = []
-
-        for node_info in node_info_list:
-            set_node_info: NodeInfo = NodeInfo()
-
-            set_node_info.node_id = copy.copy(node_info.node_id)
-            set_node_info.address_str = copy.copy(node_info.address_str)
-            set_node_info.born_id = copy.copy(node_info.born_id)
-            set_node_info.successor_info_list = []
-            set_node_info.predecessor_info = None
-
-            ret_list.append(set_node_info)
-
-        return ret_list
+    # def get_partial_deepcopy_inner(self, node_info: Optional['NodeInfo']) -> Optional['NodeInfo']:
+    #     if node_info == None:
+    #         return None
+    #
+    #     casted_node_info: NodeInfo = cast(NodeInfo, node_info)
+    #     ret_node_info: NodeInfo = NodeInfo()
+    #
+    #     ret_node_info.node_id = copy.copy(casted_node_info.node_id)
+    #     ret_node_info.address_str = copy.copy(casted_node_info.address_str)
+    #     ret_node_info.born_id = copy.copy(casted_node_info.born_id)
+    #     ret_node_info.successor_info_list = []
+    #     ret_node_info.predecessor_info = None
+    #
+    #     return ret_node_info
 
     # 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
     # ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
@@ -83,7 +68,8 @@ class NodeInfo:
         ret_node_info.node_id = copy.copy(self.node_id)
         ret_node_info.address_str = copy.copy(self.address_str)
         ret_node_info.born_id = copy.copy(self.born_id)
-        ret_node_info.successor_info_list = self.get_partial_deepcopy_list_inner(self.successor_info_list)
-        ret_node_info.predecessor_info = self.get_partial_deepcopy_inner(self.predecessor_info)
+        ret_node_info.successor_info_list = []
+        #ret_node_info.predecessor_info = self.get_partial_deepcopy_inner(self.predecessor_info)
+        ret_node_info.predecessor_info = None
 
         return ret_node_info

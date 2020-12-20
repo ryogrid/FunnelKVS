@@ -11,9 +11,9 @@ if TYPE_CHECKING:
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
-JOIN_INTERVAL_SEC = 0.5
-PUT_INTERVAL_SEC = 0.5
-GET_INTERVAL_SEC = 0.5
+JOIN_INTERVAL_SEC = 1
+PUT_INTERVAL_SEC = 1
+GET_INTERVAL_SEC = 1
 
 # 全ノードがstabilize_successorを実行することを1バッチとした際に
 # stabilize処理担当のスレッドにより呼び出されるstabilize処理を行わせる

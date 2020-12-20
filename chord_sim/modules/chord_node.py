@@ -93,6 +93,8 @@ class ChordNode:
             # successorは predecessorの 情報を必ず持っていることを前提とする
             self.node_info.predecessor_info = cast(NodeInfo, successor.node_info.predecessor_info).get_partial_deepcopy()
             successor.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+            predecessor = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
+            predecessor.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
         ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -331,7 +333,7 @@ class ChordNode:
         #     # この修正を入れた時点での実装だと、secondノードがjoinした際、secondノードの predecessor が未設定の
         #     # 状態になっているはずであり、それは正常な状態でないため、自身を設定する
         #     second_node = ChordUtil.get_node_by_address(self.node_info.predecessor_info.address_str)
-        #     second_node.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+        #     second_node.node_info.predecessor_info = self.node_info.get_partial_d eepcopy()
         #     return
 
         # 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる

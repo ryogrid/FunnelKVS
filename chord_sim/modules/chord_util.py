@@ -177,6 +177,15 @@ class ChordUtil:
             raise NodeIsDownedExectiopn()
 
     @classmethod
+    def is_node_alive(cls, address : str) -> bool:
+        try:
+            ChordUtil.get_node_by_address(address)
+        except NodeIsDownedExectiopn:
+            return False
+
+        return True
+
+    @classmethod
     def get_deepcopy_of_successor_list(cls, slist : List['NodeInfo']) -> List['NodeInfo']:
         ret_list : List['NodeInfo'] = []
         for node_info in slist:

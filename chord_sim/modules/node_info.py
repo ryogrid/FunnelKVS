@@ -33,6 +33,7 @@ class NodeInfo:
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
 
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
+        # TODO: 各エントリは複数ノードの情報を保持できるようにしてあるが、単ノードで良いのかもしれない
         self.finger_table: List[Optional[List[NodeInfo]]] = [None] * gval.ID_SPACE_BITS
 
     # 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう

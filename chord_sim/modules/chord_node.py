@@ -303,7 +303,7 @@ class ChordNode:
         successor : ChordNode
         successor_tmp : Optional[ChordNode] = None
         for idx in range(len(self.node_info.successor_info_list)):
-            if ChordUtil.is_node_alive(self.node_info.successor_info_list[idx]):
+            if ChordUtil.is_node_alive(self.node_info.successor_info_list[idx].address_str):
                 successor_tmp = ChordUtil.get_node_by_address(self.node_info.successor_info_list[idx].address_str)
                 break
         if successor_tmp != None:
@@ -365,6 +365,7 @@ class ChordNode:
 
                     # successor[0]の変更は行わず、ダウンしていたノードではなく自身をpredecessorとするよう(間接的に)要請する
                     successor.check_predecessor(self.node_info.node_id, self.node_info)
+                    return successor.node_info.get_partial_deepcopy()
             else:
                 # successor[0] の変更は不要であった
                 return successor.node_info.get_partial_deepcopy()

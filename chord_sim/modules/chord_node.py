@@ -293,127 +293,102 @@ class ChordNode:
         else: # predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
             self.node_info.predecessor_info = node_info.get_partial_deepcopy()
 
-    # TODO: ノードダウンしておらず、チェーンの接続関係が正常 (predecessorの情報が適切でそのノードが生きている)
-    #       なノードで、node_info 引数 が示すノードの successor[0] となるべきノードのノード情報を返す.
-    #       通常は自ノードの情報を返すことになるが、自ノードが把握しているpredecesorを呼び出し元ノードが認識していなかった
-    #       場合(node_info引数内のsuccessor_info_listに自身が認識しているpredecessorが含まれていなかった場合) は、
-    #       例外的に、predecessorのノード情報を返す場合もある.
-    #       規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
+    #  ノードダウンしておらず、チェーンの接続関係が正常 (predecessorの情報が適切でそのノードが生きている)
+    #  なノードで、諸々の処理の結果、self の successor[0] となるべきノードであると確認されたノードを返す.
+    #　注: この呼び出しにより、self.node_info.successor_info_list[0] は更新される
+    #  規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
     def stabilize_successor_inner(self) -> NodeInfo:
-        # 自身のsuccessor[0]に、当該ノードが認識しているpredecessorを訪ねる
-        # 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない
-        # 場合があるため、successor[0]のChordNodeオブジェクトを引いて、そこから最新のnode_info
-        # の参照を得る
-
-        # # 最初のチェック先ノードは後続のsuccessorListから生きているもの
-        # # を見つけて決定する.
-        # # なお、stabilize_successor_innerの呼び出しを行うループ内での、呼び出し先ノードは
-        # # stabilize_successor_innerの返り値で得られたノードであることから、生きていることを前提とする
-        # cur_succ_node : ChordNode
-        # cur_succ_node_tmp : Optional[ChordNode] = None
-        # for idx in range(len(bf_update_list)):
-        #     if ChordUtil.is_node_alive(bf_update_list[idx]):
-        #         cur_succ_node_tmp = bf_update_list[idx]
-        #         break
-        # if cur_succ_node_tmp != None:
-        #     cur_succ_node = cast(ChordNode,cur_succ_node_tmp)
-        # else:
-        #     # 起きてはいけないケースなので例外を投げてプログラムを終了させる
-        #     raise Exception("Maybe some parameters related to fault-tolerance of Chord network are not appropriate")
-
-        try:
-            successor = ChordUtil.get_node_by_address(self.node_info.successor_info_list[0].address_str)
-        except NodeIsDownedExectiopn:
-            # TODO: 例外発生時はsuccessor[0]をチェーンから取り除いて、successor_info_listを新たに埋める必要あり
-            #       successorノードは上記の処理の完了後に再度取得する
-            #       復旧処理の中では、運悪くダウンしたノードの後ろに知らないノードがjoinしている
-            #       可能性があるため、後続の処理で行っているような知らないノードが後続にjoinしていた
-            #       場合の張り替えはそのまま行う。
-            #       知らないノードがさらに運悪く、2ノード以上いた場合は、2ノード目以降についてはそれらが
-            #       stabilize_successorを呼び出した時点でチェーンは正常な状態になるはずなので考慮は不要なはず。
-            #       ただし、それだと自身の担当範囲が変更となったことに気づけないが、要求されたキーがレプリカ
-            #       の場合は、マスタの生存確認を行った上で返すようにすればいいだけな気もする. つまり、担当範囲が
-            #       変更になったことを明に通知する必要はない、はず.
-            pass
-
-        successor_info = successor.node_info
+        # 本メソッド呼び出しでsuccessorとして扱うノードはsuccessorListの先頭から生きているもの
+        # をサーチし、発見したノードとする.
+        successor : ChordNode
+        successor_tmp : Optional[ChordNode] = None
+        for idx in range(len(self.node_info.successor_info_list)):
+            if ChordUtil.is_node_alive(self.node_info.successor_info_list[idx]):
+                successor_tmp = ChordUtil.get_node_by_address(self.node_info.successor_info_list[idx].address_str)
+                break
+        if successor_tmp != None:
+            successor = cast(ChordNode, successor_tmp)
+        else:
+            # successorListの全てのノードを当たっても、生きているノードが存在しなかった場合
+            # 起きてはいけない状況なので例外を投げてプログラムを終了させる
+            raise Exception("Maybe some parameters related to fault-tolerance of Chord network are not appropriate")
 
         ChordUtil.dprint("stabilize_successor_first_one_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
-        pred_id_of_successor = cast(NodeInfo, successor_info.predecessor_info).node_id
+        pred_id_of_successor = cast(NodeInfo, successor.node_info.predecessor_info).node_id
 
         ChordUtil.dprint("stabilize_successor_first_one_1_5," + hex(pred_id_of_successor))
 
-        # successor[0]が認識している predecessor の情報をチェックし、適切なものに変更させたり、把握していない
-        # 自身のsuccessor[0]になるべきノードの存在が判明した場合は 自身の successor[0]をそちらに張り替える
+        # successorに認識している predecessor の情報をチェックさせて、適切なものに変更させたり、把握していない
+        # 自身のsuccessor[0]になるべきノードの存在が判明した場合は 自身の successor[0]をそちらに張り替える.
         # なお、下のパターン1から3という記述は以下の資料による説明に基づく
         # https://www.slideshare.net/did2/chorddht
         if(pred_id_of_successor == self.node_info.node_id):
             # パターン1
             # 特に訂正は不要なので処理を終了する
-            return self.node_info.get_partial_deepcopy()
+            return successor.node_info.get_partial_deepcopy()
         else:
             # 以下、パターン2およびパターン3に対応する処理
 
             # 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
             # 情報を更新してもらう
-            # 事前チェックによって避けられるかもしれないが、常に実行する
-            # なお、事前にsuccessorがダウンしていないことが保証されているので、基本的にこのタイミングで
-            # 例外が発生することはない
-            successor_obj = ChordUtil.get_node_by_address(successor_info.address_str)
-            # 注: successor[0]が認識していた predecessorがダウンしていた場合、この呼び出しにより後続でcheck_predecessorを
-            #     を呼び出すまでもなく自身になっている. 従って後続でノードダウン検出した場合の check_predecessorの呼び出しは不要であるが
-            #     呼び出しは行う
-            successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
+            # 注: successorが認識していた predecessorがダウンしていた場合、下の呼び出しにより後続でcheck_predecessorを
+            #     を呼び出すまでもなく、successorのpredecessorは自身になっている. 従って後続でノードダウン検出した場合の
+            #     check_predecessorの呼び出しは不要であるが呼び出しは行うようにしておく
+            successor.check_predecessor(self.node_info.node_id, self.node_info)
 
-            distance_unknown = ChordUtil.calc_distance_between_nodes_left_mawari(successor_obj.node_info.node_id, pred_id_of_successor)
-            distance_me = ChordUtil.calc_distance_between_nodes_left_mawari(successor_obj.node_info.node_id, self.node_info.node_id)
+            distance_unknown = ChordUtil.calc_distance_between_nodes_left_mawari(successor.node_info.node_id, pred_id_of_successor)
+            distance_me = ChordUtil.calc_distance_between_nodes_left_mawari(successor.node_info.node_id, self.node_info.node_id)
             if distance_unknown < distance_me:
                 # successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
                 # successorから自身に対して前方向にたどった場合の経路中に存在する場合
                 # 自身の認識するsuccessorの情報を更新する
 
                 try:
-                    new_successor_obj = ChordUtil.get_node_by_address(cast(NodeInfo, successor_obj.node_info.predecessor_info).address_str)
-                    self.node_info.successor_info_list[0] = new_successor_obj.node_info.get_partial_deepcopy()
+                    new_successor = ChordUtil.get_node_by_address(cast(NodeInfo, successor.node_info.predecessor_info).address_str)
+                    self.node_info.successor_info_list[0] = new_successor.node_info.get_partial_deepcopy()
 
                     # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                     # ば情報を更新してもらう
-                    new_successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
+                    new_successor.check_predecessor(self.node_info.node_id, self.node_info)
 
                     ChordUtil.dprint("stabilize_successor_first_one_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
-                                     + ChordUtil.gen_debug_str_of_node(new_successor_obj.node_info))
+                                     + ChordUtil.gen_debug_str_of_node(new_successor.node_info))
+
+                    return new_successor.node_info.get_partial_deepcopy()
                 except NodeIsDownedExectiopn:
                     # 例外発生時は張り替えを中止する
                     #   - successorは変更しない
                     #   - この時点でのsuccessor[0]が認識するpredecessorを自身とする(successr[0]のcheck_predecessorを呼び出す)
 
                     # successor[0]の変更は行わず、ダウンしていたノードではなく自身をpredecessorとするよう(間接的に)要請する
-                    successor_obj.check_predecessor(self.node_info.node_id, self.node_info)
+                    successor.check_predecessor(self.node_info.node_id, self.node_info)
+            else:
+                # successor[0] の変更は不要であった
+                return successor.node_info.get_partial_deepcopy()
 
-        # TODO:  タイプチェッカーのエラー回避のためのコード
-        #        メソッドの仕様に合わせたオブジェクトを返すように修正すること!
-        return self.node_info
 
     # successorListに関するstabilize処理を行う
-    # コメントにおいては一番近いsuccessorを successor[0] と記述し、以降に位置するノードは
-    # 近い順に successor[idx] と記述する
+    # コメントにおいては、successorListの構造を意識した記述の場合、一番近いsuccessorを successor[0] と
+    # 記述し、以降に位置するノードは近い順に successor[idx] と記述する
     def stabilize_successor(self):
         ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
-        # 既存の持っているリストは退避した上で、更新対象のリストは要素数0にリセットしてしまう
-        bf_update_list : List[NodeInfo] = self.node_info.successor_info_list
-        self.node_info.successor_info_list = []
-
         # 後続のノード（successorや、successorのsuccessor ....）を辿っていき、
         # downしているノードをよけつつ、各ノードの接続関係を正常に修復していきつつ、
         # self.node_info.successor_info_list に最大で gval.SUCCESSOR_LIST_NORMAL_LEN個
-        # のノード情報を詰める
+        # のノード情報を詰める.
+        # 処理としては successor 情報を1ノード分しか保持しない設計であった際のstabilize_successorを
+        # successorList内のノードに順に呼び出して、stabilize処理を行わせると同時に、そのノードのsuccessor[0]
+        # を返答させるといったものである.
 
-        # 最初は自ノードを指定してそのsuccessorをチェックしにいくところからスタートする
+        # 最終的に self.node_info.successor_info_listに上書きするリスト
+        updated_list : List[NodeInfo] = []
+
+        # 最初は自ノードを指定してそのsuccessor[0]を取得するところからスタートする
         cur_node : ChordNode = self
 
         while len(self.node_info.successor_info_list) == gval.SUCCESSOR_LIST_NORMAL_LEN:
@@ -423,9 +398,11 @@ class ChordNode:
                 # より多くない場合 successorをたどっていった結果、自ノードにたどり着いてしまうため、その場合は規定の
                 # ノード数を満たしていないが、successor_info_list の更新処理は終了する
                 break
-            self.node_info.successor_info_list.append(cur_node_info)
+            updated_list.append(cur_node_info)
             # この呼び出しで例外は発生しない
             cur_node = ChordUtil.get_node_by_address(cur_node_info)
+
+        self.node_info.successor_info_list = updated_list
 
     # FingerTableに関するstabilize処理を行う
     # 一回の呼び出しで1エントリを更新する
@@ -439,11 +416,17 @@ class ChordNode:
         found_node = self.find_successor(update_id)
         # found_node = self.find_predecessor(update_id)
         if found_node == None:
+            # 今回のエントリの更新はあきらめる
             ChordUtil.dprint("stabilize_finger_table_2," + ChordUtil.gen_debug_str_of_node(self.node_info))
             return
 
-        # TODO: finger_tableのエントリを引数に、found_nodeの生死を確認し、適切なノードに対応するsuccessorListを取得する
-        #       メソッドを定義し、それを利用する形に置き換える必要あり
+        # TODO: finger_tableのエントリを引数に、found_nodeの生死を確認し、found_nodeもしくは適切なノードから
+        #       successorListを取得するメソッドを定義し、それを利用する形に置き換える必要あり
+        # TODO: 今の設計だと、finger_tableの各エントリに複数ノードの情報を保持している意味がないのでは？
+        #       そもそも、インデックス0以外を readで参照するコードが存在しないし。
+        #       リトライさせたところで、途中で経由するノードのfinger_tableの情報にすぐにノードダウンの事実
+        #       が反映されるかも怪しいし、finger_tableの各エントリを拡張した点を活用して、リトライを可能な限り
+        #       避けるような設計にするのが良いのでは？
         self.node_info.finger_table[idx] = ChordUtil.get_deepcopy_of_successor_list([found_node.node_info])
 
         ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","

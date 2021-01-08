@@ -8,7 +8,7 @@ from typing import List, cast
 import modules.gval as gval
 from modules.node_info import NodeInfo
 from modules.chord_util import ChordUtil, KeyValue
-from modules.chord_node import ChordNode
+from modules.chord_node import ChordNode, NodeIsDownedExectiopn
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す
@@ -39,8 +39,14 @@ def check_nodes_connectivity():
         # 各ノードはsuccessorの情報を保持しているが、successorのsuccessorは保持しないようになって
         # いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         # 得ることに対応する形とする
-        # TODO: 例外発生時はreturnしてしまって良い
-        cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
+
+        try:
+            cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
+        except NodeIsDownedExectiopn:
+            print("")
+            ChordUtil.dprint("check_nodes_connectivity__succ, NODE_IS_DOWNED")
+            return
+
         if cur_node_info == None:
             print("", flush=True, end="")
             raise Exception("no successor having node was detected!")
@@ -66,8 +72,12 @@ def check_nodes_connectivity():
     print(",", flush=True, end="")
     while counter < all_node_num:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
-        # TODO: 例外発生時はreturnしてしまって良い
-        cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
+        try:
+            cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
+        except NodeIsDownedExectiopn:
+            print("")
+            ChordUtil.dprint("check_nodes_connectivity__pred, NODE_IS_DOWNED")
+            return
 
         # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
         # 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が

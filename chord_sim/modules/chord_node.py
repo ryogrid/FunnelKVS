@@ -65,8 +65,7 @@ class ChordNode:
             self.stored_data[str(key_value.data_id)] = key_value.value
 
         # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        # self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
-        self.node_info.finger_table[0] = ChordUtil.get_deepcopy_of_successor_list(self.node_info.successor_info_list)
+        self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
 
         if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
             # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
@@ -76,7 +75,7 @@ class ChordNode:
             tyukai_node.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
             tyukai_node.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
             # fingerテーブルの0番エントリも強制的に設定する
-            tyukai_node.node_info.finger_table[0] = [self.node_info.get_partial_deepcopy()]
+            tyukai_node.node_info.finger_table[0] = self.node_info.get_partial_deepcopy()
         else:
             # 強制的に自身を既存のチェーンに挿入する
             # successorは predecessorの 情報を必ず持っていることを前提とする
@@ -451,7 +450,7 @@ class ChordNode:
         #       リトライさせたところで、途中で経由するノードのfinger_tableの情報にすぐにノードダウンの事実
         #       が反映されるかも怪しいし、finger_tableの各エントリを拡張した点を活用して、リトライを可能な限り
         #       避けるような設計にするのが良いのでは？
-        self.node_info.finger_table[idx] = ChordUtil.get_deepcopy_of_successor_list([found_node.node_info])
+        self.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
 
         ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(found_node.node_info))
@@ -529,16 +528,16 @@ class ChordNode:
         # finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
         # ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         # 順に見ていくようにする
-        for slist in reversed(self.node_info.finger_table):
+        for node_info in reversed(self.node_info.finger_table):
             # 埋まっていないエントリも存在し得る
-            if slist == None:
+            if node_info == None:
                 ChordUtil.dprint("closest_preceding_finger_0," + ChordUtil.gen_debug_str_of_node(self.node_info))
                 continue
 
-            casted_slist = cast(List[NodeInfo], slist)
+            casted_node_info = cast(NodeInfo, node_info)
 
             ChordUtil.dprint("closest_preceding_finger_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                  + ChordUtil.gen_debug_str_of_node(casted_slist[0]))
+                  + ChordUtil.gen_debug_str_of_node(casted_node_info))
 
             # テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
             # それを返す
@@ -547,11 +546,11 @@ class ChordNode:
             #  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
             #  見つけるという処理になっていると思われる）
             # #if self.node_info.node_id < entry.node_id and entry.node_id <= id:
-            if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, casted_slist[0].node_id):
+            if ChordUtil.exist_between_two_nodes_right_mawari(self.node_info.node_id, id, casted_node_info.node_id):
                 ChordUtil.dprint("closest_preceding_finger_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(casted_slist[0]))
+                                 + ChordUtil.gen_debug_str_of_node(casted_node_info))
                 # TODO: 例外発生時はcontinueしてしまってよい
-                return ChordUtil.get_node_by_address(casted_slist[0].address_str)
+                return ChordUtil.get_node_by_address(casted_node_info.address_str)
 
         ChordUtil.dprint("closest_preceding_finger_3")
 

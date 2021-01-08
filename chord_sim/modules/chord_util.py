@@ -185,13 +185,13 @@ class ChordUtil:
 
         return True
 
-    @classmethod
-    def get_deepcopy_of_successor_list(cls, slist : List['NodeInfo']) -> List['NodeInfo']:
-        ret_list : List['NodeInfo'] = []
-        for node_info in slist:
-            ret_list.append(node_info.get_partial_deepcopy())
-
-        return slist
+    # @classmethod
+    # def get_deepcopy_of_successor_list(cls, slist : List['NodeInfo']) -> List['NodeInfo']:
+    #     ret_list : List['NodeInfo'] = []
+    #     for node_info in slist:
+    #         ret_list.append(node_info.get_partial_deepcopy())
+    #
+    #     return slist
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:

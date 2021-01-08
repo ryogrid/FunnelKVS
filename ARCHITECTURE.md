@@ -12,6 +12,7 @@
     - [分散システムにおけるScalableな名前付けアルゴリズム「Chord Protocol」を実装してみた - Qiita](https://qiita.com/taisho6339/items/7f849b65e2deab6759a1)
     - [ChordアルゴリズムによるDHT入門 - slideshare](https://www.slideshare.net/did2/chorddht)
     - [VIOPS04: DHTの基礎知識- slideshare](https://www.slideshare.net/viopsjp/dht20091211)
+    - [Chord: A Scalable Peer- to-peer Lookup Protocol for Internet Applications - slideshare](https://www.slideshare.net/GertThijs/chord-presentation)
   - Chordネットワークの利用方法
     - Chordネットワーク
       - ChordネットワークはあくまでデータのIDから「担当ノード」のアドレスを得るための一種の名前解決の仕組みとして利用する

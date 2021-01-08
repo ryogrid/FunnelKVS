@@ -422,7 +422,7 @@ class ChordNode:
 
             updated_list.append(cur_node_info)
             # この呼び出しで例外は発生しない
-            cur_node = ChordUtil.get_node_by_address(cur_node_info)
+            cur_node = ChordUtil.get_node_by_address(cur_node_info.address_str)
 
         self.node_info.successor_info_list = updated_list
         ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","

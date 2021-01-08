@@ -400,7 +400,7 @@ class ChordNode:
         # 最初は自ノードを指定してそのsuccessor[0]を取得するところからスタートする
         cur_node : ChordNode = self
 
-        while len(self.node_info.successor_info_list) == gval.SUCCESSOR_LIST_NORMAL_LEN:
+        while len(updated_list) < gval.SUCCESSOR_LIST_NORMAL_LEN:
             cur_node_info : NodeInfo = cur_node.stabilize_successor_inner()
             ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(cur_node_info))
@@ -410,13 +410,21 @@ class ChordNode:
                 # ノード数を満たしていないが、successor_info_list の更新処理は終了する
                 ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                if len(updated_list) == 0:
+                    # first node の場合の考慮
+                    # second node が 未joinの場合、successsor[0] がリストに存在しない状態となってしまうため
+                    # その場合のみ、update_list で self.node_info.successor_info_listを上書きせずにreturnする
+                    ChordUtil.dprint("stabilize_successor_2_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                    return
+
                 break
+
             updated_list.append(cur_node_info)
             # この呼び出しで例外は発生しない
             cur_node = ChordUtil.get_node_by_address(cur_node_info)
 
         self.node_info.successor_info_list = updated_list
-
         ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                      + str(self.node_info.successor_info_list))
 
@@ -473,7 +481,7 @@ class ChordNode:
 
         n_dash = self
         # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
-        while not ChordUtil.exist_between_two_nodes_right_mawari(cast(NodeInfo,n_dash.node_info).node_id, cast(NodeInfo, n_dash.node_info.successor_info_list[0]).node_id, id):
+        while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info_list[0].node_id, id):
             ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
             n_dash_found = n_dash.closest_preceding_finger(id)

@@ -4,17 +4,18 @@ from typing import Dict, List, Optional, cast
 
 import modules.gval as gval
 from .node_info import NodeInfo
-from .chord_util import ChordUtil, KeyValue, NodeIsDownedExectiopn
+from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, FindNodeFailedException
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
+    OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL"
 
     # global_get内で探索した担当ノードにgetをかけて、データを持っていないと
     # レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
     GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES = 5
 
-    # 取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
-    # なお、このシミュレータの実装上、このフィールドは一つのデータだけ保持できれば良い
+    # global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
+    # なお、本シミュレータの実装上、このフィールドは一つのデータだけ保持できれば良い
     need_getting_retry_data_id : int = -1
     need_getting_retry_node : Optional['ChordNode'] = None
 
@@ -30,6 +31,9 @@ class ChordNode:
 
         gval.already_born_node_num += 1
         self.node_info.born_id = gval.already_born_node_num
+
+        # シミュレーション時のみ必要なフィールド（実システムでは不要）
+        self.is_alive = True
 
         if first_node:
             # 最初の1ノードの場合
@@ -55,8 +59,16 @@ class ChordNode:
         #       想定しない
         tyukai_node = ChordUtil.get_node_by_address(node_address)
         # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
-        # TODO: 例外発生時にリトライする
-        successor = tyukai_node.search_node(self.node_info.node_id)
+
+        try:
+            successor = tyukai_node.find_successor(self.node_info.node_id)
+        except FindNodeFailedException:
+            # TODO: 例外発生時にリトライする
+            # 自ノードの情報、仲介ノードの情報
+            ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
+            return
+
         self.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
 
         # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
@@ -88,7 +100,7 @@ class ChordNode:
             try:
                 predecessor = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
                 predecessor.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
-            except NodeIsDownedExectiopn:
+            except NodeIsDownedExceptiopn:
                 pass
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
@@ -98,7 +110,7 @@ class ChordNode:
 
     def global_put(self, data_id : int, value_str : str):
         # TODO: 例外発生時にリトライする
-        target_node = self.search_node(data_id)
+        target_node = self.find_successor(data_id)
         target_node.put(data_id, value_str)
         ChordUtil.dprint("global_put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
@@ -115,8 +127,20 @@ class ChordNode:
         ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
-        # TODO: 例外発生時にリトライする
-        target_node = self.search_node(data_id)
+        try:
+            target_node = self.find_successor(data_id)
+        except FindNodeFailedException:
+            # 適切なノードを得ることができなかった
+
+            # リトライに必要な情報をクラス変数に設定しておく
+            ChordNode.need_getting_retry_data_id = data_id
+            ChordNode.need_getting_retry_node = self
+
+            ChordUtil.dprint("global_get_3,FIND_NODE_FAILED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(data_id))
+            # 処理を終える
+            return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
+
         got_value_str = target_node.get(data_id)
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
@@ -131,7 +155,7 @@ class ChordNode:
                     break
                 try:
                     cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
-                except NodeIsDownedExectiopn:
+                except NodeIsDownedExceptiopn:
                     ChordUtil.dprint("global_get_1,NODE_IS_DOWNED")
                     break
 
@@ -163,7 +187,7 @@ class ChordNode:
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
                 try:
                     cur_successor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_successor.node_info.successor_info_list[0]).address_str)
-                except NodeIsDownedExectiopn:
+                except NodeIsDownedExceptiopn:
                     ChordUtil.dprint("global_get_2,NODE_IS_DOWNED")
                     break
 
@@ -221,25 +245,25 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
         return ret_value_str
 
-    # some_id をChordネットワーク上で担当するノードを返す
-    # Attention: ノード探索を行ったが見つかったノードがダウンしていたか何かでアクセス不能
-    #            であった場合は NodeIsDownedException を raise する
-    def search_node(self, some_id : int) -> 'ChordNode':
-        ChordUtil.dprint("search_node_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_data(some_id))
-
-        found_node = self.find_successor(some_id)
-        if found_node == None:
-            ChordUtil.dprint("search_node_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_data(some_id))
-            raise NodeIsDownedExectiopn()
-
-        found_node = cast(ChordNode, found_node)
-        ChordUtil.dprint("search_node_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(found_node.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_data(some_id))
-
-        return found_node
+    # # some_id をChordネットワーク上で担当するノードを返す
+    # # Attention: ノード探索を行ったが見つかったノードがダウンしていたか何かでアクセス不能
+    # #            であった場合は NodeIsDownedException を raise する
+    # def search_node(self, some_id : int) -> 'ChordNode':
+    #     ChordUtil.dprint("search_node_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+    #                      + ChordUtil.gen_debug_str_of_data(some_id))
+    #
+    #     found_node = self.find_successor(some_id)
+    #     if found_node == None:
+    #         ChordUtil.dprint("search_node_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+    #                          + ChordUtil.gen_debug_str_of_data(some_id))
+    #         raise NodeIsDownedExceptiopn()
+    #
+    #     found_node = cast(ChordNode, found_node)
+    #     ChordUtil.dprint("search_node_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+    #                      + ChordUtil.gen_debug_str_of_node(found_node.node_info) + ","
+    #                      + ChordUtil.gen_debug_str_of_data(some_id))
+    #
+    #     return found_node
 
     # TODO: Deleteの実装
     # def global_delete(self, key_str):
@@ -375,7 +399,7 @@ class ChordNode:
                     ChordUtil.dprint("stabilize_successor_inner_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
                                      + ChordUtil.gen_debug_str_of_node(new_successor.node_info))
-                except NodeIsDownedExectiopn:
+                except NodeIsDownedExceptiopn:
                     # 例外発生時は張り替えを中止する
                     #   - successorは変更しない
                     #   - この時点でのsuccessor[0]が認識するpredecessorを自身とする(successr[0]のcheck_predecessorを呼び出す)
@@ -447,11 +471,14 @@ class ChordNode:
         # FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
         # 担当するノードに最も近いノードが格納される
         update_id = ChordUtil.overflow_check_and_conv(self.node_info.node_id + 2**idx)
-        found_node = self.find_successor(update_id)
-        # found_node = self.find_predecessor(update_id)
-        if found_node == None:
-            # 今回のエントリの更新はあきらめる
-            ChordUtil.dprint("stabilize_finger_table_2," + ChordUtil.gen_debug_str_of_node(self.node_info))
+        try:
+            found_node = self.find_successor(update_id)
+        except FindNodeFailedException:
+            # 適切な担当ノードを得ることができなかった
+            # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
+            # ことであるので、更新対象のエントリには None を設定しておく
+            self.node_info.finger_table[idx] = None
+            ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.node_info))
             return
 
         self.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
@@ -460,7 +487,8 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_node(found_node.node_info))
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
-    def find_successor(self, id : int) -> Optional['ChordNode']:
+    # Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
+    def find_successor(self, id : int) -> 'ChordNode':
         ChordUtil.dprint("find_successor_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_data(id))
 
@@ -468,7 +496,7 @@ class ChordNode:
         if n_dash == None:
             ChordUtil.dprint("find_successor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(id))
-            return None
+            raise FindNodeFailedException()
 
         ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + ","
@@ -476,9 +504,13 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_data(id))
 
         try:
+            # 取得しようとしたノードがダウンしていた場合 NodeIsDownedException が raise される
             return ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
-        except NodeIsDownedExectiopn:
-            return None
+        except NodeIsDownedExceptiopn:
+            ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(id))
+            raise FindNodeFailedException()
+
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
     def find_predecessor(self, id: int) -> 'ChordNode':
@@ -557,7 +589,7 @@ class ChordNode:
                                  + ChordUtil.gen_debug_str_of_node(casted_node_info))
                 try:
                     return ChordUtil.get_node_by_address(casted_node_info.address_str)
-                except NodeIsDownedExectiopn:
+                except NodeIsDownedExceptiopn:
                     continue
 
         ChordUtil.dprint("closest_preceding_finger_3")

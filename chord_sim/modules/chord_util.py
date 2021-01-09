@@ -167,31 +167,20 @@ class ChordUtil:
         return hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)
 
     # Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
-    #            したことを意味するため、対応する NodeIsDownedException 例外を raise する
+    #            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
     @classmethod
     def get_node_by_address(cls, address : str) -> 'ChordNode':
-        try:
-            ret_val = gval.all_node_dict[address]
-            return ret_val
-        except KeyError:
-            raise NodeIsDownedExectiopn()
+        ret_val = gval.all_node_dict[address]
+        if ret_val.is_alive == False:
+            ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
+            raise NodeIsDownedExceptiopn()
+
+        return ret_val
 
     @classmethod
     def is_node_alive(cls, address : str) -> bool:
-        try:
-            ChordUtil.get_node_by_address(address)
-        except NodeIsDownedExectiopn:
-            return False
-
-        return True
-
-    # @classmethod
-    # def get_deepcopy_of_successor_list(cls, slist : List['NodeInfo']) -> List['NodeInfo']:
-    #     ret_list : List['NodeInfo'] = []
-    #     for node_info in slist:
-    #         ret_list.append(node_info.get_partial_deepcopy())
-    #
-    #     return slist
+        node_obj = ChordUtil.get_node_by_address(address)
+        return node_obj.is_alive
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
@@ -204,8 +193,13 @@ class KeyValue:
         else:
             self.data_id : int = ChordUtil.hash_str_to_int(key)
 
-class NodeIsDownedExectiopn(Exception):
+class NodeIsDownedExceptiopn(Exception):
 
     def __init__(self):
-        super(NodeIsDownedExectiopn, self).__init__("Accessed Node seems to be downed.")
+        super(NodeIsDownedExceptiopn, self).__init__("Accessed Node seems to be downed.")
+
+class FindNodeFailedException(Exception):
+
+    def __init__(self):
+        super(FindNodeFailedException, self).__init__("Node finding is failed.")
 

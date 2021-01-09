@@ -8,7 +8,7 @@ from typing import List, cast
 import modules.gval as gval
 from modules.node_info import NodeInfo
 from modules.chord_util import ChordUtil, KeyValue
-from modules.chord_node import ChordNode, NodeIsDownedExectiopn
+from modules.chord_node import ChordNode, NodeIsDownedExceptiopn
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # ChordNodeオブジェクトを返す
@@ -42,7 +42,7 @@ def check_nodes_connectivity():
 
         try:
             cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
-        except NodeIsDownedExectiopn:
+        except NodeIsDownedExceptiopn:
             print("")
             ChordUtil.dprint("check_nodes_connectivity__succ, NODE_IS_DOWNED")
             return
@@ -74,7 +74,7 @@ def check_nodes_connectivity():
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
         try:
             cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
-        except NodeIsDownedExectiopn:
+        except NodeIsDownedExceptiopn:
             print("")
             ChordUtil.dprint("check_nodes_connectivity__pred, NODE_IS_DOWNED")
             return
@@ -239,6 +239,21 @@ def do_get_on_random_node():
     # ロックの解放
     gval.lock_of_all_data.release()
 
+# グローバル変数であるall_node_dictからランダムにノードを選択し
+# ダウンさせる（is_aliveフィールドをFalseに設定する）
+def do_kill_a_random_node():
+    # ロックの取得
+    gval.lock_of_all_data.acquire()
+
+    node = get_a_random_node()
+    node.is_alive = False
+    ChordUtil.dprint(
+        "do_kill_a_random_node,"
+        + ChordUtil.gen_debug_str_of_node(node.node_info))
+
+    # ロックの解放
+    gval.lock_of_all_data.release()
+
 def node_join_th():
     while gval.already_born_node_num < gval.NODE_NUM_MAX:
         add_new_node()
@@ -264,6 +279,14 @@ def data_get_th():
         # sleepを挟む
         time.sleep(gval.GET_INTERVAL_SEC)
 
+def node_kill_th():
+    while True:
+        # TODO: リトライされなければならない処理が存在した場合はkill処理
+        #       を行わないようにする（仲介ノードや、前回 global_xxxx を発行したノードなどリトライ処理
+        #       に関わるノードがkillされると面倒なので）
+        do_kill_a_random_node()
+        time.sleep(gval.NODE_KILL_INTERVAL_SEC)
+
 def main():
     # 再現性のため乱数シードを固定
     # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで
@@ -286,6 +309,9 @@ def main():
 
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     data_get_th_handle.start()
+
+    # node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
+    # node_kill_th_handle.start()
 
     while True:
         time.sleep(1)

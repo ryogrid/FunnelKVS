@@ -15,9 +15,20 @@ class ChordNode:
     GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES = 5
 
     # global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
-    # なお、本シミュレータの実装上、このフィールドは一つのデータだけ保持できれば良い
+    # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
     need_getting_retry_data_id : int = -1
     need_getting_retry_node : Optional['ChordNode'] = None
+
+    # global_put が find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
+    # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+    need_put_retry_data_id : int = -1
+    need_put_retry_data_value : str = ""
+    need_put_retry_node : Optional['ChordNode'] = None
+
+    # join が find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のjoin処理の際にリトライさせる
+    # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+    need_join_retry_node : Optional['ChordNode'] = None
+    need_join_retry_tyukai_node: Optional['ChordNode'] = None
 
     # join処理もコンストラクタで行ってしまう
     def __init__(self, node_address: str, first_node=False):
@@ -108,13 +119,27 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
-    def global_put(self, data_id : int, value_str : str):
-        # TODO: 例外発生時にリトライする
-        target_node = self.find_successor(data_id)
+    def global_put(self, data_id : int, value_str : str) -> bool:
+        try:
+            target_node = self.find_successor(data_id)
+            # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
+            # 初期化しておく
+            ChordNode.need_put_retry_data_id = -1
+        except FindNodeFailedException:
+            # 適切なノードを得られなかったため次回呼び出し時にリトライする形で呼び出しを
+            # うけられるように情報を設定しておく
+            ChordNode.need_put_retry_data_id = data_id
+            ChordNode.need_put_retry_node = self
+            ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(data_id))
+            return False
+
         target_node.put(data_id, value_str)
         ChordUtil.dprint("global_put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
+
+        return True
 
     def put(self, data_id : int, value_str : str):
         key_id_str = str(data_id)

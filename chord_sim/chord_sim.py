@@ -111,6 +111,8 @@ def add_new_node():
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
+    # TODO: 前回の呼び出しが失敗していた場合はリトライを行うよう実装する
+
     tyukai_node = get_a_random_node()
     new_node = ChordNode(tyukai_node.node_info.address_str)
     gval.all_node_dict[new_node.node_info.address_str] = new_node
@@ -197,19 +199,29 @@ def do_stabilize_once_at_all_node():
             gval.lock_of_all_data.release()
 
 
-
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
 # アドレスをよろしく解決し、見つかったノードにputの操作を依頼する
 def do_put_on_random_node():
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
-    unixtime_str = str(time.time())
-    # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyとvalueに用いる
-    kv_data = KeyValue(unixtime_str, unixtime_str)
-    node = get_a_random_node()
-    node.global_put(kv_data.data_id, kv_data.value)
-    gval.all_data_list.append(kv_data)
+    if ChordNode.need_put_retry_data_id != -1:
+        # 前回の呼び出し時に global_putが失敗しており、リトライが必要
+        
+        # key と value の値は共通としているため、記録してあった value の値を key としても用いる
+        kv_data = KeyValue(ChordNode.need_put_retry_data_value, ChordNode.need_put_retry_data_value)
+        # data_id は乱数で求めるというインチキをしているため、記録してあったもので上書きする
+        kv_data.data_id = ChordNode.need_put_retry_data_id
+        node = ChordNode.need_put_retry_node
+    else:
+        unixtime_str = str(time.time())
+        # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyとvalueに用いる
+        kv_data = KeyValue(unixtime_str, unixtime_str)
+        node = get_a_random_node()
+
+    # 成功した場合はTrueが返るのでその場合だけ all_node_dictに追加する
+    if node.global_put(kv_data.data_id, kv_data.value):
+        gval.all_data_list.append(kv_data)
 
     # ロックの解放
     gval.lock_of_all_data.release()
@@ -281,10 +293,14 @@ def data_get_th():
 
 def node_kill_th():
     while True:
-        # TODO: リトライされなければならない処理が存在した場合はkill処理
-        #       を行わないようにする（仲介ノードや、前回 global_xxxx を発行したノードなどリトライ処理
-        #       に関わるノードがkillされると面倒なので）
-        do_kill_a_random_node()
+        # ネットワークに存在するノードが5ノードを越えたらノードをダウンさせる処理を有効にする
+        # しかし、リトライされなければならない処理が存在した場合は抑制する
+        if len(gval.all_node_dict) > 5 \
+                and (ChordNode.need_getting_retry_data_id == -1
+                     and ChordNode.need_put_retry_data_id == -1
+                     and ChordNode.need_join_retry_node == None) :
+            do_kill_a_random_node()
+
         time.sleep(gval.NODE_KILL_INTERVAL_SEC)
 
 def main():

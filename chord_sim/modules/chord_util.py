@@ -196,10 +196,10 @@ class KeyValue:
 class NodeIsDownedExceptiopn(Exception):
 
     def __init__(self):
-        super(NodeIsDownedExceptiopn, self).__init__("Accessed Node seems to be downed.")
+        super(NodeIsDownedExceptiopn, self).__init__("Accessed node seems to be downed.")
 
-class FindNodeFailedException(Exception):
+class AppropriateNodeNotFoundException(Exception):
 
     def __init__(self):
-        super(FindNodeFailedException, self).__init__("Node finding is failed.")
+        super(AppropriateNodeNotFoundException, self).__init__("Appropriate node is not found.")
 

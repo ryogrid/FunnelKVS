@@ -207,7 +207,7 @@ def do_put_on_random_node():
 
     if ChordNode.need_put_retry_data_id != -1:
         # 前回の呼び出し時に global_putが失敗しており、リトライが必要
-        
+
         # key と value の値は共通としているため、記録してあった value の値を key としても用いる
         kv_data = KeyValue(ChordNode.need_put_retry_data_value, ChordNode.need_put_retry_data_value)
         # data_id は乱数で求めるというインチキをしているため、記録してあったもので上書きする

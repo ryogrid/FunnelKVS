@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, cast
 
 import modules.gval as gval
 from .node_info import NodeInfo
-from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, FindNodeFailedException
+from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
@@ -66,17 +66,25 @@ class ChordNode:
 
         # TODO: join時にsuccessorListを埋めておくようにする. また、レプリケーションデータの受け取りも行う
 
-        # TODO: 実装上例外は発生しない. また実システムでもダウンしているノードの情報が与えられることは
-        #       想定しない
+        # 実装上例外は発生しない.
+        # また実システムでもダウンしているノードの情報が与えられることは想定しない
         tyukai_node = ChordUtil.get_node_by_address(node_address)
-        # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
+        ChordUtil.dprint("join_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
 
         try:
+            # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
             successor = tyukai_node.find_successor(self.node_info.node_id)
-        except FindNodeFailedException:
-            # TODO: 例外発生時にリトライする
+            # リトライは不要なので、本メソッドの呼び出し元がリトライ処理を行うかの判断に用いる
+            # フィールドをリセットしておく
+            ChordNode.need_join_retry_node = None
+        except AppropriateNodeNotFoundException:
+            # リトライに必要な情報を記録しておく
+            ChordNode.need_join_retry_node = self
+            ChordNode.need_join_retry_tyukai_node = tyukai_node
+
             # 自ノードの情報、仲介ノードの情報
-            ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+            ChordUtil.dprint("join_2,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
             return
 
@@ -99,6 +107,9 @@ class ChordNode:
             tyukai_node.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
             # fingerテーブルの0番エントリも強制的に設定する
             tyukai_node.node_info.finger_table[0] = self.node_info.get_partial_deepcopy()
+            ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
         else:
             # 強制的に自身を既存のチェーンに挿入する
             # successorは predecessorの 情報を必ず持っていることを前提とする
@@ -111,7 +122,14 @@ class ChordNode:
             try:
                 predecessor = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
                 predecessor.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
+                ChordUtil.dprint("join_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
+                                 + ChordUtil.gen_debug_str_of_node(predecessor.node_info))
             except NodeIsDownedExceptiopn:
+                ChordUtil.dprint("join_5,FIND_NODE_FAILED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
                 pass
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
@@ -125,7 +143,7 @@ class ChordNode:
             # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
             # 初期化しておく
             ChordNode.need_put_retry_data_id = -1
-        except FindNodeFailedException:
+        except AppropriateNodeNotFoundException:
             # 適切なノードを得られなかったため次回呼び出し時にリトライする形で呼び出しを
             # うけられるように情報を設定しておく
             ChordNode.need_put_retry_data_id = data_id
@@ -154,7 +172,7 @@ class ChordNode:
 
         try:
             target_node = self.find_successor(data_id)
-        except FindNodeFailedException:
+        except AppropriateNodeNotFoundException:
             # 適切なノードを得ることができなかった
 
             # リトライに必要な情報をクラス変数に設定しておく
@@ -498,7 +516,7 @@ class ChordNode:
         update_id = ChordUtil.overflow_check_and_conv(self.node_info.node_id + 2**idx)
         try:
             found_node = self.find_successor(update_id)
-        except FindNodeFailedException:
+        except AppropriateNodeNotFoundException:
             # 適切な担当ノードを得ることができなかった
             # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
             # ことであるので、更新対象のエントリには None を設定しておく
@@ -521,7 +539,7 @@ class ChordNode:
         if n_dash == None:
             ChordUtil.dprint("find_successor_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(id))
-            raise FindNodeFailedException()
+            raise AppropriateNodeNotFoundException()
 
         ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + ","
@@ -534,7 +552,7 @@ class ChordNode:
         except NodeIsDownedExceptiopn:
             ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(id))
-            raise FindNodeFailedException()
+            raise AppropriateNodeNotFoundException()
 
 
     # id(int)　の前で一番近い位置に存在するノードを探索する

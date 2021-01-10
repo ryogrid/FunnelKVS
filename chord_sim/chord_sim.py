@@ -116,6 +116,13 @@ def add_new_node():
         tyukai_node = ChordNode.need_join_retry_tyukai_node
         new_node = ChordNode.need_join_retry_node
         new_node.join(tyukai_node.node_info.address_str)
+        if ChordNode.need_join_retry_node == None:
+            # リトライ情報が再設定されていないためリトライに成功したと判断
+            ChordUtil.dprint(
+                "add_new_node_1,retry of join is succeeded," + ChordUtil.gen_debug_str_of_node(new_node.node_info))
+        else:
+            ChordUtil.dprint(
+                "add_new_node_2,retry of join is failed," + ChordUtil.gen_debug_str_of_node(new_node.node_info))
     else:
         tyukai_node = get_a_random_node()
         new_node = ChordNode(tyukai_node.node_info.address_str)
@@ -212,8 +219,12 @@ def do_put_on_random_node():
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
+    is_retry = False
+
     if ChordNode.need_put_retry_data_id != -1:
         # 前回の呼び出し時に global_putが失敗しており、リトライが必要
+
+        is_retry = True
 
         # key と value の値は共通としているため、記録してあった value の値を key としても用いる
         kv_data = KeyValue(ChordNode.need_put_retry_data_value, ChordNode.need_put_retry_data_value)
@@ -230,6 +241,17 @@ def do_put_on_random_node():
     if node.global_put(kv_data.data_id, kv_data.value):
         gval.all_data_list.append(kv_data)
 
+    if is_retry:
+        if ChordNode.need_put_retry_data_id == -1:
+            # リトライ情報が再設定されていないためリトライに成功したと判断
+            ChordUtil.dprint(
+                "do_put_on_random_node_1,retry of global_put is succeeded," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(kv_data.data_id))
+        else:
+            ChordUtil.dprint(
+                "do_put_on_random_node_2,retry of global_put is failed," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(kv_data.data_id))
+
     # ロックの解放
     gval.lock_of_all_data.release()
 
@@ -244,8 +266,11 @@ def do_get_on_random_node():
         gval.lock_of_all_data.release()
         return
 
+    is_retry = False
+
     if ChordNode.need_getting_retry_data_id != -1:
         # doing retry
+        is_retry = True
         target_data_id = ChordNode.need_getting_retry_data_id
         node = cast('ChordNode', ChordNode.need_getting_retry_node)
     else:
@@ -254,6 +279,19 @@ def do_get_on_random_node():
         node = get_a_random_node()
 
     node.global_get(target_data_id)
+
+    if is_retry:
+        if ChordNode.need_get_retry_data_id == -1:
+            # リトライ情報が再設定されていないためリトライに成功したと判断
+            ChordUtil.dprint(
+                "do_get_on_random_node_1,retry of global_get is succeeded," + ChordUtil.gen_debug_str_of_node(
+                    node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(target_data_id))
+        else:
+            ChordUtil.dprint(
+                "do_get_on_random_node_2,retry of global_get is failed," + ChordUtil.gen_debug_str_of_node(
+                    node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(target_data_id))
 
     # ロックの解放
     gval.lock_of_all_data.release()

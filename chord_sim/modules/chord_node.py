@@ -257,13 +257,13 @@ class ChordNode:
         if ChordNode.need_getting_retry_data_id != -1:
             if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
                 # リトライに成功した
-                ChordUtil.dprint("global_get_2_5,retry success")
+                ChordUtil.dprint("global_get_2_5,retry of global_get is succeeded")
                 # リトライは不要なためクリア
                 ChordNode.need_getting_retry_data_id = -1
                 ChordNode.need_getting_retry_node = None
             else:
                 # リトライに失敗した（何もしない）
-                ChordUtil.dprint("global_get_2_5,retry failed")
+                ChordUtil.dprint("global_get_2_5,retry of global_get is failed")
                 pass
 
         # 取得に失敗した場合はリトライに必要な情報をクラス変数に設定しておく
@@ -287,26 +287,6 @@ class ChordNode:
         ChordUtil.dprint("get," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
         return ret_value_str
-
-    # # some_id をChordネットワーク上で担当するノードを返す
-    # # Attention: ノード探索を行ったが見つかったノードがダウンしていたか何かでアクセス不能
-    # #            であった場合は NodeIsDownedException を raise する
-    # def search_node(self, some_id : int) -> 'ChordNode':
-    #     ChordUtil.dprint("search_node_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-    #                      + ChordUtil.gen_debug_str_of_data(some_id))
-    #
-    #     found_node = self.find_successor(some_id)
-    #     if found_node == None:
-    #         ChordUtil.dprint("search_node_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-    #                          + ChordUtil.gen_debug_str_of_data(some_id))
-    #         raise NodeIsDownedExceptiopn()
-    #
-    #     found_node = cast(ChordNode, found_node)
-    #     ChordUtil.dprint("search_node_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-    #                      + ChordUtil.gen_debug_str_of_node(found_node.node_info) + ","
-    #                      + ChordUtil.gen_debug_str_of_data(some_id))
-    #
-    #     return found_node
 
     # TODO: Deleteの実装
     # def global_delete(self, key_str):

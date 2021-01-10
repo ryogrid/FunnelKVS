@@ -111,11 +111,18 @@ def add_new_node():
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
-    # TODO: 前回の呼び出しが失敗していた場合はリトライを行うよう実装する
+    if ChordNode.need_join_retry_node != None:
+        # 前回の呼び出しが失敗していた場合はリトライを行う
+        tyukai_node = ChordNode.need_join_retry_tyukai_node
+        new_node = ChordNode.need_join_retry_node
+        new_node.join(tyukai_node.node_info.address_str)
+    else:
+        tyukai_node = get_a_random_node()
+        new_node = ChordNode(tyukai_node.node_info.address_str)
 
-    tyukai_node = get_a_random_node()
-    new_node = ChordNode(tyukai_node.node_info.address_str)
-    gval.all_node_dict[new_node.node_info.address_str] = new_node
+    if ChordNode.need_join_retry_node == None:
+        # join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
+        gval.all_node_dict[new_node.node_info.address_str] = new_node
 
     # ロックの解放
     gval.lock_of_all_data.release()

@@ -177,6 +177,7 @@ class ChordUtil:
 
         return ret_val
 
+    # Attention: TargetNodeDoesNotExistException を raiseする場合がある
     @classmethod
     def is_node_alive(cls, address : str) -> bool:
         try:

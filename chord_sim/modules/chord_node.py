@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, cast
 
 import modules.gval as gval
 from .node_info import NodeInfo
-from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException
+from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, TargetNodeIsNotExistException
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
@@ -64,8 +64,6 @@ class ChordNode:
     def join(self, node_address : str):
         # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報をやりとりするようにする必要あり
 
-        # TODO: join時にsuccessorListを埋めておくようにする. また、レプリケーションデータの受け取りも行う
-
         # 実装上例外は発生しない.
         # また実システムでもダウンしているノードの情報が与えられることは想定しない
         tyukai_node = ChordUtil.get_node_by_address(node_address)
@@ -98,15 +96,20 @@ class ChordNode:
         # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
         self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
 
+        predecessor = None
         if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
             # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
 
+            predecessor = tyukai_node
+
             # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
-            self.node_info.predecessor_info = tyukai_node.node_info.get_partial_deepcopy()
+            self.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
             tyukai_node.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
             tyukai_node.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
             # fingerテーブルの0番エントリも強制的に設定する
             tyukai_node.node_info.finger_table[0] = self.node_info.get_partial_deepcopy()
+
+
             ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
@@ -122,6 +125,10 @@ class ChordNode:
             try:
                 predecessor = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
                 predecessor.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
+
+                # successorListを埋めておく
+                self.stabilize_successor()
+
                 ChordUtil.dprint("join_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
@@ -131,6 +138,8 @@ class ChordNode:
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
                 pass
+
+        # TODO: predecessorが非Noneであれば、当該predecessorからレプリケーションデータの受け取りを行う
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
         ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -362,9 +371,16 @@ class ChordNode:
         successor : ChordNode
         successor_tmp : Optional[ChordNode] = None
         for idx in range(len(self.node_info.successor_info_list)):
-            if ChordUtil.is_node_alive(self.node_info.successor_info_list[idx].address_str):
-                successor_tmp = ChordUtil.get_node_by_address(self.node_info.successor_info_list[idx].address_str)
-                break
+            try:
+                if ChordUtil.is_node_alive(self.node_info.successor_info_list[idx].address_str):
+                    successor_tmp = ChordUtil.get_node_by_address(self.node_info.successor_info_list[idx].address_str)
+                    break
+            except TargetNodeIsNotExistException:
+                # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
+                # した際に発生してしまうので、ここで対処する
+                # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなので、後続の処理を行わず successor[0]を返す
+                return self.node_info.successor_info_list[0].get_partial_deepcopy()
+
         if successor_tmp != None:
             successor = cast(ChordNode, successor_tmp)
         else:

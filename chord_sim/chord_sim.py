@@ -44,7 +44,7 @@ def check_nodes_connectivity():
             cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
         except NodeIsDownedExceptiopn:
             print("")
-            ChordUtil.dprint("check_nodes_connectivity__succ, NODE_IS_DOWNED")
+            ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")
             return
 
         if cur_node_info == None:
@@ -53,16 +53,20 @@ def check_nodes_connectivity():
         counter += 1
     print("")
 
-    # # 2ノード目が参加して以降をチェック対象とする
-    # # successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
-    # # チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
-    # if all_node_num >=2 and cur_node_info.node_id != start_node_info.node_id:
-    #     ChordUtil.dprint("check_nodes_connectivity_succ_err,chain does not include all node. all_node_num = "
-    #                      + str(all_node_num) + ","
-    #                      + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
-    #                      + ChordUtil.gen_debug_str_of_node(cur_node_info))
-    #     print("", flush=True, end="")
-    #     raise Exception("SUCCESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
+    # 2ノード目が参加して以降をチェック対象とする
+    # successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
+    # チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
+    if all_node_num >=2 and cur_node_info.node_id != start_node_info.node_id:
+        ChordUtil.dprint("check_nodes_connectivity_succ_err,chain does not includes all node. all_node_num = "
+                         + str(all_node_num) + ","
+                         + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
+        # raise exception("SUCCESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
+    else:
+        ChordUtil.dprint("check_nodes_connectivity_succ_success,chain includes all node. all_node_num = "
+                         + str(all_node_num) + ","
+                         + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
 
     # 続いてpredecessor方向に辿る
     counter = 0
@@ -76,7 +80,7 @@ def check_nodes_connectivity():
             cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
         except NodeIsDownedExceptiopn:
             print("")
-            ChordUtil.dprint("check_nodes_connectivity__pred, NODE_IS_DOWNED")
+            ChordUtil.dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
             return
 
         # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
@@ -93,18 +97,22 @@ def check_nodes_connectivity():
         counter += 1
     print("")
 
-    # # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
-    # # 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が
-    # # あり得るため、余裕を持たせて5ノード目以降からチェックする
-    # # successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
-    # # チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
-    # if all_node_num >=5 and cur_node_info.node_id != start_node_info.node_id:
-    #     ChordUtil.dprint("check_nodes_connectivity_succ_err,chain does not include all node. all_node_num = "
-    #                      + str(all_node_num) + ","
-    #                      + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
-    #                      + ChordUtil.gen_debug_str_of_node(cur_node_info)
-    #                      , flush=True)
-    #     raise Exception("PREDECESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
+    # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
+    # 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が
+    # あり得るため、余裕を持たせて5ノード目以降からチェックする
+    # successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
+    # チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
+    if all_node_num >=5 and cur_node_info.node_id != start_node_info.node_id:
+        ChordUtil.dprint("check_nodes_connectivity_pred_err,chain does not includes all node. all_node_num = "
+                         + str(all_node_num) + ","
+                         + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
+        # raise Exception("PREDECESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
+    else:
+        ChordUtil.dprint("check_nodes_connectivity_pred_success,chain includes all node. all_node_num = "
+                         + str(all_node_num) + ","
+                         + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
 
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():

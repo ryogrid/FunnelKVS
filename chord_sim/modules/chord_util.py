@@ -184,8 +184,10 @@ class ChordUtil:
         except KeyError:
             # join処理の途中で構築中のノード情報をチェックしてしまいにいった場合に発生する
             raise TargetNodeDoesNotExistException()
+        except NodeIsDownedExceptiopn:
+            return False
 
-        return node_obj.is_alive
+        return True
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:

@@ -446,8 +446,14 @@ class ChordNode:
                     # successor[0]の変更は行わず、ダウンしていたノードではなく自身をpredecessorとするよう(間接的に)要請する
                     successor.check_predecessor(self.node_info.node_id, self.node_info)
                     ChordUtil.dprint("stabilize_successor_inner_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
-                                     + str(cast(NodeInfo, self.node_info.successor_info_list[0].predecessor_info).node_id))
+                                     + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
+                except TargetNodeDoesNotExistException:
+                    # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
+                    # した際に発生してしまうので、ここで対処する
+                    # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなの特に処理は不要であり
+                    # 本メソッドは元々の successor[0] を返せばよい
+                    ChordUtil.dprint("stabilize_successor_inner_6," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
         return self.node_info.successor_info_list[0].get_partial_deepcopy()
 

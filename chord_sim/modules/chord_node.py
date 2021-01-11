@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, cast
 
 import modules.gval as gval
 from .node_info import NodeInfo
-from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, TargetNodeIsNotExistException
+from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, TargetNodeDoesNotExistException
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
@@ -375,7 +375,7 @@ class ChordNode:
                 if ChordUtil.is_node_alive(self.node_info.successor_info_list[idx].address_str):
                     successor_tmp = ChordUtil.get_node_by_address(self.node_info.successor_info_list[idx].address_str)
                     break
-            except TargetNodeIsNotExistException:
+            except TargetNodeDoesNotExistException:
                 # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
                 # した際に発生してしまうので、ここで対処する
                 # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなので、後続の処理を行わず successor[0]を返す

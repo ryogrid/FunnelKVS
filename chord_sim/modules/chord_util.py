@@ -183,7 +183,7 @@ class ChordUtil:
             node_obj = ChordUtil.get_node_by_address(address)
         except KeyError:
             # join処理の途中で構築中のノード情報をチェックしてしまいにいった場合に発生する
-            raise TargetNodeIsNotExistException()
+            raise TargetNodeDoesNotExistException()
 
         return node_obj.is_alive
 
@@ -210,7 +210,7 @@ class AppropriateNodeNotFoundException(Exception):
 
 # 通常、join時に all_node_dictにノードオブジェクトが登録される前に
 # ノードのアドレスによる取得を試みた場合のみしか発生しない
-class TargetNodeIsNotExistException(Exception):
+class TargetNodeDoesNotExistException(Exception):
 
     def __init__(self):
-        super(TargetNodeIsNotExistException, self).__init__("Target node is not exist on kvs network yet.")
+        super(TargetNodeDoesNotExistException, self).__init__("Target node is not exist on kvs network yet.")

@@ -142,7 +142,7 @@ class ChordNode:
         # TODO: predecessorが非Noneであれば、当該predecessorからレプリケーションデータの受け取りを行う
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
-        ChordUtil.dprint("join," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        ChordUtil.dprint("join_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 
@@ -376,11 +376,18 @@ class ChordNode:
                 if ChordUtil.is_node_alive(self.node_info.successor_info_list[idx].address_str):
                     successor_tmp = ChordUtil.get_node_by_address(self.node_info.successor_info_list[idx].address_str)
                     break
+                else:
+                    ChordUtil.dprint("stabilize_successor_inner_1,SUCCESSOR_IS_DOWNED,"
+                                     + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[idx]))
             except TargetNodeDoesNotExistException:
                 # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
                 # した際に発生してしまうので、ここで対処する
                 # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなので、後続の処理を行わず successor[0]を返す
                 return self.node_info.successor_info_list[0].get_partial_deepcopy()
+
+        # TODO: DEBUG時のみ必要なのであとで消す
+        print("flush", flush=True)
 
         if successor_tmp != None:
             successor = cast(ChordNode, successor_tmp)

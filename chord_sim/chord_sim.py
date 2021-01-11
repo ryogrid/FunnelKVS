@@ -143,9 +143,9 @@ def do_stabilize_once_at_all_node():
 
     # 各リストはpopメソッドで要素を取り出して利用されていく
     # 同じノードは複数回利用されるため、その分コピーしておく（参照がコピーされるだけ）
-    shuffled_node_list_successor = random.sample(node_list, len(node_list))
+    shuffled_node_list_successor : List[ChordNode] = random.sample(node_list, len(node_list))
     shuffled_node_list_successor = shuffled_node_list_successor * gval.STABILIZE_SUCCESSOR_BATCH_TIMES
-    shuffled_node_list_ftable = random.sample(node_list, len(node_list))
+    shuffled_node_list_ftable : List[ChordNode] = random.sample(node_list, len(node_list))
     shuffled_node_list_ftable = shuffled_node_list_ftable * (gval.STABILIZE_FTABLE_BATCH_TIMES * gval.ID_SPACE_BITS)
 
     cur_node_num = len(node_list)
@@ -184,19 +184,21 @@ def do_stabilize_once_at_all_node():
             # 選択された処理を実行する
             if selected_operation == "successor":
                 node = shuffled_node_list_successor.pop()
-                node.stabilize_successor()
-                ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                                   + str(done_stabilize_successor_cnt))
+                if node.is_alive == True:
+                    node.stabilize_successor()
+                    ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                                       + str(done_stabilize_successor_cnt))
                 done_stabilize_successor_cnt += 1
             else: # "ftable"
                 # 1ノードの1エントリを更新する
                 # 更新するエントリのインデックスはこの関数の呼び出し時点の全ノード
                 # で共通に0からインクリメントされていく
                 node = shuffled_node_list_ftable.pop()
-                ChordUtil.dprint(
-                    "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                    + str(cur_ftable_idx))
-                node.stabilize_finger_table(cur_ftable_idx)
+                if node.is_alive == True:
+                    ChordUtil.dprint(
+                        "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                        + str(cur_ftable_idx))
+                    node.stabilize_finger_table(cur_ftable_idx)
                 done_stabilize_ftable_cnt += 1
 
                 if done_stabilize_ftable_cnt % cur_node_num == 0:

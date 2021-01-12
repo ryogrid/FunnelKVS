@@ -167,22 +167,28 @@ class ChordUtil:
         return hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)
 
     # Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
-    #            したことを意味するため、対応する NodeIsDownedException 例外を raise する
+    #            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
     @classmethod
     def get_node_by_address(cls, address : str) -> 'ChordNode':
-        try:
-            ret_val = gval.all_node_dict[address]
-            return ret_val
-        except KeyError:
-            raise NodeIsDownedExectiopn()
+        ret_val = gval.all_node_dict[address]
+        if ret_val.is_alive == False:
+            ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
+            raise NodeIsDownedExceptiopn()
 
+        return ret_val
+
+    # Attention: TargetNodeDoesNotExistException を raiseする場合がある
     @classmethod
-    def get_deepcopy_of_successor_list(cls, slist : List['NodeInfo']) -> List['NodeInfo']:
-        ret_list : List['NodeInfo'] = []
-        for node_info in slist:
-            ret_list.append(node_info.get_partial_deepcopy())
+    def is_node_alive(cls, address : str) -> bool:
+        try:
+            node_obj = ChordUtil.get_node_by_address(address)
+        except KeyError:
+            # join処理の途中で構築中のノード情報をチェックしてしまいにいった場合に発生する
+            raise TargetNodeDoesNotExistException()
+        except NodeIsDownedExceptiopn:
+            return False
 
-        return slist
+        return True
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
@@ -195,8 +201,19 @@ class KeyValue:
         else:
             self.data_id : int = ChordUtil.hash_str_to_int(key)
 
-class NodeIsDownedExectiopn(Exception):
+class NodeIsDownedExceptiopn(Exception):
 
     def __init__(self):
-        super(NodeIsDownedExectiopn, self).__init__("Accessed Node seems to be downed.")
+        super(NodeIsDownedExceptiopn, self).__init__("Accessed node seems to be downed.")
 
+class AppropriateNodeNotFoundException(Exception):
+
+    def __init__(self):
+        super(AppropriateNodeNotFoundException, self).__init__("Appropriate node is not found.")
+
+# 通常、join時に all_node_dictにノードオブジェクトが登録される前に
+# ノードのアドレスによる取得を試みた場合のみしか発生しない
+class TargetNodeDoesNotExistException(Exception):
+
+    def __init__(self):
+        super(TargetNodeDoesNotExistException, self).__init__("Target node is not exist on kvs network yet.")

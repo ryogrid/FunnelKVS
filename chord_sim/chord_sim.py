@@ -8,15 +8,14 @@ from typing import List, cast
 import modules.gval as gval
 from modules.node_info import NodeInfo
 from modules.chord_util import ChordUtil, KeyValue
-from modules.chord_node import ChordNode
+from modules.chord_node import ChordNode, NodeIsDownedExceptiopn
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
-# ChordNodeオブジェクトを返す
+# is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
 def get_a_random_node() -> ChordNode:
-    key_list : List[str] = list(gval.all_node_dict.keys())
-    selected_key : str = ChordUtil.get_random_elem(key_list)
-    # TODO: キーが必ず存在するので、例外が発生することはない
-    return ChordUtil.get_node_by_address(selected_key)
+    alive_nodes_list : List[ChordNode] = list(filter(lambda node: node.is_alive == True,list(gval.all_node_dict.values())))
+    return ChordUtil.get_random_elem(alive_nodes_list)
+
 
 # stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
 # ランダムに選択したノードからsuccessor方向にsuccessorの繋がりでノードを辿って
@@ -29,7 +28,8 @@ def check_nodes_connectivity():
     # まずはsuccessor方向に辿る
     cur_node_info : NodeInfo = get_a_random_node().node_info
     start_node_info : NodeInfo = cur_node_info
-    all_node_num = len(list(gval.all_node_dict.values()))
+    # ノードの総数（is_aliveフィールドがFalseのものは除外して算出）
+    all_node_num = len(list(filter(lambda node: node.is_alive == True ,list(gval.all_node_dict.values()))))
     ChordUtil.print_no_lf("check_nodes_connectivity__succ,all_node_num=" + str(all_node_num) + ",already_born_node_num=" + str(gval.already_born_node_num))
     print(",", flush=True, end="")
 
@@ -39,8 +39,14 @@ def check_nodes_connectivity():
         # 各ノードはsuccessorの情報を保持しているが、successorのsuccessorは保持しないようになって
         # いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         # 得ることに対応する形とする
-        # TODO: 例外発生時はreturnしてしまって良い
-        cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
+
+        try:
+            cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
+        except NodeIsDownedExceptiopn:
+            print("")
+            ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")
+            return
+
         if cur_node_info == None:
             print("", flush=True, end="")
             raise Exception("no successor having node was detected!")
@@ -51,12 +57,16 @@ def check_nodes_connectivity():
     # successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
     # チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
     if all_node_num >=2 and cur_node_info.node_id != start_node_info.node_id:
-        ChordUtil.dprint("check_nodes_connectivity_succ_err,chain does not include all node. all_node_num = "
+        ChordUtil.dprint("check_nodes_connectivity_succ_err,chain does not includes all node. all_node_num = "
                          + str(all_node_num) + ","
                          + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(cur_node_info))
-        print("", flush=True, end="")
-        raise Exception("SUCCESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
+        # raise exception("SUCCESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
+    else:
+        ChordUtil.dprint("check_nodes_connectivity_succ_success,chain includes all node. all_node_num = "
+                         + str(all_node_num) + ","
+                         + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
 
     # 続いてpredecessor方向に辿る
     counter = 0
@@ -66,8 +76,12 @@ def check_nodes_connectivity():
     print(",", flush=True, end="")
     while counter < all_node_num:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
-        # TODO: 例外発生時はreturnしてしまって良い
-        cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
+        try:
+            cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
+        except NodeIsDownedExceptiopn:
+            print("")
+            ChordUtil.dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
+            return
 
         # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
         # 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が
@@ -89,21 +103,41 @@ def check_nodes_connectivity():
     # successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
     # チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
     if all_node_num >=5 and cur_node_info.node_id != start_node_info.node_id:
-        ChordUtil.dprint("check_nodes_connectivity_succ_err,chain does not include all node. all_node_num = "
+        ChordUtil.dprint("check_nodes_connectivity_pred_err,chain does not includes all node. all_node_num = "
                          + str(all_node_num) + ","
                          + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(cur_node_info)
-                         , flush=True)
-        raise Exception("PREDECESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
+        # raise Exception("PREDECESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
+    else:
+        ChordUtil.dprint("check_nodes_connectivity_pred_success,chain includes all node. all_node_num = "
+                         + str(all_node_num) + ","
+                         + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
 
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
-    tyukai_node = get_a_random_node()
-    new_node = ChordNode(tyukai_node.node_info.address_str)
-    gval.all_node_dict[new_node.node_info.address_str] = new_node
+    if ChordNode.need_join_retry_node != None:
+        # 前回の呼び出しが失敗していた場合はリトライを行う
+        tyukai_node = ChordNode.need_join_retry_tyukai_node
+        new_node = ChordNode.need_join_retry_node
+        new_node.join(tyukai_node.node_info.address_str)
+        if ChordNode.need_join_retry_node == None:
+            # リトライ情報が再設定されていないためリトライに成功したと判断
+            ChordUtil.dprint(
+                "add_new_node_1,retry of join is succeeded," + ChordUtil.gen_debug_str_of_node(new_node.node_info))
+        else:
+            ChordUtil.dprint(
+                "add_new_node_2,retry of join is failed," + ChordUtil.gen_debug_str_of_node(new_node.node_info))
+    else:
+        tyukai_node = get_a_random_node()
+        new_node = ChordNode(tyukai_node.node_info.address_str)
+
+    if ChordNode.need_join_retry_node == None:
+        # join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
+        gval.all_node_dict[new_node.node_info.address_str] = new_node
 
     # ロックの解放
     gval.lock_of_all_data.release()
@@ -117,9 +151,9 @@ def do_stabilize_once_at_all_node():
 
     # 各リストはpopメソッドで要素を取り出して利用されていく
     # 同じノードは複数回利用されるため、その分コピーしておく（参照がコピーされるだけ）
-    shuffled_node_list_successor = random.sample(node_list, len(node_list))
+    shuffled_node_list_successor : List[ChordNode] = random.sample(node_list, len(node_list))
     shuffled_node_list_successor = shuffled_node_list_successor * gval.STABILIZE_SUCCESSOR_BATCH_TIMES
-    shuffled_node_list_ftable = random.sample(node_list, len(node_list))
+    shuffled_node_list_ftable : List[ChordNode] = random.sample(node_list, len(node_list))
     shuffled_node_list_ftable = shuffled_node_list_ftable * (gval.STABILIZE_FTABLE_BATCH_TIMES * gval.ID_SPACE_BITS)
 
     cur_node_num = len(node_list)
@@ -158,19 +192,21 @@ def do_stabilize_once_at_all_node():
             # 選択された処理を実行する
             if selected_operation == "successor":
                 node = shuffled_node_list_successor.pop()
-                node.stabilize_successor()
-                ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                                   + str(done_stabilize_successor_cnt))
+                if node.is_alive == True:
+                    node.stabilize_successor()
+                    ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                                       + str(done_stabilize_successor_cnt))
                 done_stabilize_successor_cnt += 1
             else: # "ftable"
                 # 1ノードの1エントリを更新する
                 # 更新するエントリのインデックスはこの関数の呼び出し時点の全ノード
                 # で共通に0からインクリメントされていく
                 node = shuffled_node_list_ftable.pop()
-                ChordUtil.dprint(
-                    "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                    + str(cur_ftable_idx))
-                node.stabilize_finger_table(cur_ftable_idx)
+                if node.is_alive == True:
+                    ChordUtil.dprint(
+                        "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                        + str(cur_ftable_idx))
+                    node.stabilize_finger_table(cur_ftable_idx)
                 done_stabilize_ftable_cnt += 1
 
                 if done_stabilize_ftable_cnt % cur_node_num == 0:
@@ -187,19 +223,44 @@ def do_stabilize_once_at_all_node():
             gval.lock_of_all_data.release()
 
 
-
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
 # アドレスをよろしく解決し、見つかったノードにputの操作を依頼する
 def do_put_on_random_node():
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
-    unixtime_str = str(time.time())
-    # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyとvalueに用いる
-    kv_data = KeyValue(unixtime_str, unixtime_str)
-    node = get_a_random_node()
-    node.global_put(kv_data.data_id, kv_data.value)
-    gval.all_data_list.append(kv_data)
+    is_retry = False
+
+    if ChordNode.need_put_retry_data_id != -1:
+        # 前回の呼び出し時に global_putが失敗しており、リトライが必要
+
+        is_retry = True
+
+        # key と value の値は共通としているため、記録してあった value の値を key としても用いる
+        kv_data = KeyValue(ChordNode.need_put_retry_data_value, ChordNode.need_put_retry_data_value)
+        # data_id は乱数で求めるというインチキをしているため、記録してあったもので上書きする
+        kv_data.data_id = ChordNode.need_put_retry_data_id
+        node = ChordNode.need_put_retry_node
+    else:
+        unixtime_str = str(time.time())
+        # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyとvalueに用いる
+        kv_data = KeyValue(unixtime_str, unixtime_str)
+        node = get_a_random_node()
+
+    # 成功した場合はTrueが返るのでその場合だけ all_node_dictに追加する
+    if node.global_put(kv_data.data_id, kv_data.value):
+        gval.all_data_list.append(kv_data)
+
+    if is_retry:
+        if ChordNode.need_put_retry_data_id == -1:
+            # リトライ情報が再設定されていないためリトライに成功したと判断
+            ChordUtil.dprint(
+                "do_put_on_random_node_1,retry of global_put is succeeded," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(kv_data.data_id))
+        else:
+            ChordUtil.dprint(
+                "do_put_on_random_node_2,retry of global_put is failed," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(kv_data.data_id))
 
     # ロックの解放
     gval.lock_of_all_data.release()
@@ -215,8 +276,11 @@ def do_get_on_random_node():
         gval.lock_of_all_data.release()
         return
 
+    is_retry = False
+
     if ChordNode.need_getting_retry_data_id != -1:
         # doing retry
+        is_retry = True
         target_data_id = ChordNode.need_getting_retry_data_id
         node = cast('ChordNode', ChordNode.need_getting_retry_node)
     else:
@@ -225,6 +289,34 @@ def do_get_on_random_node():
         node = get_a_random_node()
 
     node.global_get(target_data_id)
+
+    if is_retry:
+        if ChordNode.need_get_retry_data_id == -1:
+            # リトライ情報が再設定されていないためリトライに成功したと判断
+            ChordUtil.dprint(
+                "do_get_on_random_node_1,retry of global_get is succeeded," + ChordUtil.gen_debug_str_of_node(
+                    node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(target_data_id))
+        else:
+            ChordUtil.dprint(
+                "do_get_on_random_node_2,retry of global_get is failed," + ChordUtil.gen_debug_str_of_node(
+                    node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(target_data_id))
+
+    # ロックの解放
+    gval.lock_of_all_data.release()
+
+# グローバル変数であるall_node_dictからランダムにノードを選択し
+# ダウンさせる（is_aliveフィールドをFalseに設定する）
+def do_kill_a_random_node():
+    # ロックの取得
+    gval.lock_of_all_data.acquire()
+
+    node = get_a_random_node()
+    node.is_alive = False
+    ChordUtil.dprint(
+        "do_kill_a_random_node,"
+        + ChordUtil.gen_debug_str_of_node(node.node_info))
 
     # ロックの解放
     gval.lock_of_all_data.release()
@@ -254,6 +346,18 @@ def data_get_th():
         # sleepを挟む
         time.sleep(gval.GET_INTERVAL_SEC)
 
+def node_kill_th():
+    while True:
+        # ネットワークに存在するノードが5ノードを越えたらノードをダウンさせる処理を有効にする
+        # しかし、リトライされなければならない処理が存在した場合は抑制する
+        if len(gval.all_node_dict) > 5 \
+                and (ChordNode.need_getting_retry_data_id == -1
+                     and ChordNode.need_put_retry_data_id == -1
+                     and ChordNode.need_join_retry_node == None) :
+            do_kill_a_random_node()
+
+        time.sleep(gval.NODE_KILL_INTERVAL_SEC)
+
 def main():
     # 再現性のため乱数シードを固定
     # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで
@@ -274,8 +378,11 @@ def main():
     data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     data_put_th_handle.start()
 
-    data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
-    data_get_th_handle.start()
+    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
+    # data_get_th_handle.start()
+
+    node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
+    node_kill_th_handle.start()
 
     while True:
         time.sleep(1)

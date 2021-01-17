@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from . import gval
 
+# メモ: オブジェクトをdictのキーとして使用可能としてある
 class NodeInfo:
 
     def __init__(self):
@@ -56,3 +57,11 @@ class NodeInfo:
         ret_node_info.predecessor_info = None
 
         return ret_node_info
+
+    def __eq__(self, other):
+        if not isinstance(other, NodeInfo):
+            return False
+        return self.node_id == other.node_id
+
+    def __hash__(self):
+        return self.node_id

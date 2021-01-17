@@ -4,7 +4,8 @@ from typing import Dict, List, Optional, cast
 
 import modules.gval as gval
 from .node_info import NodeInfo
-from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, TargetNodeDoesNotExistException
+from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
+    TargetNodeDoesNotExistException, StoredValueEntry, NodeInfoPointer
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
@@ -33,8 +34,25 @@ class ChordNode:
     # join処理もコンストラクタで行ってしまう
     def __init__(self, node_address: str, first_node=False):
         self.node_info = NodeInfo()
+
+        # TODO: レプリケーション対応したら下のコメントアウトされたフィールドに切り替える
         # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
         self.stored_data : Dict[str, str] = {}
+
+        # self.stored_data : Dict[str, StoredValueEntry] = {}
+
+        # 主担当ノードのNodeInfoオブジェクトから、そのノードが担当するデータを引くためのインデックス辞書.
+        # 大半のkeyはレプリカを自身に保持させているノードとなるが、自ノードである場合も同じ枠組みで
+        # 扱う.
+        # つまり、レプリカでないデータについてもこのインデックス辞書は扱うことになる
+        self.master2data_idx : Dict[NodeInfo, List[StoredValueEntry]]
+
+        # 保持してるデータが紐づいている主担当ノードの情報を保持するためのリスト
+        # ただし、主担当ノードが切り替わった場合に参照先を一つ切り替えるだけで関連する
+        # 全データの紐づけが変更可能とするため、NodeInfoを指す（参照をフィールドに持つ）
+        # NodeInfoPointerクラスを間に挟む形とし、StoredValueEntryでも当該クラスの
+        # オブジェクト参照するようにしてある
+        self.master_node_list : List[NodeInfoPointer]
 
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chorネットワーク上でのIDを決定する
         self.node_info.address_str = ChordUtil.gen_address_str()
@@ -385,9 +403,6 @@ class ChordNode:
                 # した際に発生してしまうので、ここで対処する
                 # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなので、後続の処理を行わず successor[0]を返す
                 return self.node_info.successor_info_list[0].get_partial_deepcopy()
-
-        # TODO: DEBUG時のみ必要なのであとで消す
-        print("flush", flush=True)
 
         if successor_tmp != None:
             successor = cast(ChordNode, successor_tmp)

@@ -190,6 +190,13 @@ class ChordUtil:
 
         return True
 
+# 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
+# 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
+class NodeInfoPointer:
+
+    def __init__(self, node_info : NodeInfo):
+        self.node_info : NodeInfo = node_info
+
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
     def __init__(self, key, value):
@@ -200,6 +207,11 @@ class KeyValue:
             self.data_id = None
         else:
             self.data_id : int = ChordUtil.hash_str_to_int(key)
+
+class StoredValueEntry:
+    def __init__(self, data : str, master_info : NodeInfoPointer):
+        self.master_info : NodeInfoPointer = master_info
+        self.data : str = data
 
 class NodeIsDownedExceptiopn(Exception):
 

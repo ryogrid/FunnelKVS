@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, cast
 import modules.gval as gval
 from .node_info import NodeInfo
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
-    TargetNodeDoesNotExistException, StoredValueEntry, NodeInfoPointer
+    TargetNodeDoesNotExistException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
@@ -78,10 +78,24 @@ class ChordNode:
         else:
             self.join(node_address)
 
+    # TODO: 自ノードが担当ノードとして保持しているデータを全て返す
+    #       pass_tantou_data_for_replication
+    def pass_tantou_data_for_replication(self) -> List[DataIdAndValue]:
+        raise Exception("not implemented yet")
+
+    # TODO: 自ノードが担当ノードとなっているものを除いて、保持しているデータをマスター
+    #       ごとに dict に詰めて返す
+    def pass_all_replica(self) -> Dict[NodeInfo, List[DataIdAndValue]]:
+        raise Exception("not implemented yet")
+
+    # TODO: successor_info_listの長さをチェックし、規定長を越えていた場合
+    #       余剰なノードにレプリカを削除させた上で、リストから取り除く
+    #       実装には delete_replica メソッドを用いればよい
+    def check_replication_redunduncy(self):
+        raise Exception("not implemented yet")
+
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     def join(self, node_address : str):
-        # TODO: あとで、ちゃんとノードに定義されたAPIを介して情報をやりとりするようにする必要あり
-
         # 実装上例外は発生しない.
         # また実システムでもダウンしているノードの情報が与えられることは想定しない
         tyukai_node = ChordUtil.get_node_by_address(node_address)
@@ -107,14 +121,13 @@ class ChordNode:
         self.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
 
         # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
-        tantou_data_list : List[KeyValue] = successor.get_copies_of_my_tantou_data(self.node_info.node_id, False)
+        tantou_data_list : List[KeyValue] = successor.delegate_my_tantou_data(self.node_info.node_id, False)
         for key_value in tantou_data_list:
             self.stored_data[str(key_value.data_id)] = key_value.value
 
         # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
         self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
 
-        predecessor = None
         if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
             # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
 
@@ -142,7 +155,7 @@ class ChordNode:
             # stabilize_successorを実行した時点で解消されるはず
             try:
                 predecessor = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
-                predecessor.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
+                predecessor.node_info.successor_info_list.insert(0, self.node_info.get_partial_deepcopy())
 
                 # successorListを埋めておく
                 self.stabilize_successor()
@@ -157,7 +170,20 @@ class ChordNode:
                                  + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
                 pass
 
-        # TODO: predecessorが非Noneであれば、当該predecessorからレプリケーションデータの受け取りを行う
+        # TODO: 委譲を受けたデータをsuccessorList内の全ノードにレプリカとして配る.
+        #       receive_replicaメソッドを利用する
+
+        # TODO: predecessorが非Noneであれば、当該predecessorの担当データをレプリカとして保持するため受け取る.
+        #       pass_tantou_data_for_replicationメソッドを利用する
+
+        # TODO: predecessorが非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
+        #       いる場合があるため、そのチェックと越えていた場合の余剰のノードからレプリカを全て削除させる処理を
+        #       呼び出す
+        #       check_replication_redunduncyメソッドを利用する
+
+        # TODO: successorから保持している全てのレプリカを受け取る（successorよりは前に位置することになるため、
+        #       基本的に全てのレプリカを保持している状態とならなければならない）
+        #       pass_all_replicaメソッドを利用する
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
         ChordUtil.dprint("join_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -186,9 +212,28 @@ class ChordNode:
 
         return True
 
+    # TODO: レプリカを受け取らせるメソッド receive_replica の実装
+    #       他のノードが保持しておいて欲しいレプリカを渡す際に呼び出される.
+    #       なお、master_node 引数と呼び出し元ノードは一致しない場合がある.
+    #       返り値として、処理が完了した時点でmaster_nodeに紐づいているレプリカをいくつ保持して
+    #       いるかを返す
+    #       receive_replica
+    def receive_replica(self, master_node : NodeInfo, pass_datas : List[DataIdAndValue]) -> int:
+        raise Exception("not implemented yet")
+
     def put(self, data_id : int, value_str : str):
         key_id_str = str(data_id)
         self.stored_data[key_id_str] = value_str
+
+        # TODO: データの保持形式の変更への対応
+
+        # TODO: レプリカを successorList内のノードに渡す処理の実装
+        #       receive_replicaメソッドの呼び出しが主.
+        #       なお、新規ノードのjoin時のレプリカのコピーにおいて、predecessorのさらに前に位置するノードが
+        #       担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
+        #       全てを保持していないノードが存在する場合があるため、receive_replicaメソッド呼び出し時に返ってくる
+        #       レプリカデータの保持数が、認識と合っていない場合は、不足しているデータを渡すといった対処が必要となる
+
         ChordUtil.dprint("put," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
@@ -303,13 +348,29 @@ class ChordNode:
               + ChordUtil.gen_debug_str_of_data(data_id) + "," + got_value_str)
         return got_value_str
 
+
+    # TODO: レプリカに紐づけられているマスターノードが切り替わったことを通知し、管理情報を
+    #       通知内容に応じて更新させる
+    def notify_master_node_change(self, old_master : NodeInfo, new_master : NodeInfo):
+        raise Exception("not implemented yet")
+
     # 得られた value の文字列を返す
     def get(self, data_id : int) -> str:
-        ret_value_str = None
         try:
             ret_value_str = self.stored_data[str(data_id)]
         except:
             ret_value_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
+
+        # TODO: データの保持形式の変更への対応
+
+        # TODO: get要求に応じたデータを参照した際に自身が担当でないノードであった
+        #       場合は、担当ノードの生死をチェックし、生きていれば QUERIED_DATA_NOT_FOUND_STR
+        #       を返し、ダウンしていた場合は、以下の2つを行った上で、保持していたデータを返す
+        #       - 自身のsuccessorList内のノードに担当ノードの変更を通知する（データの紐づけを変えさせる）
+        #         notify_master_node_changeメソッドを利用する
+        #       - 通常、担当が切り替わった場合、レプリカの保有ノードが規定数より少なくなってしまうため、
+        #         自身のsuccessorList内の全ノードがレプリカを持った状態とする
+        #         receive_replicaメソッドを利用する
 
         ChordUtil.dprint("get," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
@@ -322,14 +383,23 @@ class ChordNode:
     # def delete(self, key_str):
     #     print("not implemented yet")
 
-    # 自身が保持しているデータを一部取り除いて返す.
-    # 取り除くデータは時計周りに辿った際に 引数 node_id と 自身の node_id
+    # TODO: 保持しているレプリカを data_id の範囲を指定して削除させる.
+    #       マスターノードの担当範囲の変更や、新規ノードのjoinにより、レプリカを保持させていた
+    #       ノードの保持するデータに変更が生じたり、レプリケーションの対象から外れた場合に用いる.
+    #       対象 data_id の範囲は [range_start, range_end) となり、両方を無指定とした場合は
+    #       全範囲が対象となる
+    #       delete_replica
+    def delete_replica(self, master_node : NodeInfo, range_start : int = -1, range_end : int = -1):
+        raise Exception("not implemented yet")
+
+    # 自身が保持しているデータのうち委譲するものを返す.
+    # 対象となるデータは時計周りに辿った際に 引数 node_id と 自身の node_id
     # の間に data_id が位置するデータである.
     # join呼び出し時、新たに参加してきた新規ノードに、successorとなる自身が、担当から外れる
     # 範囲のデータの委譲を行うために、新規ノードから呼び出される形で用いられる.
     # rest_copy引数によってコピーを渡すだけか、完全に委譲してしまい自身のデータストアからは渡したデータを削除
     # するかどうか選択できる
-    def get_copies_of_my_tantou_data(self, node_id : int, rest_copy : bool = True) -> List[KeyValue]:
+    def delegate_my_tantou_data(self, node_id : int, rest_copy : bool = True) -> List[KeyValue]:
         ret_datas : List[KeyValue] = []
         for key, value in self.stored_data.items():
             data_id : int = int(key)
@@ -346,10 +416,17 @@ class ChordNode:
             item.data_id = data_id
             ret_datas.append(item)
 
-        # データを委譲する際に元々持っていたノードからは削除するよう指定されていた場合
+        # データを委譲する際に元々持っていたノードから削除するよう指定されていた場合
         if rest_copy == False:
             for kv in ret_datas:
                 del self.stored_data[str(kv.data_id)]
+
+        # TODO: 委譲したことで自身が担当ノードで無くなったデータについてsuccessorList
+        #       内のノードに通知し、削除させる（それらのノードは再度同じレプリカを保持する
+        #       ことになるかもしれないが、それは新担当の管轄なので、非効率ともなるがひとまず削除させる）
+        #       delete_replicaメソッドを利用する
+        #       削除が完了するまで本メソッドは終了しないため、新担当がレプリカを配布する処理と不整合
+        #       が起こることはない
 
         return ret_datas
 
@@ -453,7 +530,11 @@ class ChordNode:
 
                     try:
                         new_successor = ChordUtil.get_node_by_address(cast(NodeInfo, successor.node_info.predecessor_info).address_str)
-                        self.node_info.successor_info_list[0] = new_successor.node_info.get_partial_deepcopy()
+                        self.node_info.successor_info_list.insert(0, new_successor.node_info.get_partial_deepcopy())
+
+                        # TODO: 新たなsuccesorに対して担当データのレプリカを渡し、successorListから溢れたノードには
+                        #       レプリカを削除させる
+                        #       joinの中で行っている処理を参考に実装すれば良い
 
                         # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                         # ば情報を更新してもらう
@@ -487,6 +568,12 @@ class ChordNode:
     # コメントにおいては、successorListの構造を意識した記述の場合、一番近いsuccessorを successor[0] と
     # 記述し、以降に位置するノードは近い順に successor[idx] と記述する
     def stabilize_successor(self):
+        # TODO: put時にレプリカを全て、もしくは一部持っていないノードについてはケアされる
+        #       ため、大局的には問題ないと思われるが、ノードダウンを検出した場合や、未認識
+        #       であったノードを発見した場合に、レプリカの配置状態が前述のケアでカバーできない
+        #       ような状態とならないか確認する
+        #       check_predecessor
+
         ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
 

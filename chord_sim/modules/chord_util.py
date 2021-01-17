@@ -3,6 +3,7 @@
 import time
 import random
 import datetime
+import dataclasses
 from typing import List, Any, Optional, cast, TYPE_CHECKING
 
 from . import gval
@@ -208,10 +209,16 @@ class KeyValue:
         else:
             self.data_id : int = ChordUtil.hash_str_to_int(key)
 
+@dataclasses.dataclass
+class DataIdAndValue:
+    data_id : int
+    value : str
+
+@dataclasses.dataclass
 class StoredValueEntry:
-    def __init__(self, data : str, master_info : NodeInfoPointer):
-        self.master_info : NodeInfoPointer = master_info
-        self.data : str = data
+    master_info : NodeInfoPointer
+    data_id : int
+    value : str
 
 class NodeIsDownedExceptiopn(Exception):
 

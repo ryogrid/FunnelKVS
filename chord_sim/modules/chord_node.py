@@ -42,14 +42,15 @@ class ChordNode:
         # 大半のkeyはレプリカを自身に保持させているノードとなるが、自ノードである場合も同じ枠組みで
         # 扱う.
         # つまり、レプリカでないデータについてもこのインデックス辞書は扱うことになる
-        self.master2data_idx : Dict[NodeInfo, List[StoredValueEntry]]
+        self.master2data_idx : Dict[NodeInfo, List[StoredValueEntry]] = {}
 
-        # 保持してるデータが紐づいている主担当ノードの情報を保持するためのリスト
+        # 保持してるデータが紐づいている主担当ノードの情報を保持するためのdict
         # ただし、主担当ノードが切り替わった場合に参照先を一つ切り替えるだけで関連する
         # 全データの紐づけが変更可能とするため、NodeInfoを指す（参照をフィールドに持つ）
         # NodeInfoPointerクラスを間に挟む形とし、StoredValueEntryでも当該クラスの
         # オブジェクト参照するようにしてある
-        self.master_node_list : List[NodeInfoPointer]
+        # キーはマスターノードのID文字列
+        self.master_node_dict : Dict[str, NodeInfoPointer] = {}
 
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chorネットワーク上でのIDを決定する
         self.node_info.address_str = ChordUtil.gen_address_str()
@@ -223,12 +224,27 @@ class ChordNode:
     def receive_replica(self, master_node : NodeInfo, pass_datas : List[DataIdAndValue]) -> int:
         raise Exception("not implemented yet")
 
-    def put(self, data_id : int, value_str : str):
+    def store_new_data(self, data_id : int, value_str : str):
         key_id_str = str(data_id)
-        self.stored_data[key_id_str] = value_str
+        #self.stored_data[key_id_str] = value_str
+        try:
+            ninfo_p = self.master_node_dict[key_id_str]
+        except KeyError:
+            ninfo_p = NodeInfoPointer(self.node_info)
+            self.master_node_dict[key_id_str] = ninfo_p
 
-        # TODO: データの保持形式の変更への対応
-        #       on put
+        sv_entry = StoredValueEntry(master_info=ninfo_p, data_id=data_id, value=value_str)
+        self.stored_data[self.node_info] = sv_entry
+        try:
+            data_list : List[StoredValueEntry] = self.master2data_idx[self.node_info]
+        except KeyError:
+            data_list = []
+            self.master2data_idx[self.node_info] = data_list
+
+        data_list.append(sv_entry)
+
+    def put(self, data_id : int, value_str : str):
+        self.store_new_data(data_id, value_str)
 
         # TODO: レプリカを successorList内のノードに渡す処理の実装
         #       receive_replicaメソッドの呼び出しが主.

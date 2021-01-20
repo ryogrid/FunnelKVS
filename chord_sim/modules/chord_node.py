@@ -35,11 +35,8 @@ class ChordNode:
     def __init__(self, node_address: str, first_node=False):
         self.node_info = NodeInfo()
 
-        # TODO: レプリケーション対応したら下のコメントアウトされたフィールドに切り替える
-        # KeyもValueもどちらも文字列. Keyはハッシュを通されたものなので元データの値とは異なる
-        self.stored_data : Dict[str, str] = {}
-
-        # self.stored_data : Dict[str, StoredValueEntry] = {}
+        # Keyはハッシュを通されたものなので元データの値とは異なる
+        self.stored_data : Dict[str, StoredValueEntry] = {}
 
         # 主担当ノードのNodeInfoオブジェクトから、そのノードが担当するデータを引くためのインデックス辞書.
         # 大半のkeyはレプリカを自身に保持させているノードとなるが、自ノードである場合も同じ枠組みで

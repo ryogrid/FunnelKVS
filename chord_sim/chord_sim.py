@@ -193,7 +193,7 @@ def do_stabilize_once_at_all_node():
             if selected_operation == "successor":
                 node = shuffled_node_list_successor.pop()
                 if node.is_alive == True:
-                    node.stabilize_successor()
+                    node.stabilizer.stabilize_successor()
                     ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                                        + str(done_stabilize_successor_cnt))
                 done_stabilize_successor_cnt += 1
@@ -206,7 +206,7 @@ def do_stabilize_once_at_all_node():
                     ChordUtil.dprint(
                         "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                         + str(cur_ftable_idx))
-                    node.stabilize_finger_table(cur_ftable_idx)
+                    node.stabilizer.stabilize_finger_table(cur_ftable_idx)
                 done_stabilize_ftable_cnt += 1
 
                 if done_stabilize_ftable_cnt % cur_node_num == 0:

@@ -200,14 +200,15 @@ class NodeInfoPointer:
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
-    def __init__(self, key, value):
-        self.key : str = key
+    def __init__(self, key : Optional[str], value : str):
+        self.key : Optional[str] = key
         self.value_data : str = value
+        self.data_id : Optional[int] = None
         # keyのハッシュ値
         if key == None:
             self.data_id = None
         else:
-            self.data_id : int = ChordUtil.hash_str_to_int(key)
+            self.data_id = ChordUtil.hash_str_to_int(cast(str, key))
 
 @dataclasses.dataclass
 class DataIdAndValue:

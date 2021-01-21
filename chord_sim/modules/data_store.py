@@ -99,9 +99,6 @@ class DataStore:
     # rest_copy引数によってコピーを渡すだけか、完全に委譲してしまい自身のデータストアからは渡したデータを削除
     # するかどうか選択できる
     def delegate_my_tantou_data(self, node_id : int, rest_copy : bool = True) -> List[KeyValue]:
-        #TODO: 新しいデータ保持の枠組みに対応させる
-        #      on delegate_my_tantou_data
-
         ret_datas : List[KeyValue] = []
         for key, value in self.stored_data.items():
             data_id : int = int(key)
@@ -114,7 +111,7 @@ class DataStore:
 
             # 文字列の参照をそのまま用いてしまうが、文字列はイミュータブルであるため
             # 問題ない
-            item = KeyValue(None, value)
+            item = KeyValue(None, value.value_data)
             item.data_id = data_id
             ret_datas.append(item)
 

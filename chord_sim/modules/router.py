@@ -1,17 +1,19 @@
 # coding:utf-8
 
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
 import modules.gval as gval
-from .node_info import NodeInfo
-from .chord_node import ChordNode
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
     TargetNodeDoesNotExistException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
 
+if TYPE_CHECKING:
+    from .node_info import NodeInfo
+    from .chord_node import ChordNode
+
 class Router:
 
-    def __init__(self, existing_node : ChordNode):
-        self.existing_node : ChordNode = existing_node
+    def __init__(self, existing_node : 'ChordNode'):
+        self.existing_node : 'ChordNode' = existing_node
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
@@ -43,7 +45,7 @@ class Router:
     def find_predecessor(self, id: int) -> 'ChordNode':
         ChordUtil.dprint("find_predecessor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
 
-        n_dash : ChordNode = self.existing_node
+        n_dash : 'ChordNode' = self.existing_node
         # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
         while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info_list[0].node_id, id):
             ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -99,7 +101,7 @@ class Router:
                 ChordUtil.dprint("closest_preceding_finger_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
                 continue
 
-            casted_node_info = cast(NodeInfo, node_info)
+            casted_node_info = cast('NodeInfo', node_info)
 
             ChordUtil.dprint("closest_preceding_finger_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                   + ChordUtil.gen_debug_str_of_node(casted_node_info))

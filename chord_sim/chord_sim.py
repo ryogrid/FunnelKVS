@@ -248,7 +248,7 @@ def do_put_on_random_node():
         node = get_a_random_node()
 
     # 成功した場合はTrueが返るのでその場合だけ all_node_dictに追加する
-    if node.global_put(kv_data.data_id, kv_data.value):
+    if node.global_put(kv_data.data_id, kv_data.value_data):
         gval.all_data_list.append(kv_data)
 
     if is_retry:
@@ -378,11 +378,11 @@ def main():
     data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     data_put_th_handle.start()
 
-    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
-    # data_get_th_handle.start()
+    data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
+    data_get_th_handle.start()
 
-    node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
-    node_kill_th_handle.start()
+    # node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
+    # node_kill_th_handle.start()
 
     while True:
         time.sleep(1)

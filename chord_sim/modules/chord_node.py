@@ -100,10 +100,13 @@ class ChordNode:
 
         self.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
 
+        #TODO: 新しいデータ保持の枠組みに対応させる
+        #      on join
+
         # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
         tantou_data_list : List[KeyValue] = successor.data_store.delegate_my_tantou_data(self.node_info.node_id, False)
         for key_value in tantou_data_list:
-            self.stored_data[str(key_value.data_id)] = key_value.value
+            self.data_store.store_new_data(key_value.data_id, key_value.value_data)
 
         # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
         self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
@@ -323,12 +326,12 @@ class ChordNode:
     # 得られた value の文字列を返す
     def get(self, data_id : int) -> str:
         try:
-            ret_value_str = self.stored_data[str(data_id)]
+            sv_entry : StoredValueEntry = self.data_store.get(data_id)
         except:
-            ret_value_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
-
-        # TODO: データの保持形式の変更への対応
-        #       on get
+            err_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
+            ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                         + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
+            return err_str
 
         # TODO: get要求に応じたデータを参照した際に自身が担当でないノードであった
         #       場合は、担当ノードの生死をチェックし、生きていれば QUERIED_DATA_NOT_FOUND_STR
@@ -339,8 +342,11 @@ class ChordNode:
         #         自身のsuccessorList内の全ノードがレプリカを持った状態とする
         #         receive_replicaメソッドを利用する
         #       on get
+        ret_value_str : str = sv_entry.value_data
+        print(ret_value_str)
+        print("", flush=True)
 
-        ChordUtil.dprint("get," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        ChordUtil.dprint("get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
         return ret_value_str
 

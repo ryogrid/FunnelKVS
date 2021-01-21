@@ -195,14 +195,14 @@ class ChordUtil:
 # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
 class NodeInfoPointer:
 
-    def __init__(self, node_info : NodeInfo):
+    def __init__(self, node_info : 'NodeInfo'):
         self.node_info : NodeInfo = node_info
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
     def __init__(self, key, value):
         self.key : str = key
-        self.value : str = value
+        self.value_data : str = value
         # keyのハッシュ値
         if key == None:
             self.data_id = None
@@ -218,7 +218,14 @@ class DataIdAndValue:
 class StoredValueEntry:
     master_info : NodeInfoPointer
     data_id : int
-    value : str
+    value_data : str
+
+# class StoredValueEntry:
+#
+#     def __init__(self, master_info : NodeInfoPointer, data_id : int, value_data : str):
+#         self.master_info : NodeInfoPointer = master_info
+#         self.data_id : int = data_id
+#         self.value_data : str = value_data
 
 class NodeIsDownedExceptiopn(Exception):
 

@@ -1,31 +1,33 @@
 # coding:utf-8
 
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
 import modules.gval as gval
-from .node_info import NodeInfo
-from .chord_node import ChordNode
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
     TargetNodeDoesNotExistException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
 
+if TYPE_CHECKING:
+    from .node_info import NodeInfo
+    from .chord_node import ChordNode
+
 class Stabilizer:
 
-    def __init__(self, existing_node : ChordNode):
-        self.existing_node : ChordNode = existing_node
+    def __init__(self, existing_node : 'ChordNode'):
+        self.existing_node : 'ChordNode' = existing_node
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
     # Attention: TargetNodeDoesNotExistException を raiseする場合がある
-    def check_predecessor(self, id : int, node_info : NodeInfo):
+    def check_predecessor(self, id : int, node_info : 'NodeInfo'):
         ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
         # この時点で認識している predecessor がノードダウンしていないかチェックする
-        is_pred_alived = ChordUtil.is_node_alive(cast(NodeInfo, self.existing_node.node_info.predecessor_info).address_str)
+        is_pred_alived = ChordUtil.is_node_alive(cast('NodeInfo', self.existing_node.node_info.predecessor_info).address_str)
 
         if is_pred_alived:
             distance_check = ChordUtil.calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id, id)
-            distance_cur = ChordUtil.calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id, cast(NodeInfo,self.existing_node.node_info.predecessor_info).node_id)
+            distance_cur = ChordUtil.calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id, cast('NodeInfo',self.existing_node.node_info.predecessor_info).node_id)
 
             # 確認を求められたノードの方が現在の predecessor より predecessorらしければ
             # 経路表の情報を更新する
@@ -42,13 +44,13 @@ class Stabilizer:
     #  なノードで、諸々の処理の結果、self の successor[0] となるべきノードであると確認されたノードを返す.
     #　注: この呼び出しにより、self.existing_node.node_info.successor_info_list[0] は更新される
     #  規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
-    def stabilize_successor_inner(self) -> NodeInfo:
+    def stabilize_successor_inner(self) -> 'NodeInfo':
         # 本メソッド呼び出しでsuccessorとして扱うノードはsuccessorListの先頭から生きているもの
         # をサーチし、発見したノードとする.
         ChordUtil.dprint("stabilize_successor_inner_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
 
-        successor : ChordNode
-        successor_tmp : Optional[ChordNode] = None
+        successor : 'ChordNode'
+        successor_tmp : Optional['ChordNode'] = None
         for idx in range(len(self.existing_node.node_info.successor_info_list)):
             try:
                 if ChordUtil.is_node_alive(self.existing_node.node_info.successor_info_list[idx].address_str):
@@ -65,7 +67,7 @@ class Stabilizer:
                 return self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
 
         if successor_tmp != None:
-            successor = cast(ChordNode, successor_tmp)
+            successor = cast('ChordNode', successor_tmp)
         else:
             # successorListの全てのノードを当たっても、生きているノードが存在しなかった場合
             # 起きてはいけない状況なので例外を投げてプログラムを終了させる
@@ -77,7 +79,7 @@ class Stabilizer:
         ChordUtil.dprint("stabilize_successor_inner_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
-        pred_id_of_successor = cast(NodeInfo, successor.node_info.predecessor_info).node_id
+        pred_id_of_successor = cast('NodeInfo', successor.node_info.predecessor_info).node_id
 
         ChordUtil.dprint("stabilize_successor_inner_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
@@ -112,7 +114,7 @@ class Stabilizer:
                     # 自身の認識するsuccessorの情報を更新する
 
                     try:
-                        new_successor = ChordUtil.get_node_by_address(cast(NodeInfo, successor.node_info.predecessor_info).address_str)
+                        new_successor = ChordUtil.get_node_by_address(cast('NodeInfo', successor.node_info.predecessor_info).address_str)
                         self.existing_node.node_info.successor_info_list.insert(0, new_successor.node_info.get_partial_deepcopy())
 
                         # TODO: 新たなsuccesorに対して担当データのレプリカを渡し、successorListから溢れたノードには
@@ -170,13 +172,13 @@ class Stabilizer:
         # を返答させるといったものである.
 
         # 最終的に self.existing_node.node_info.successor_info_listに上書きするリスト
-        updated_list : List[NodeInfo] = []
+        updated_list : List['NodeInfo'] = []
 
         # 最初は自ノードを指定してそのsuccessor[0]を取得するところからスタートする
-        cur_node : ChordNode = self
+        cur_node : 'ChordNode' = self.existing_node
 
         while len(updated_list) < gval.SUCCESSOR_LIST_NORMAL_LEN:
-            cur_node_info : NodeInfo = cur_node.stabilize_successor_inner()
+            cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
             ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(cur_node_info))
             if cur_node_info.node_id == self.existing_node.node_info.node_id:
@@ -213,7 +215,7 @@ class Stabilizer:
         # 担当するノードに最も近いノードが格納される
         update_id = ChordUtil.overflow_check_and_conv(self.existing_node.node_info.node_id + 2**idx)
         try:
-            found_node = self.find_successor(update_id)
+            found_node = self.existing_node.router.find_successor(update_id)
         except AppropriateNodeNotFoundException:
             # 適切な担当ノードを得ることができなかった
             # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた

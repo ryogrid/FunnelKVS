@@ -1,16 +1,18 @@
 # coding:utf-8
 
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
-from .node_info import NodeInfo
-from .chord_node import ChordNode
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
     TargetNodeDoesNotExistException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
 
+if TYPE_CHECKING:
+    from .chord_node import ChordNode
+    from .node_info import NodeInfo
+
 class DataStore:
 
-    def __init__(self, existing_node : ChordNode):
-        self.existing_node : ChordNode = existing_node
+    def __init__(self, existing_node : 'ChordNode'):
+        self.existing_node : 'ChordNode' = existing_node
 
         # Keyはハッシュを通されたものなので元データの値とは異なる
         self.stored_data : Dict[str, StoredValueEntry] = {}
@@ -29,22 +31,28 @@ class DataStore:
         # キーはマスターノードのID文字列
         self.master_node_dict : Dict[str, NodeInfoPointer] = {}
 
-    def store_new_data(self, data_id : int, value_str : str):
+    # master_node引数を指定しなかった場合は、self.existing_node.node_info をデータのマスターの情報として格納する
+    def store_new_data(self, data_id : int, value_str : str, master_info : Optional['NodeInfo'] = None):
+        if master_info == None:
+            master_node_info = self.existing_node.node_info
+        else:
+            master_node_info = cast(NodeInfo, master_info).get_partial_deepcopy()
+
         key_id_str = str(data_id)
         #self.stored_data[key_id_str] = value_str
         try:
             ninfo_p = self.master_node_dict[key_id_str]
         except KeyError:
-            ninfo_p = NodeInfoPointer(self.existing_node.node_info)
+            ninfo_p = NodeInfoPointer(master_node_info)
             self.master_node_dict[key_id_str] = ninfo_p
 
-        sv_entry = StoredValueEntry(master_info=ninfo_p, data_id=data_id, value=value_str)
+        sv_entry = StoredValueEntry(master_info=ninfo_p, data_id=data_id, value_data=value_str)
         self.stored_data[key_id_str] = sv_entry
         try:
-            data_list : List[StoredValueEntry] = self.master2data_idx[self.existing_node.node_info]
+            data_list : List[StoredValueEntry] = self.master2data_idx[master_node_info]
         except KeyError:
             data_list = []
-            self.master2data_idx[self.existing_node.node_info] = data_list
+            self.master2data_idx[master_node_info] = data_list
 
         data_list.append(sv_entry)
 
@@ -54,7 +62,7 @@ class DataStore:
     #       対象 data_id の範囲は [range_start, range_end) となり、両方を無指定とした場合は
     #       全範囲が対象となる
     #       delete_replica
-    def delete_replica(self, master_node : NodeInfo, range_start : int = -1, range_end : int = -1):
+    def delete_replica(self, master_node : 'NodeInfo', range_start : int = -1, range_end : int = -1):
         raise Exception("not implemented yet")
 
     # TODO: 自ノードが担当ノードとして保持しているデータを全て返す
@@ -65,7 +73,7 @@ class DataStore:
     # TODO: 自ノードが担当ノードとなっているものを除いて、保持しているデータをマスター
     #       ごとに dict に詰めて返す
     #       pass_all_replica
-    def pass_all_replica(self) -> Dict[NodeInfo, List[DataIdAndValue]]:
+    def pass_all_replica(self) -> Dict['NodeInfo', List[DataIdAndValue]]:
         raise Exception("not implemented yet")
 
     # TODO: レプリカデータを呼び出し先ノードに受け取らせる
@@ -74,13 +82,13 @@ class DataStore:
     #       返り値として、処理が完了した時点でmaster_nodeに紐づいているレプリカをいくつ保持して
     #       いるかを返す
     #       receive_replica
-    def receive_replica(self, master_node : NodeInfo, pass_datas : List[DataIdAndValue]) -> int:
+    def receive_replica(self, master_node : 'NodeInfo', pass_datas : List[DataIdAndValue]) -> int:
         raise Exception("not implemented yet")
 
     # TODO: レプリカに紐づけられているマスターノードが切り替わったことを通知し、管理情報を
     #       通知内容に応じて更新させる
     #       notify_master_node_change
-    def notify_master_node_change(self, old_master : NodeInfo, new_master : NodeInfo):
+    def notify_master_node_change(self, old_master : 'NodeInfo', new_master : 'NodeInfo'):
         raise Exception("not implemented yet")
 
     # 自身が保持しているデータのうち委譲するものを返す.
@@ -124,3 +132,7 @@ class DataStore:
         #       on delegate_my_tantou_data
 
         return ret_datas
+
+    # 存在しないKeyが与えられた場合 KeyErrorがraiseされる
+    def get(self, data_id : int) -> StoredValueEntry:
+        return self.stored_data[str(data_id)]

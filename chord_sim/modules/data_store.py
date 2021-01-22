@@ -17,11 +17,11 @@ class DataStore:
         # Keyはハッシュを通されたものなので元データの値とは異なる
         self.stored_data : Dict[str, StoredValueEntry] = {}
 
-        # 主担当ノードのNodeInfoオブジェクトから、そのノードが担当するデータを引くためのインデックス辞書.
+        # 主担当ノードのnode_id文字列から、そのノードが担当するデータを引くためのインデックス辞書.
         # 大半のkeyはレプリカを自身に保持させているノードとなるが、自ノードである場合も同じ枠組みで
         # 扱う.
         # つまり、レプリカでないデータについてもこのインデックス辞書は扱うことになる
-        self.master2data_idx : Dict[NodeInfo, List[StoredValueEntry]] = {}
+        self.master2data_idx : Dict[str, List[StoredValueEntry]] = {}
 
         # 保持してるデータが紐づいている主担当ノードの情報を保持するためのdict
         # ただし、主担当ノードが切り替わった場合に参照先を一つ切り替えるだけで関連する
@@ -49,10 +49,10 @@ class DataStore:
         sv_entry = StoredValueEntry(master_info=ninfo_p, data_id=data_id, value_data=value_str)
         self.stored_data[key_id_str] = sv_entry
         try:
-            data_list : List[StoredValueEntry] = self.master2data_idx[master_node_info]
+            data_list : List[StoredValueEntry] = self.master2data_idx[str(master_node_info.node_id)]
         except KeyError:
             data_list = []
-            self.master2data_idx[master_node_info] = data_list
+            self.master2data_idx[str(master_node_info.node_id)] = data_list
 
         data_list.append(sv_entry)
 
@@ -79,10 +79,11 @@ class DataStore:
     # TODO: レプリカデータを呼び出し先ノードに受け取らせる
     #       他のノードが保持しておいて欲しいレプリカを渡す際に呼び出される.
     #       なお、master_node 引数と呼び出し元ノードは一致しない場合がある.
+    #       replace_allオプション引数をTrueとした場合は、指定したノードのデータを丸っと入れ替える
     #       返り値として、処理が完了した時点でmaster_nodeに紐づいているレプリカをいくつ保持して
     #       いるかを返す
     #       receive_replica
-    def receive_replica(self, master_node : 'NodeInfo', pass_datas : List[DataIdAndValue]) -> int:
+    def receive_replica(self, master_node : 'NodeInfo', pass_datas : List[DataIdAndValue], replace_all = False) -> int:
         raise Exception("not implemented yet")
 
     # TODO: レプリカに紐づけられているマスターノードが切り替わったことを通知し、管理情報を
@@ -133,3 +134,11 @@ class DataStore:
     # 存在しないKeyが与えられた場合 KeyErrorがraiseされる
     def get(self, data_id : int) -> StoredValueEntry:
         return self.stored_data[str(data_id)]
+
+    def get_replica_cnt_by_master_node(self, node_id : int) -> int:
+        replica_list = self.master2data_idx[str(node_id)]
+        return len(replica_list)
+
+    def get_all_replica_by_master_node(self, node_id : int) -> List[DataIdAndValue]:
+        replica_list : List[StoredValueEntry] = self.master2data_idx[str(node_id)]
+        return [DataIdAndValue(data_id = data.data_id, value_data=data.value_data ) for data in replica_list]

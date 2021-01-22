@@ -196,17 +196,48 @@ class ChordNode:
         return True
 
     def put(self, data_id : int, value_str : str):
+        ChordUtil.dprint("put_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                         + ChordUtil.gen_debug_str_of_data(data_id))
+
         self.data_store.store_new_data(data_id, value_str)
 
-        # TODO: レプリカを successorList内のノードに渡す処理の実装
-        #       receive_replicaメソッドの呼び出しが主.
-        #       なお、新規ノードのjoin時のレプリカのコピーにおいて、predecessorのさらに前に位置するノードが
-        #       担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
-        #       全てを保持していないノードが存在する場合があるため、receive_replicaメソッド呼び出し時に返ってくる
-        #       レプリカデータの保持数が、認識と合っていない場合は、不足しているデータを渡すといった対処が必要となる
-        #       on put
+        # レプリカを successorList内のノードに渡す
+        # なお、新規ノードのjoin時のレプリカのコピーにおいて、predecessorのさらに前に位置するノードが
+        # 担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
+        # 全てを保持していないノードが存在する場合があるため、receive_replicaメソッド呼び出し時に返ってくる
+        # レプリカの保持数が、全件となっていない場合は全て保持させる
+        for succ_info in self.node_info.successor_info_list:
+            try:
+                succ_node : ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
+            except NodeIsDownedExceptiopn:
+                # stabilize_successor等を経ていずれ正常な状態に
+                # なるため、ここでは何もせずに次のノードに移る
+                ChordUtil.dprint("put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                                 + ChordUtil.gen_debug_str_of_node(succ_info))
+                continue
 
-        ChordUtil.dprint("put," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+            has_replica_cnt = succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(),[
+                                                                     DataIdAndValue(
+                                                                       data_id=data_id,
+                                                                       value_data=value_str
+                                                                     )])
+            correct_replica_cnt = self.data_store.get_replica_cnt_by_master_node(self.node_info.node_id)
+
+            # レプリカを渡したノードが保持しているべき自ノードのレプリカを全て保持していない場合
+            # 全て保持させる
+            if has_replica_cnt != correct_replica_cnt:
+                replica_list = self.data_store.get_all_replica_by_master_node(self.node_info.node_id)
+                succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(), replica_list, replace_all=True)
+                ChordUtil.dprint("put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                                 + ChordUtil.gen_debug_str_of_node(succ_info))
+
+            ChordUtil.dprint("put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                             + ChordUtil.gen_debug_str_of_node(succ_info))
+
+        ChordUtil.dprint("put_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
     # 得られた value の文字列を返す

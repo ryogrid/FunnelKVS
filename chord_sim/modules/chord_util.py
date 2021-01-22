@@ -213,7 +213,7 @@ class KeyValue:
 @dataclasses.dataclass
 class DataIdAndValue:
     data_id : int
-    value : str
+    value_data : str
 
 @dataclasses.dataclass
 class StoredValueEntry:

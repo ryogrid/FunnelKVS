@@ -9,6 +9,7 @@ import modules.gval as gval
 from modules.node_info import NodeInfo
 from modules.chord_util import ChordUtil, KeyValue
 from modules.chord_node import ChordNode, NodeIsDownedExceptiopn
+from modules.stabilizer import Stabilizer
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
@@ -119,12 +120,12 @@ def add_new_node():
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
-    if ChordNode.need_join_retry_node != None:
+    if Stabilizer.need_join_retry_node != None:
         # 前回の呼び出しが失敗していた場合はリトライを行う
         tyukai_node = ChordNode.need_join_retry_tyukai_node
         new_node = ChordNode.need_join_retry_node
-        new_node.join(tyukai_node.node_info.address_str)
-        if ChordNode.need_join_retry_node == None:
+        new_node.stabilizer.join(tyukai_node.node_info.address_str)
+        if Stabilizer.need_join_retry_node == None:
             # リトライ情報が再設定されていないためリトライに成功したと判断
             ChordUtil.dprint(
                 "add_new_node_1,retry of join is succeeded," + ChordUtil.gen_debug_str_of_node(new_node.node_info))
@@ -135,7 +136,7 @@ def add_new_node():
         tyukai_node = get_a_random_node()
         new_node = ChordNode(tyukai_node.node_info.address_str)
 
-    if ChordNode.need_join_retry_node == None:
+    if Stabilizer.need_join_retry_node == None:
         # join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
         gval.all_node_dict[new_node.node_info.address_str] = new_node
 

@@ -84,7 +84,8 @@ class DataStore:
     #       いるかを返す
     #       receive_replica
     def receive_replica(self, master_node : 'NodeInfo', pass_datas : List[DataIdAndValue], replace_all = False) -> int:
-        raise Exception("not implemented yet")
+        pass
+        # raise Exception("not implemented yet")
 
     # TODO: レプリカに紐づけられているマスターノードが切り替わったことを通知し、管理情報を
     #       通知内容に応じて更新させる

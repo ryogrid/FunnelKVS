@@ -29,10 +29,7 @@ class ChordNode:
     need_put_retry_data_value : str = ""
     need_put_retry_node : Optional['ChordNode'] = None
 
-    # join が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のjoin処理の際にリトライさせる
-    # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
-    need_join_retry_node : Optional['ChordNode'] = None
-    need_join_retry_tyukai_node: Optional['ChordNode'] = None
+
 
     # join処理もコンストラクタで行ってしまう
     def __init__(self, node_address: str, first_node=False):
@@ -65,113 +62,7 @@ class ChordNode:
 
             return
         else:
-            self.join(node_address)
-
-    # TODO: successor_info_listの長さをチェックし、規定長を越えていた場合
-    #       余剰なノードにレプリカを削除させた上で、リストから取り除く
-    #       実装には delete_replica メソッドを用いればよい
-    #       check_replication_redunduncy
-    def check_replication_redunduncy(self):
-        raise Exception("not implemented yet")
-
-    # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
-    def join(self, node_address : str):
-        # 実装上例外は発生しない.
-        # また実システムでもダウンしているノードの情報が与えられることは想定しない
-        tyukai_node = ChordUtil.get_node_by_address(node_address)
-        ChordUtil.dprint("join_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
-
-        try:
-            # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
-            successor = tyukai_node.router.find_successor(self.node_info.node_id)
-            # リトライは不要なので、本メソッドの呼び出し元がリトライ処理を行うかの判断に用いる
-            # フィールドをリセットしておく
-            ChordNode.need_join_retry_node = None
-        except AppropriateNodeNotFoundException:
-            # リトライに必要な情報を記録しておく
-            ChordNode.need_join_retry_node = self
-            ChordNode.need_join_retry_tyukai_node = tyukai_node
-
-            # 自ノードの情報、仲介ノードの情報
-            ChordUtil.dprint("join_2,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
-            return
-
-        self.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
-
-        # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
-        tantou_data_list : List[KeyValue] = successor.data_store.delegate_my_tantou_data(self.node_info.node_id, False)
-        for key_value in tantou_data_list:
-            self.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)
-
-        # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        self.node_info.finger_table[0] = self.node_info.successor_info_list[0].get_partial_deepcopy()
-
-        if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
-            # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
-
-            predecessor = tyukai_node
-
-            # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
-            self.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
-            tyukai_node.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
-            tyukai_node.node_info.successor_info_list[0] = self.node_info.get_partial_deepcopy()
-            # fingerテーブルの0番エントリも強制的に設定する
-            tyukai_node.node_info.finger_table[0] = self.node_info.get_partial_deepcopy()
-
-
-            ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
-        else:
-            # 強制的に自身を既存のチェーンに挿入する
-            # successorは predecessorの 情報を必ず持っていることを前提とする
-            self.node_info.predecessor_info = cast(NodeInfo, successor.node_info.predecessor_info).get_partial_deepcopy()
-            successor.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
-
-            # 例外発生時は取得を試みたノードはダウンしているが、無視してpredecessorに設定したままにしておく.
-            # 不正な状態に一時的になるが、predecessorをsuccessor_info_listに持つノードが
-            # stabilize_successorを実行した時点で解消されるはず
-            try:
-                predecessor = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
-                predecessor.node_info.successor_info_list.insert(0, self.node_info.get_partial_deepcopy())
-
-                # successorListを埋めておく
-                self.stabilizer.stabilize_successor()
-
-                ChordUtil.dprint("join_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]) + ","
-                                 + ChordUtil.gen_debug_str_of_node(predecessor.node_info))
-            except NodeIsDownedExceptiopn:
-                ChordUtil.dprint("join_5,FIND_NODE_FAILED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
-                pass
-
-        # TODO: 委譲を受けたデータをsuccessorList内の全ノードにレプリカとして配る.
-        #       receive_replicaメソッドを利用する
-        #       on join
-
-        # TODO: predecessorが非Noneであれば、当該predecessorの担当データをレプリカとして保持するため受け取る.
-        #       pass_tantou_data_for_replicationメソッドを利用する
-
-        # TODO: predecessorが非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
-        #       いる場合があるため、そのチェックと越えていた場合の余剰のノードからレプリカを全て削除させる処理を
-        #       呼び出す
-        #       check_replication_redunduncyメソッドを利用する
-        #       on join
-
-        # TODO: successorから保持している全てのレプリカを受け取る（successorよりは前に位置することになるため、
-        #       基本的に全てのレプリカを保持している状態とならなければならない）
-        #       pass_all_replicaメソッドを利用する
-        #       on join
-
-        # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
-        ChordUtil.dprint("join_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(self.node_info.successor_info_list[0]))
+            self.stabilizer.join(node_address)
 
     def global_put(self, data_id : int, value_str : str) -> bool:
         try:

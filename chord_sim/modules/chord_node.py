@@ -250,23 +250,59 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
             return err_str
 
-        # TODO: get要求に応じたデータを参照した際に自身が担当でないノードであった
-        #       場合は、担当ノードの生死をチェックし、生きていれば QUERIED_DATA_NOT_FOUND_STR
-        #       を返し、ダウンしていた場合は、以下の2つを行った上で、保持していたデータを返す
-        #       - 自身のsuccessorList内のノードに担当ノードの変更を通知する（データの紐づけを変えさせる）
-        #         notify_master_node_changeメソッドを利用する
-        #       - 通常、担当が切り替わった場合、レプリカの保有ノードが規定数より少なくなってしまうため、
-        #         自身のsuccessorList内の全ノードがレプリカを持った状態とする
-        #         receive_replicaメソッドを利用する
-        #       on get
 
-        # print(sv_entry)
-        ret_value_str : str = sv_entry.value_data
-        # print(ret_value_str)
-        # print("", flush=True)
+        if sv_entry.master_info.node_info.node_id == self.node_info.node_id:
+            # 自ノードが担当ノード（マスター）のデータであった
+            ret_value_str = sv_entry.value_data
+            ChordUtil.dprint("get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
+        else:
+            # get要求に応じたデータを参照した際に自身が担当でないノードであった場合は、
+            # 担当ノードの生死をチェックし、生きていれば QUERIED_DATA_NOT_FOUND_STR
+            # を返し、ダウンしていた場合は、自身がダウンしていた担当ノードに成り代わる.
+            # 具体的には、以下を行った上で、保持しているデータを返す
+            #   - 自身の保持しているデータに紐づいている担当ノードの情報を更新する
+            #   - 自身のsuccessorList内のノードに担当ノードの変更を通知する（データの紐づけを変えさせる）
+            #     notify_master_node_changeメソッドを利用する
+            #  通常、担当が切り替わった場合、レプリカの保有ノード数が規定数より少なくなってしまうが、
+            #  少なくとも次に新たなデータの put を受けた際に、不足状態が解消される処理が走るため
+            #  ここでは、レプリカの保持ノードを増やすような処理は行わない
 
-        ChordUtil.dprint("get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+            if ChordUtil.is_node_alive(sv_entry.master_info.node_info.address_str):
+                # データの担当ノードであるマスターが生きていた.
+                # 自身はレプリカを保持しているが、取得先が誤っているためエラーとして扱う.
+                # (返してしまってもほとんどの場合で問題はないが、マスターに put や delete などの更新リクエストが
+                #  かかっていた場合、タイミングによってデータの不整合が起きてしまう)
+                ret_value_str = self.QUERIED_DATA_NOT_FOUND_STR
+                ChordUtil.dprint("get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
+            else:
+                # データの担当ノードであるマスターがダウンしていた.
+                # 自身の保持しているデータに紐づいている担当ノードの情報を更新する
+                self.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
+
+                # 自身のsuccessorList内のノードに担当ノードの変更を通知する
+                for node_info in self.node_info.successor_info_list:
+                    try:
+                        node_obj : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
+                        node_obj.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
+                        ChordUtil.dprint("get_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_data(data_id))
+                    except NodeIsDownedExceptiopn:
+                        # ノードがダウンしていた場合は無視して次のノードに進む
+                        # ノードダウンに関する対処は stabilize 処理の中で後ほど行われるためここでは
+                        # 何もしない
+                        ChordUtil.dprint("get_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_data(data_id))
+                        continue
+
+        ChordUtil.dprint("get_6," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
+
         return ret_value_str
 
     # TODO: Deleteの実装

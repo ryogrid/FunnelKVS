@@ -36,7 +36,7 @@ class DataStore:
         if master_info == None:
             master_node_info = self.existing_node.node_info
         else:
-            master_node_info = cast(NodeInfo, master_info).get_partial_deepcopy()
+            master_node_info = cast('NodeInfo', master_info).get_partial_deepcopy()
 
         key_id_str = str(data_id)
         #self.stored_data[key_id_str] = value_str

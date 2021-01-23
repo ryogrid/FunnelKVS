@@ -56,14 +56,41 @@ class DataStore:
 
         data_list.append(sv_entry)
 
-    # TODO: 保持しているレプリカを data_id の範囲を指定して削除させる.
-    #       マスターノードの担当範囲の変更や、新規ノードのjoinにより、レプリカを保持させていた
-    #       ノードの保持するデータに変更が生じたり、レプリケーションの対象から外れた場合に用いる.
-    #       対象 data_id の範囲は [range_start, range_end) となり、両方を無指定とした場合は
-    #       全範囲が対象となる
-    #       delete_replica
+    # 保持しているレプリカを data_id の範囲を指定して削除させる.
+    # マスターノードの担当範囲の変更や、新規ノードのjoinにより、レプリカを保持させていた
+    # ノードの保持するデータに変更が生じたり、レプリケーションの対象から外れた場合に用いる.
+    # 対象 data_id の範囲は (range_start, range_end) となり、両方を無指定とした場合は
+    # 全範囲が対象となる
+    # data_idの範囲はstartからendに向かう向きがChord空間上で右回りとなるよう指定する
     def delete_replica(self, master_node : 'NodeInfo', range_start : int = -1, range_end : int = -1):
-        raise Exception("not implemented yet")
+        ChordUtil.dprint("delete_replica_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(master_node) + ","
+                         + str(range_start) + "," + str(range_end))
+        try:
+            related_entries: List[StoredValueEntry] = self.master2data_idx[str(master_node.node_id)]
+        except KeyError:
+            ChordUtil.dprint("delete_replica_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(master_node) + ","
+                             + str(range_start) + "," + str(range_end))
+            return
+
+        # 範囲指定されていた場合は該当範囲に含まれるデータのみを削除する
+        if range_start != -1 and range_end != -1:
+            delete_entries : List[StoredValueEntry] = []
+            for sv_entry in related_entries:
+                if ChordUtil.exist_between_two_nodes_right_mawari(range_start, range_end, sv_entry.data_id):
+                    delete_entries.append(sv_entry)
+            for sv_entry in delete_entries:
+                related_entries.remove(sv_entry)
+
+        # 全範囲の削除が指定されているか、範囲指定での削除の結果、指定されたマスターノードに紐づくデータが
+        # 0件となった場合、当該ノードに関連する管理情報は不要であるため削除する
+        try:
+            if len(related_entries) == 0 or (range_start == -1 and range_end == -1):
+                del self.master2data_idx[str(master_node.node_id)]
+                del self.master_node_dict[str(master_node.node_id)]
+        except KeyError:
+            pass
 
     # TODO: 自ノードが担当ノードとして保持しているデータを全て返す
     #       pass_tantou_data_for_replication
@@ -76,16 +103,21 @@ class DataStore:
     def pass_all_replica(self) -> Dict['NodeInfo', List[DataIdAndValue]]:
         raise Exception("not implemented yet")
 
-    # TODO: レプリカデータを呼び出し先ノードに受け取らせる
-    #       他のノードが保持しておいて欲しいレプリカを渡す際に呼び出される.
-    #       なお、master_node 引数と呼び出し元ノードは一致しない場合がある.
-    #       replace_allオプション引数をTrueとした場合は、指定したノードのデータを丸っと入れ替える
-    #       返り値として、処理が完了した時点でmaster_nodeに紐づいているレプリカをいくつ保持して
-    #       いるかを返す
-    #       receive_replica
+    # レプリカデータを受け取る
+    # 他のノードが、保持しておいて欲しいレプリカを渡す際に呼び出される.
+    # なお、master_node 引数と呼び出し元ノードは一致しない場合がある.
+    # replace_allオプション引数をTrueとした場合は、指定したノードのデータを丸っと入れ替える
+    # 返り値として、処理が完了した時点でmaster_nodeに紐づいているレプリカをいくつ保持して
+    # いるかを返す
     def receive_replica(self, master_node : 'NodeInfo', pass_datas : List[DataIdAndValue], replace_all = False) -> int:
-        pass
-        # raise Exception("not implemented yet")
+        if replace_all:
+            self.delete_replica(master_node)
+
+        copied_master_node = master_node.get_partial_deepcopy()
+        for id_value in pass_datas:
+            self.store_new_data(id_value.data_id, id_value.value_data, master_info=copied_master_node)
+
+        return self.get_replica_cnt_by_master_node(master_node.node_id)
 
     # TODO: レプリカに紐づけられているマスターノードが切り替わったことを通知し、管理情報を
     #       通知内容に応じて更新させる

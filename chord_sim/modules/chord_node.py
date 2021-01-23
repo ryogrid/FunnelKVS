@@ -29,8 +29,6 @@ class ChordNode:
     need_put_retry_data_value : str = ""
     need_put_retry_node : Optional['ChordNode'] = None
 
-
-
     # join処理もコンストラクタで行ってしまう
     def __init__(self, node_address: str, first_node=False):
         self.node_info : NodeInfo = NodeInfo()

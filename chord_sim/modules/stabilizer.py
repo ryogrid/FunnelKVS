@@ -109,6 +109,7 @@ class Stabilizer:
 
         # TODO: predecessorが非Noneであれば、当該predecessorの担当データをレプリカとして保持するため受け取る.
         #       pass_tantou_data_for_replicationメソッドを利用する
+        #       on join
 
         # TODO: predecessorが非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
         #       いる場合があるため、そのチェックと越えていた場合の余剰のノードからレプリカを全て削除させる処理を

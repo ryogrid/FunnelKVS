@@ -15,3 +15,5 @@
 - design verification with simulator wrote by python
   - you can simulate distributed kvs which has put and get interface
   - **simulation code and design description as code on node down exsisting condition are work in progress**
+- TODO list (Japanese, includes finished tasks)
+  - https://gist.github.com/ryogrid/9b1f340babfbb6cdc9d03e57b7834e71

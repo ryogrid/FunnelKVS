@@ -94,12 +94,14 @@ class DataStore:
 
     # TODO: 自ノードが担当ノードとして保持しているデータを全て返す
     #       pass_tantou_data_for_replication
+    #       for 契機4
     def pass_tantou_data_for_replication(self) -> List[DataIdAndValue]:
         raise Exception("not implemented yet")
 
     # TODO: 自ノードが担当ノードとなっているものを除いて、保持しているデータをマスター
     #       ごとに dict に詰めて返す
     #       pass_all_replica
+    #       for 契機4
     def pass_all_replica(self) -> Dict['NodeInfo', List[DataIdAndValue]]:
         raise Exception("not implemented yet")
 
@@ -119,11 +121,21 @@ class DataStore:
 
         return self.get_replica_cnt_by_master_node(master_node.node_id)
 
-    # TODO: レプリカに紐づけられているマスターノードが切り替わったことを通知し、管理情報を
-    #       通知内容に応じて更新させる
-    #       notify_master_node_change
+    # レプリカに紐づけられているマスターノードが切り替わったことを通知し、管理情報を
+    # 通知内容に応じて更新させる
     def notify_master_node_change(self, old_master : 'NodeInfo', new_master : 'NodeInfo'):
-        raise Exception("not implemented yet")
+        try:
+            # 各データが保持しているマスタの情報への参照を更新する
+            ninfo_p : NodeInfoPointer = self.master_node_dict[str(old_master.node_id)]
+            ninfo_p.node_info = new_master.get_partial_deepcopy()
+
+            # マスターノードのIDから、紐づいているデータのリストを得るための dict においても切り替えを行う
+            data_list : List[StoredValueEntry] = self.master2data_idx[str(old_master.node_id)]
+            del self.master2data_idx[str(old_master.node_id)]
+            self.master2data_idx[str(new_master.node_id)] = data_list
+        except KeyError:
+            # 指定されたマスターノードのデータは保持していなかったことを意味するので何もせずに終了する
+            pass
 
     # 自身が保持しているデータのうち委譲するものを返す.
     # 対象となるデータは時計周りに辿った際に 引数 node_id と 自身の node_id
@@ -136,7 +148,6 @@ class DataStore:
         ret_datas : List[KeyValue] = []
         for key, value in self.stored_data.items():
             data_id : int = int(key)
-
             # Chordネットワークを右回りにたどった時に、データの id (data_id) が呼び出し元の node_id から
             # 自身の node_id の間に位置する場合は、そのデータの担当は自身から変わらないため、渡すデータから
             # 除外する
@@ -154,13 +165,23 @@ class DataStore:
             for kv in ret_datas:
                 del self.stored_data[str(kv.data_id)]
 
-        # TODO: 委譲したことで自身が担当ノードで無くなったデータについてsuccessorList
-        #       内のノードに通知し、削除させる（それらのノードは再度同じレプリカを保持する
-        #       ことになるかもしれないが、それは新担当の管轄なので、非効率ともなるがひとまず削除させる）
-        #       delete_replicaメソッドを利用する
-        #       削除が完了するまで本メソッドは終了しないため、新担当がレプリカを配布する処理と不整合
-        #       が起こることはない
-        #       on delegate_my_tantou_data
+        # 委譲したことで自身が担当ノードで無くなったデータについてsuccessorList
+        # 内のノードに通知し、削除させる（それらのノードは再度同じレプリカを保持する
+        # ことになるかもしれないが、それは新担当の管轄なので、非効率ともなるがひとまず削除させる）
+        # 削除が完了するまで本メソッドは終了しないため、新担当がレプリカを配布する処理と以下の処理が
+        # バッティングすることはない
+        for node_info in self.existing_node.node_info.successor_info_list:
+            try:
+                node : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
+                # マスターノードが自ノードとして設定されているデータのうち自ノードが担当でなくなるデータを削除させる.
+                # 少なくとも、自ノードが担当となる範囲以外は自身の担当でなくなるため、担当範囲以外全てを指定して要請する.
+                # 始点・終点の指定としては、左周りで考えた時に自ノードから、委譲先ノードまでの範囲が、担当が自ノードから
+                # 変化していないID範囲であることを踏まえると、Chordネットワークを右回りでたどった時に、自ノードから委譲
+                # 先のノードに至るID範囲は自身が担当でない全てのID範囲と考えることができる
+                node.data_store.delete_replica(self.existing_node.node_info, self.existing_node.node_info.node_id, node_id)
+            except NodeIsDownedExceptiopn:
+                # stablize処理 がよろしくやってくれるのでここでは何もしない
+                continue
 
         return ret_datas
 

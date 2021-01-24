@@ -99,7 +99,7 @@ class ChordNode:
             try:
                 succ_node : ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
             except NodeIsDownedExceptiopn:
-                # stabilize_successor等を経ていずれ正常な状態に
+                # stabilize処理 と put処理 を経ていずれ正常な状態に
                 # なるため、ここでは何もせずに次のノードに移る
                 ChordUtil.dprint("put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(data_id) + ","
@@ -163,6 +163,7 @@ class ChordNode:
                 try:
                     cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
                 except NodeIsDownedExceptiopn:
+                    # ここでは何も対処はしない
                     ChordUtil.dprint("global_get_1,NODE_IS_DOWNED")
                     break
 
@@ -195,6 +196,7 @@ class ChordNode:
                 try:
                     cur_successor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_successor.node_info.successor_info_list[0]).address_str)
                 except NodeIsDownedExceptiopn:
+                    # ここでは何も対処はしない
                     ChordUtil.dprint("global_get_2,NODE_IS_DOWNED")
                     break
 
@@ -293,7 +295,7 @@ class ChordNode:
                                          + ChordUtil.gen_debug_str_of_data(data_id))
                     except NodeIsDownedExceptiopn:
                         # ノードがダウンしていた場合は無視して次のノードに進む
-                        # ノードダウンに関する対処は stabilize 処理の中で後ほど行われるためここでは
+                        # ノードダウンに関する対処は stabilize処理の中で後ほど行われるためここでは
                         # 何もしない
                         ChordUtil.dprint("get_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                          + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","

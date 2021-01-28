@@ -118,11 +118,11 @@ class Stabilizer:
                 # put処理 の中で後ほど行われるためここでは対処しない
                 continue
 
-        # 自ノードの predecessor が非Noneであれば、当該ノードの担当データをレプリカとして保持しておかなければならないため
-        # データを渡してもらい、格納する
         if self.existing_node.node_info.predecessor_info != None:
             self_predecessor_info : NodeInfo = cast('NodeInfo', self.existing_node.node_info.predecessor_info)
             try:
+                # predecessorが非Noneであれば当該ノードの担当データをレプリカとして保持しておかなければならないため
+                # データを渡してもらい、格納する
                 self_predeessor_node = ChordUtil.get_node_by_address(self_predecessor_info.address_str)
                 pred_tantou_datas : List[DataIdAndValue] = self_predeessor_node.data_store.pass_tantou_data_for_replication()
                 for iv_entry in pred_tantou_datas:
@@ -130,22 +130,22 @@ class Stabilizer:
                                                                  iv_entry.value_data,
                                                                  master_info=self_predecessor_info.get_partial_deepcopy()
                                                                  )
-            except:
+
+                # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
+                # いる場合があるため、そのチェックと、越えていた場合の余剰のノードからレプリカを全て削除させる処理を呼び出す
+                self_predeessor_node.check_replication_redunduncy()
+            except NodeIsDownedExceptiopn:
                 # ノードがダウンしていた場合は無視して次のノードに進む.
                 # ノードダウンに関する対処とそれに関連したレプリカの適切な配置はそれぞれ stabilize処理 と
                 # put処理 の中で後ほど行われるためここでは対処しない
                 pass
 
-        # TODO: predecessorが非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
-        #       いる場合があるため、そのチェックと越えていた場合の余剰のノードからレプリカを全て削除させる処理を
-        #       呼び出す
-        #       check_replication_redunduncyメソッドを利用する
-        #       on join
-
         # TODO: successorから保持している全てのレプリカを受け取る（successorよりは前に位置することになるため、
         #       基本的に全てのレプリカを保持している状態とならなければならない）
         #       pass_all_replicaメソッドを利用する
         #       on join
+        passed_all_replica: Dict[NodeInfo, List[DataIdAndValue]] = successor.data_store.pass_all_replica()
+
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
         ChordUtil.dprint("join_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

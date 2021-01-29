@@ -20,13 +20,28 @@ class Stabilizer:
     def __init__(self, existing_node : 'ChordNode'):
         self.existing_node : 'ChordNode' = existing_node
 
-    # TODO: successor_info_listの長さをチェックし、規定長を越えていた場合
-    #       余剰なノードにレプリカを削除させた上で、リストから取り除く
-    #       実装には delete_replica メソッドを用いればよい
-    #       check_replication_redunduncy
-    #       for 契機3
+    # successor_info_listの長さをチェックし、規定長を越えていた場合余剰なノードにレプリカを
+    # 削除させた上で、リストから取り除く
     def check_replication_redunduncy(self):
-        raise Exception("not implemented yet")
+        ChordUtil.dprint(
+            "check_replication_redunduncy_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+            + str(len(self.existing_node.node_info.successor_info_list)))
+        if len(self.existing_node.node_info.successor_info_list) > gval.SUCCESSOR_LIST_NORMAL_LEN:
+            for idx in range(gval.SUCCESSOR_LIST_NORMAL_LEN, len(self.existing_node.node_info.successor_info_list)):
+                try:
+                    successor_node : ChordNode = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[idx].address_str)
+                    successor_node.data_store.delete_replica(self.existing_node.node_info)
+                    ChordUtil.dprint(
+                        "check_replication_redunduncy_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx])
+                        + str(len(self.existing_node.node_info.successor_info_list)))
+                except NodeIsDownedExceptiopn:
+                    # 余剰ノードがダウンしていた場合はここでは何も対処しない
+                    ChordUtil.dprint(
+                        "check_replication_redunduncy_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx])
+                        + str(len(self.existing_node.node_info.successor_info_list)) + ",NODE_IS_DOWNED")
+                    continue
 
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     def join(self, node_address : str):

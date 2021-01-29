@@ -118,12 +118,17 @@ class DataStore:
                 + "NO_TANDOU_DATA_YET")
             return []
 
-    # TODO: 自ノードが担当ノードとなっているものを除いて、保持しているデータをマスター
-    #       ごとに dict に詰めて返す
-    #       pass_all_replica
-    #       for 契機3
+    # 自ノードが担当ノードとなっているものを除いて、保持しているデータ（レプリカ）を マスターノード
+    # ごとに dict に詰めて返す
     def pass_all_replica(self) -> Dict['NodeInfo', List[DataIdAndValue]]:
-        raise Exception("not implemented yet")
+        ret_dict : Dict['NodeInfo', List[DataIdAndValue]] = {}
+        for node_id_str, ninfo_p in self.master_node_dict.items():
+            master_info : 'NodeInfo' = ninfo_p.node_info.get_partial_deepcopy()
+            if node_id_str != str(self.existing_node.node_info.node_id):
+                data_list = self.master2data_idx[node_id_str]
+                ret_dict[master_info] = [DataIdAndValue(data_id = data.data_id, value_data=data.value_data ) for data in data_list]
+
+        return ret_dict
 
     # レプリカデータを受け取る
     # 他のノードが、保持しておいて欲しいレプリカを渡す際に呼び出される.

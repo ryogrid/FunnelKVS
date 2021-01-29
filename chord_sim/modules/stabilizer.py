@@ -99,7 +99,7 @@ class Stabilizer:
                                  + ChordUtil.gen_debug_str_of_node(predecessor.node_info))
             except NodeIsDownedExceptiopn:
                 # ここでは特に何も対処しない
-                ChordUtil.dprint("join_5,FIND_NODE_FAILED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                ChordUtil.dprint("join_5,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
                 pass
@@ -108,6 +108,9 @@ class Stabilizer:
         for node_info in self.existing_node.node_info.successor_info_list:
             try:
                 node = ChordUtil.get_node_by_address(node_info.address_str)
+                ChordUtil.dprint("join_6," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(node_info) + "," + str(len(self.existing_node.node_info.successor_info_list)))
                 node.data_store.receive_replica(
                     self.existing_node.node_info,
                     [DataIdAndValue(data_id = cast('int', data.data_id), value_data=data.value_data) for data in tantou_data_list]
@@ -116,6 +119,9 @@ class Stabilizer:
                 # ノードがダウンしていた場合は無視して次のノードに進む.
                 # ノードダウンに関する対処とそれに関連したレプリカの適切な配置はそれぞれ stabilize処理 と
                 # put処理 の中で後ほど行われるためここでは対処しない
+                ChordUtil.dprint("join_7,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(node_info))
                 continue
 
         if self.existing_node.node_info.predecessor_info != None:
@@ -130,25 +136,28 @@ class Stabilizer:
                                                                  iv_entry.value_data,
                                                                  master_info=self_predecessor_info.get_partial_deepcopy()
                                                                  )
-
+                ChordUtil.dprint("join_8," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(self_predeessor_node.node_info) + "," + str(len(pred_tantou_datas)))
                 # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
                 # いる場合があるため、そのチェックと、越えていた場合の余剰のノードからレプリカを全て削除させる処理を呼び出す
                 self_predeessor_node.stabilizer.check_replication_redunduncy()
             except NodeIsDownedExceptiopn:
+                ChordUtil.dprint("join_9,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(node_info))
                 # ノードがダウンしていた場合は無視して次のノードに進む.
                 # ノードダウンに関する対処とそれに関連したレプリカの適切な配置はそれぞれ stabilize処理 と
                 # put処理 の中で後ほど行われるためここでは対処しない
                 pass
 
-        # TODO: successorから保持している全てのレプリカを受け取る（successorよりは前に位置することになるため、
-        #       基本的に全てのレプリカを保持している状態とならなければならない）
-        #       pass_all_replicaメソッドを利用する
-        #       on join
+        # successorから保持している全てのレプリカを受け取り格納する（successorよりは前に位置することになるため、
+        # 基本的にsuccessorが保持しているレプリカは自身も全て保持している状態とならなければならない）
         passed_all_replica: Dict[NodeInfo, List[DataIdAndValue]] = successor.data_store.pass_all_replica()
-
+        self.existing_node.data_store.store_replica_of_several_masters(passed_all_replica)
 
         # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
-        ChordUtil.dprint("join_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+        ChordUtil.dprint("join_10," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 

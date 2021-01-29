@@ -138,6 +138,20 @@ class DataStore:
                          + str(len(pass_datas)) + "," + str(replace_all) + "," + str(replica_cnt))
         return replica_cnt
 
+    # 複数マスタのレプリカをまとめて受け取り格納する
+    def store_replica_of_several_masters(self, data_dict: Dict[NodeInfo, List[DataIdAndValue]]):
+        ChordUtil.dprint("store_replica_of_several_masters_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                         + str(len(data_dict)))
+
+        for master_node, data_list in data_dict.items():
+            copied_master_node = master_node.get_partial_deepcopy()
+            ChordUtil.dprint("store_replica_of_several_masters_2,"
+                             + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(copied_master_node) + ","
+                             + str(len(data_list)))
+            for id_value in data_list:
+                self.store_new_data(id_value.data_id, id_value.value_data, master_info=copied_master_node)
+
     # レプリカに紐づけられているマスターノードが切り替わったことを通知し、管理情報を
     # 通知内容に応じて更新させる
     def notify_master_node_change(self, old_master : 'NodeInfo', new_master : 'NodeInfo'):

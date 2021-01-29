@@ -101,11 +101,22 @@ class DataStore:
                              + str(range_start) + "," + str(range_end))
             pass
 
-    # TODO: 自ノードが担当ノードとして保持しているデータを全て返す
-    #       pass_tantou_data_for_replication
-    #       for 契機3
+    # 自ノードが担当ノードとして保持しているデータを全て返す
     def pass_tantou_data_for_replication(self) -> List[DataIdAndValue]:
-        raise Exception("not implemented yet")
+        ChordUtil.dprint(
+            "pass_tantou_data_for_replication_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
+        try:
+            tantou_data_list : List[StoredValueEntry] = self.master2data_idx[str(self.existing_node.node_info.node_id)]
+            ChordUtil.dprint(
+                "pass_tantou_data_for_replication_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                + str(len(tantou_data_list)))
+            return [DataIdAndValue(data_id = data.data_id, value_data=data.value_data ) for data in tantou_data_list]
+        except KeyError:
+            # まだ一つもデータをputされたり、他ノードから委譲される、担当データを持っていたノードに代替として成り代わるといったことがなかった
+            ChordUtil.dprint(
+                "pass_tantou_data_for_replication_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                + "NO_TANDOU_DATA_YET")
+            return []
 
     # TODO: 自ノードが担当ノードとなっているものを除いて、保持しているデータをマスター
     #       ごとに dict に詰めて返す

@@ -24,6 +24,7 @@ class Stabilizer:
     #       余剰なノードにレプリカを削除させた上で、リストから取り除く
     #       実装には delete_replica メソッドを用いればよい
     #       check_replication_redunduncy
+    #       for 契機3
     def check_replication_redunduncy(self):
         raise Exception("not implemented yet")
 
@@ -267,6 +268,7 @@ class Stabilizer:
                         #       レプリカを削除させる
                         #       joinの中で行っている処理を参考に実装すれば良い
                         #       on stabilize_successor_inner
+                        #       for 契機4
 
                         # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                         # ば情報を更新してもらう
@@ -305,6 +307,7 @@ class Stabilizer:
         #       であったノードを発見した場合に、レプリカの配置状態が前述のケアでカバーできない
         #       ような状態とならないか確認する
         #       on stabilize_successor
+        #       for 契機4
 
         ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))

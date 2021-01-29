@@ -133,7 +133,7 @@ class Stabilizer:
 
                 # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
                 # いる場合があるため、そのチェックと、越えていた場合の余剰のノードからレプリカを全て削除させる処理を呼び出す
-                self_predeessor_node.check_replication_redunduncy()
+                self_predeessor_node.stabilizer.check_replication_redunduncy()
             except NodeIsDownedExceptiopn:
                 # ノードがダウンしていた場合は無視して次のノードに進む.
                 # ノードダウンに関する対処とそれに関連したレプリカの適切な配置はそれぞれ stabilize処理 と

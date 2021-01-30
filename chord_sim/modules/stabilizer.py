@@ -26,21 +26,28 @@ class Stabilizer:
         ChordUtil.dprint(
             "check_replication_redunduncy_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
             + str(len(self.existing_node.node_info.successor_info_list)))
+
         if len(self.existing_node.node_info.successor_info_list) > gval.SUCCESSOR_LIST_NORMAL_LEN:
             for idx in range(gval.SUCCESSOR_LIST_NORMAL_LEN, len(self.existing_node.node_info.successor_info_list)):
+                node_info = self.existing_node.node_info.successor_info_list[idx]
                 try:
-                    successor_node : ChordNode = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[idx].address_str)
+                    successor_node : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
                     successor_node.data_store.delete_replica(self.existing_node.node_info)
                     ChordUtil.dprint(
                         "check_replication_redunduncy_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                         + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx])
                         + str(len(self.existing_node.node_info.successor_info_list)))
+                    # 余剰となったノードを successorListから取り除く
+                    self.existing_node.node_info.successor_info_list.remove(node_info)
                 except NodeIsDownedExceptiopn:
                     # 余剰ノードがダウンしていた場合はここでは何も対処しない
                     ChordUtil.dprint(
                         "check_replication_redunduncy_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                         + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx])
                         + str(len(self.existing_node.node_info.successor_info_list)) + ",NODE_IS_DOWNED")
+                    # ダウンしているので、レプリカを削除させることはできないが、それが取得されてしまうことも無いため
+                    # 特にレプリカに関するケアは行わず、余剰となったノードとして successorListから取り除く
+                    self.existing_node.node_info.successor_info_list.remove(node_info)
                     continue
 
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
@@ -155,8 +162,10 @@ class Stabilizer:
                 ChordUtil.dprint("join_8," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(self_predeessor_node.node_info) + "," + str(len(pred_tantou_datas)))
+
                 # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
                 # いる場合があるため、そのチェックと、越えていた場合の余剰のノードからレプリカを全て削除させる処理を呼び出す
+                # (この呼び出しの中で successorListからの余剰ノード情報削除も行われる）
                 self_predeessor_node.stabilizer.check_replication_redunduncy()
             except NodeIsDownedExceptiopn:
                 ChordUtil.dprint("join_9,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -279,11 +288,15 @@ class Stabilizer:
                         new_successor = ChordUtil.get_node_by_address(cast('NodeInfo', successor.node_info.predecessor_info).address_str)
                         self.existing_node.node_info.successor_info_list.insert(0, new_successor.node_info.get_partial_deepcopy())
 
-                        # TODO: 新たなsuccesorに対して担当データのレプリカを渡し、successorListから溢れたノードには
-                        #       レプリカを削除させる
-                        #       joinの中で行っている処理を参考に実装すれば良い
-                        #       on stabilize_successor_inner
-                        #       for 契機4
+                        # 新たなsuccesorに対して担当データのレプリカを渡す
+                        tantou_data_list : List[DataIdAndValue] = \
+                            self.existing_node.data_store.get_all_replica_by_master_node(self.existing_node.node_info.node_id)
+                        new_successor.data_store.receive_replica(self.existing_node.node_info.get_partial_deepcopy(),
+                                                                 tantou_data_list, replace_all=True)
+
+                        # successorListから溢れたノードがいた場合、自ノードの担当データのレプリカを削除させ、successorListから取り除く
+                        # (この呼び出しの中でsuccessorListからのノード情報の削除も行われる)
+                        self.check_replication_redunduncy()
 
                         # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                         # ば情報を更新してもらう

@@ -269,6 +269,7 @@ class DataStore:
         replica_list = self.master2data_idx[str(node_id)]
         return len(replica_list)
 
+    # 自ノードの担当データはレプリカではないが、レプリカと同様に扱う
     def get_all_replica_by_master_node(self, node_id : int) -> List[DataIdAndValue]:
         replica_list : List[StoredValueEntry] = self.master2data_idx[str(node_id)]
         return [DataIdAndValue(data_id = data.data_id, value_data=data.value_data ) for data in replica_list]

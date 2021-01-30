@@ -155,7 +155,7 @@ class DataStore:
         return replica_cnt
 
     # 複数マスタのレプリカをまとめて受け取り格納する
-    def store_replica_of_several_masters(self, data_dict: Dict[NodeInfo, List[DataIdAndValue]]):
+    def store_replica_of_several_masters(self, data_dict: Dict['NodeInfo', List[DataIdAndValue]]):
         ChordUtil.dprint("store_replica_of_several_masters_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + str(len(data_dict)))
 
@@ -266,10 +266,16 @@ class DataStore:
         return self.stored_data[str(data_id)]
 
     def get_replica_cnt_by_master_node(self, node_id : int) -> int:
-        replica_list = self.master2data_idx[str(node_id)]
-        return len(replica_list)
+        try:
+            replica_list = self.master2data_idx[str(node_id)]
+            return len(replica_list)
+        except KeyError:
+            return 0
 
     # 自ノードの担当データはレプリカではないが、レプリカと同様に扱う
     def get_all_replica_by_master_node(self, node_id : int) -> List[DataIdAndValue]:
-        replica_list : List[StoredValueEntry] = self.master2data_idx[str(node_id)]
-        return [DataIdAndValue(data_id = data.data_id, value_data=data.value_data ) for data in replica_list]
+        try:
+            replica_list : List[StoredValueEntry] = self.master2data_idx[str(node_id)]
+            return [DataIdAndValue(data_id = data.data_id, value_data=data.value_data ) for data in replica_list]
+        except KeyError:
+            return []

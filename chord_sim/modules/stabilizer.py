@@ -360,14 +360,14 @@ class Stabilizer:
                              + ChordUtil.gen_debug_str_of_node(cur_node_info))
             if cur_node_info.node_id == self.existing_node.node_info.node_id:
                 # Chordネットワークに (downしていない状態で) 存在するノード数が gval.SUCCESSOR_LIST_NORMAL_LEN
-                # より多くない場合 successorをたどっていった結果、自ノードにたどり着いてしまうため、その場合は規定の
+                # より少ない場合 successorをたどっていった結果、自ノードにたどり着いてしまうため、その場合は規定の
                 # ノード数を満たしていないが、successor_info_list の更新処理は終了する
                 ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(cur_node_info))
                 if len(updated_list) == 0:
                     # first node の場合の考慮
                     # second node が 未joinの場合、successsor[0] がリストに存在しない状態となってしまうため
-                    # その場合のみ、update_list で self.existing_node.node_info.successor_info_listを上書きせずにreturnする
+                    # その場合のみ、updated_list で self.existing_node.node_info.successor_info_listを上書きせずにreturnする
                     ChordUtil.dprint("stabilize_successor_2_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_node_info))
                     return

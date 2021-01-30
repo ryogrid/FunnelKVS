@@ -221,6 +221,11 @@ class StoredValueEntry:
     data_id : int
     value_data : str
 
+    def __eq__(self, other):
+        if not isinstance(other, StoredValueEntry):
+            return False
+        return self.data_id == other.data_id
+
 # class StoredValueEntry:
 #
 #     def __init__(self, master_info : NodeInfoPointer, data_id : int, value_data : str):

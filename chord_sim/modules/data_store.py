@@ -178,6 +178,8 @@ class DataStore:
             # 各データが保持しているマスタの情報への参照を更新する
             ninfo_p : NodeInfoPointer = self.master_node_dict[str(old_master.node_id)]
             ninfo_p.node_info = new_master.get_partial_deepcopy()
+            del self.master_node_dict[str(old_master.node_id)]
+            self.master_node_dict[str(new_master.node_id)] = ninfo_p
 
             ChordUtil.dprint(
                 "notify_master_node_change_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -234,6 +236,26 @@ class DataStore:
         if rest_copy == False:
             for kv in ret_datas:
                 del self.stored_data[str(kv.data_id)]
+            # master2data_idxの中の紐づけも削除しないと、参照が残ってしまうのでこちらも処理する
+            try:
+                all_data : List[StoredValueEntry] = self.master2data_idx[str(self.existing_node.node_info.node_id)]
+            except:
+                ChordUtil.dprint(
+                    "delegate_my_tantou_data_2_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    + ChordUtil.gen_debug_str_of_data(node_id) + ",NO_TANTOU_DATA_YET")
+                # まだ一つもデータを保持していなかったということなので空リストを返す
+                return []
+
+            delete_data = []
+            for sv_entry in all_data:
+                if ChordUtil.exist_between_two_nodes_right_mawari(node_id, self.existing_node.node_info.node_id, sv_entry.data_id):
+                    delete_data.append(sv_entry)
+            for sv_entry in delete_data:
+                all_data.remove(sv_entry)
+            # 委譲により担当データが0個となっていた場合、データの関連を管理するためのdictから不要となったエントリを削除する
+            if len(all_data) == 0:
+                del self.master2data_idx[str(self.existing_node.node_info.node_id)]
+                del self.master_node_dict[str(self.existing_node.node_info.node_id)]
 
         # 委譲したことで自身が担当ノードで無くなったデータについてsuccessorList
         # 内のノードに通知し、削除させる（それらのノードは再度同じレプリカを保持する

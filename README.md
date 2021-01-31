@@ -14,6 +14,5 @@
 ## distributed kvs simulator (chord_sim dir)
 - design verification with simulator wrote by python
   - you can simulate distributed kvs working  behavior. on the simulation put, get, stabilize, join operations are issued continuously under node down occuring condition.
-  - **simulation code and design description as code on node down occuring condition are work in progress**
 - TODO list (Japanese, includes finished tasks)
   - https://gist.github.com/ryogrid/9b1f340babfbb6cdc9d03e57b7834e71

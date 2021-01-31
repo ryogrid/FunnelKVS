@@ -63,6 +63,7 @@ class ChordNode:
             self.stabilizer.join(node_address)
 
     def global_put(self, data_id : int, value_str : str) -> bool:
+
         try:
             target_node = self.router.find_successor(data_id)
             # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
@@ -77,16 +78,36 @@ class ChordNode:
                              + ChordUtil.gen_debug_str_of_data(data_id))
             return False
 
-        target_node.put(data_id, value_str)
-        ChordUtil.dprint("global_put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        success = target_node.put(data_id, value_str)
+        if not success:
+            ChordNode.need_put_retry_data_id = data_id
+            ChordNode.need_put_retry_node = self
+            ChordUtil.dprint("global_put_2,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(data_id))
+            return False
+
+        ChordUtil.dprint("global_put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
         return True
 
-    def put(self, data_id : int, value_str : str):
+    def put(self, data_id : int, value_str : str) -> bool:
         ChordUtil.dprint("put_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
+
+        # 担当範囲（predecessorのidと自身のidの間）のデータであるかのチェック処理を加える
+        # そこに収まっていなかった場合、一定時間後リトライが行われるようエラーを返す.
+        # (predecessorの生死をチェックし、生きていればエラーとし、ダウンしていたら担当である
+        #  とも、そうでないとも確定しないため、リクエストを受けるという実装も可能だが、stabilize処理
+        #  で predecessor が生きているノードとなるまで下手にデータを持たない方が、データ配置の整合性
+        #  を壊すリスクが減りそうな気がするので、そうする)
+        if self.node_info.predecessor_info == None:
+            return False
+        # Chordネットワークを右回りにたどった時に、データの id (data_id) が predecessor の node_id から
+        # 自身の node_id の間に位置する場合は、そのデータは自身の担当だが、そうではない場合
+        if not ChordUtil.exist_between_two_nodes_right_mawari(cast(NodeInfo,self.node_info.predecessor_info).node_id, self.node_info.node_id, data_id):
+            return False
 
         self.data_store.store_new_data(data_id, value_str)
 
@@ -128,6 +149,8 @@ class ChordNode:
 
         ChordUtil.dprint("put_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
+
+        return True
 
     # 得られた value の文字列を返す
     def global_get(self, data_id : int) -> str:

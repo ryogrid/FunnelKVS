@@ -31,6 +31,23 @@ class DataStore:
         # キーはマスターノードのID文字列
         self.master_node_dict : Dict[str, NodeInfoPointer] = {}
 
+    def master2data_idx_set(self, key_data : str, value_data : List[StoredValueEntry]):
+        self.master2data_idx[key_data] = value_data
+        ChordUtil.dprint("datastore_op," + key_data + ",master2data_idx_set")
+
+    def master2data_idx_del(self, key_data : str):
+        del self.master2data_idx[key_data]
+        ChordUtil.dprint("datastore_op," + key_data + ",master2data_idx_del")
+
+    def master_node_dict_set(self, key_data : str, value_data : NodeInfoPointer):
+        self.master_node_dict[key_data] = value_data
+        ChordUtil.dprint("datastore_op," + key_data + ",master_node_dict_set")
+
+    def master_node_dict_del(self, key_data : str):
+        del self.master_node_dict[key_data]
+        ChordUtil.dprint("datastore_op," + key_data + ",master_node_dict_del")
+
+
     # master_node引数を指定しなかった場合は、self.existing_node.node_info をデータのマスターの情報として格納する
     def store_new_data(self, data_id : int, value_str : str, master_info : Optional['NodeInfo'] = None):
         if master_info == None:
@@ -41,10 +58,10 @@ class DataStore:
         key_id_str = str(data_id)
         #self.stored_data[key_id_str] = value_str
         try:
-            ninfo_p = self.master_node_dict[key_id_str]
+            ninfo_p = self.master_node_dict[str(master_node_info.node_id)]
         except KeyError:
             ninfo_p = NodeInfoPointer(master_node_info)
-            self.master_node_dict[key_id_str] = ninfo_p
+            self.master_node_dict_set(str(master_node_info.node_id), ninfo_p)
 
         sv_entry = StoredValueEntry(master_info=ninfo_p, data_id=data_id, value_data=value_str)
         self.stored_data[key_id_str] = sv_entry
@@ -52,7 +69,7 @@ class DataStore:
             data_list : List[StoredValueEntry] = self.master2data_idx[str(master_node_info.node_id)]
         except KeyError:
             data_list = []
-            self.master2data_idx[str(master_node_info.node_id)] = data_list
+            self.master2data_idx_set(str(master_node_info.node_id), data_list)
 
         data_list.append(sv_entry)
 
@@ -90,8 +107,8 @@ class DataStore:
         # 0件となった場合、当該ノードに関連する管理情報は不要であるため削除する
         try:
             if len(related_entries) == 0 or (range_start == -1 and range_end == -1):
-                del self.master2data_idx[str(master_node.node_id)]
-                del self.master_node_dict[str(master_node.node_id)]
+                self.master2data_idx_del(str(master_node.node_id))
+                self.master_node_dict_del(str(master_node.node_id))
                 ChordUtil.dprint("delete_replica_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(master_node) + ","
                                  + str(range_start) + "," + str(range_end))
@@ -122,6 +139,8 @@ class DataStore:
     # ごとに dict に詰めて返す
     def pass_all_replica(self) -> Dict['NodeInfo', List[DataIdAndValue]]:
         ret_dict : Dict['NodeInfo', List[DataIdAndValue]] = {}
+        ChordUtil.dprint("pass_all_replica_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
+        print("", flush=True)
         for node_id_str, ninfo_p in self.master_node_dict.items():
             master_info : 'NodeInfo' = ninfo_p.node_info.get_partial_deepcopy()
             if node_id_str != str(self.existing_node.node_info.node_id):
@@ -178,8 +197,8 @@ class DataStore:
             # 各データが保持しているマスタの情報への参照を更新する
             ninfo_p : NodeInfoPointer = self.master_node_dict[str(old_master.node_id)]
             ninfo_p.node_info = new_master.get_partial_deepcopy()
-            del self.master_node_dict[str(old_master.node_id)]
-            self.master_node_dict[str(new_master.node_id)] = ninfo_p
+            self.master_node_dict_del(str(old_master.node_id))
+            self.master_node_dict_set(str(new_master.node_id), ninfo_p)
 
             ChordUtil.dprint(
                 "notify_master_node_change_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -189,8 +208,8 @@ class DataStore:
 
             # マスターノードのIDから、紐づいているデータのリストを得るための dict においても切り替えを行う
             data_list : List[StoredValueEntry] = self.master2data_idx[str(old_master.node_id)]
-            del self.master2data_idx[str(old_master.node_id)]
-            self.master2data_idx[str(new_master.node_id)] = data_list
+            self.master2data_idx_del(str(old_master.node_id))
+            self.master2data_idx_set(str(new_master.node_id), data_list)
 
             ChordUtil.dprint(
                 "notify_master_node_change_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -254,8 +273,8 @@ class DataStore:
                 all_data.remove(sv_entry)
             # 委譲により担当データが0個となっていた場合、データの関連を管理するためのdictから不要となったエントリを削除する
             if len(all_data) == 0:
-                del self.master2data_idx[str(self.existing_node.node_info.node_id)]
-                del self.master_node_dict[str(self.existing_node.node_info.node_id)]
+                self.master2data_idx_del(str(self.existing_node.node_info.node_id))
+                self.master_node_dict_del(str(self.existing_node.node_info.node_id))
 
         # 委譲したことで自身が担当ノードで無くなったデータについてsuccessorList
         # 内のノードに通知し、削除させる（それらのノードは再度同じレプリカを保持する

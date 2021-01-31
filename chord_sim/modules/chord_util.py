@@ -3,6 +3,7 @@
 import time
 import random
 import datetime
+import dataclasses
 from typing import List, Any, Optional, cast, TYPE_CHECKING
 
 from . import gval
@@ -190,16 +191,47 @@ class ChordUtil:
 
         return True
 
+# 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
+# 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
+class NodeInfoPointer:
+
+    def __init__(self, node_info : 'NodeInfo'):
+        self.node_info : NodeInfo = node_info
+
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
-    def __init__(self, key, value):
-        self.key : str = key
-        self.value : str = value
+    def __init__(self, key : Optional[str], value : str):
+        self.key : Optional[str] = key
+        self.value_data : str = value
+        self.data_id : Optional[int] = None
         # keyのハッシュ値
         if key == None:
             self.data_id = None
         else:
-            self.data_id : int = ChordUtil.hash_str_to_int(key)
+            self.data_id = ChordUtil.hash_str_to_int(cast(str, key))
+
+@dataclasses.dataclass
+class DataIdAndValue:
+    data_id : int
+    value_data : str
+
+@dataclasses.dataclass
+class StoredValueEntry:
+    master_info : NodeInfoPointer
+    data_id : int
+    value_data : str
+
+    def __eq__(self, other):
+        if not isinstance(other, StoredValueEntry):
+            return False
+        return self.data_id == other.data_id
+
+# class StoredValueEntry:
+#
+#     def __init__(self, master_info : NodeInfoPointer, data_id : int, value_data : str):
+#         self.master_info : NodeInfoPointer = master_info
+#         self.data_id : int = data_id
+#         self.value_data : str = value_data
 
 class NodeIsDownedExceptiopn(Exception):
 

@@ -9,6 +9,7 @@ import modules.gval as gval
 from modules.node_info import NodeInfo
 from modules.chord_util import ChordUtil, KeyValue
 from modules.chord_node import ChordNode, NodeIsDownedExceptiopn
+from modules.stabilizer import Stabilizer
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
@@ -119,12 +120,12 @@ def add_new_node():
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
-    if ChordNode.need_join_retry_node != None:
+    if Stabilizer.need_join_retry_node != None:
         # 前回の呼び出しが失敗していた場合はリトライを行う
         tyukai_node = ChordNode.need_join_retry_tyukai_node
         new_node = ChordNode.need_join_retry_node
-        new_node.join(tyukai_node.node_info.address_str)
-        if ChordNode.need_join_retry_node == None:
+        new_node.stabilizer.join(tyukai_node.node_info.address_str)
+        if Stabilizer.need_join_retry_node == None:
             # リトライ情報が再設定されていないためリトライに成功したと判断
             ChordUtil.dprint(
                 "add_new_node_1,retry of join is succeeded," + ChordUtil.gen_debug_str_of_node(new_node.node_info))
@@ -135,7 +136,7 @@ def add_new_node():
         tyukai_node = get_a_random_node()
         new_node = ChordNode(tyukai_node.node_info.address_str)
 
-    if ChordNode.need_join_retry_node == None:
+    if Stabilizer.need_join_retry_node == None:
         # join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
         gval.all_node_dict[new_node.node_info.address_str] = new_node
 
@@ -193,7 +194,7 @@ def do_stabilize_once_at_all_node():
             if selected_operation == "successor":
                 node = shuffled_node_list_successor.pop()
                 if node.is_alive == True:
-                    node.stabilize_successor()
+                    node.stabilizer.stabilize_successor()
                     ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                                        + str(done_stabilize_successor_cnt))
                 done_stabilize_successor_cnt += 1
@@ -206,7 +207,7 @@ def do_stabilize_once_at_all_node():
                     ChordUtil.dprint(
                         "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                         + str(cur_ftable_idx))
-                    node.stabilize_finger_table(cur_ftable_idx)
+                    node.stabilizer.stabilize_finger_table(cur_ftable_idx)
                 done_stabilize_ftable_cnt += 1
 
                 if done_stabilize_ftable_cnt % cur_node_num == 0:
@@ -248,7 +249,7 @@ def do_put_on_random_node():
         node = get_a_random_node()
 
     # 成功した場合はTrueが返るのでその場合だけ all_node_dictに追加する
-    if node.global_put(kv_data.data_id, kv_data.value):
+    if node.global_put(kv_data.data_id, kv_data.value_data):
         gval.all_data_list.append(kv_data)
 
     if is_retry:
@@ -291,7 +292,7 @@ def do_get_on_random_node():
     node.global_get(target_data_id)
 
     if is_retry:
-        if ChordNode.need_get_retry_data_id == -1:
+        if ChordNode.need_getting_retry_data_id == -1:
             # リトライ情報が再設定されていないためリトライに成功したと判断
             ChordUtil.dprint(
                 "do_get_on_random_node_1,retry of global_get is succeeded," + ChordUtil.gen_debug_str_of_node(
@@ -353,7 +354,7 @@ def node_kill_th():
         if len(gval.all_node_dict) > 5 \
                 and (ChordNode.need_getting_retry_data_id == -1
                      and ChordNode.need_put_retry_data_id == -1
-                     and ChordNode.need_join_retry_node == None) :
+                     and Stabilizer.need_join_retry_node == None) :
             do_kill_a_random_node()
 
         time.sleep(gval.NODE_KILL_INTERVAL_SEC)
@@ -378,8 +379,8 @@ def main():
     data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     data_put_th_handle.start()
 
-    # data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
-    # data_get_th_handle.start()
+    data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
+    data_get_th_handle.start()
 
     node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
     node_kill_th_handle.start()

@@ -140,7 +140,6 @@ class DataStore:
     def pass_all_replica(self) -> Dict['NodeInfo', List[DataIdAndValue]]:
         ret_dict : Dict['NodeInfo', List[DataIdAndValue]] = {}
         ChordUtil.dprint("pass_all_replica_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
-        print("", flush=True)
         for node_id_str, ninfo_p in self.master_node_dict.items():
             master_info : 'NodeInfo' = ninfo_p.node_info.get_partial_deepcopy()
             if node_id_str != str(self.existing_node.node_info.node_id):

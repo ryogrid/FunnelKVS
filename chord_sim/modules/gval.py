@@ -11,7 +11,8 @@ if TYPE_CHECKING:
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
-JOIN_INTERVAL_SEC = 0.7 # 0.5 # 1
+# paramaters for executing by PyPy3 on my desktop machine
+JOIN_INTERVAL_SEC = 0.9 #0.7 # 0.5 # 1
 PUT_INTERVAL_SEC = 0.5 # 1
 GET_INTERVAL_SEC = 0.5 # 1
 

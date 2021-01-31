@@ -256,8 +256,8 @@ class Stabilizer:
                          + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
                          + str(pred_id_of_successor))
 
-        # successorに認識している predecessor の情報をチェックさせて、適切なものに変更させたり、把握していない
-        # 自身のsuccessor[0]になるべきノードの存在が判明した場合は 自身の successor[0]をそちらに張り替える.
+        # successorが認識している predecessor の情報をチェックさせて、適切なものに変更させたり、把握していない
+        # 自身のsuccessor[0]になるべきノードの存在が判明した場合は 自身の successor[0] をそちらに張り替える.
         # なお、下のパターン1から3という記述は以下の資料による説明に基づく
         # https://www.slideshare.net/did2/chorddht
         if(pred_id_of_successor == self.existing_node.node_info.node_id):

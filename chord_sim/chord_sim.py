@@ -354,7 +354,7 @@ def node_kill_th():
         if len(gval.all_node_dict) > 5 \
                 and (ChordNode.need_getting_retry_data_id == -1
                      and ChordNode.need_put_retry_data_id == -1
-                     and ChordNode.need_join_retry_node == None) :
+                     and Stabilizer.need_join_retry_node == None) :
             do_kill_a_random_node()
 
         time.sleep(gval.NODE_KILL_INTERVAL_SEC)
@@ -382,8 +382,8 @@ def main():
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     data_get_th_handle.start()
 
-    # node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
-    # node_kill_th_handle.start()
+    node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
+    node_kill_th_handle.start()
 
     while True:
         time.sleep(1)

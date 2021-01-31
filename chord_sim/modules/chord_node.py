@@ -294,6 +294,8 @@ class ChordNode:
             #  少なくとも次に新たなデータの put を受けた際に、不足状態が解消される処理が走るため
             #  ここでは、レプリカの保持ノードを増やすような処理は行わない
 
+            ret_value_str = self.QUERIED_DATA_NOT_FOUND_STR
+
             if ChordUtil.is_node_alive(sv_entry.master_info.node_info.address_str):
                 # データの担当ノードであるマスターが生きていた.
                 # 自身はレプリカを保持しているが、取得先が誤っているためエラーとして扱う.
@@ -324,6 +326,9 @@ class ChordNode:
                                          + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
                                          + ChordUtil.gen_debug_str_of_data(data_id))
                         continue
+
+                ret_value_str = sv_entry.value_data
+
 
         ChordUtil.dprint("get_6," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)

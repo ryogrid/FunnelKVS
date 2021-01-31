@@ -292,7 +292,7 @@ def do_get_on_random_node():
     node.global_get(target_data_id)
 
     if is_retry:
-        if ChordNode.need_get_retry_data_id == -1:
+        if ChordNode.need_getting_retry_data_id == -1:
             # リトライ情報が再設定されていないためリトライに成功したと判断
             ChordUtil.dprint(
                 "do_get_on_random_node_1,retry of global_get is succeeded," + ChordUtil.gen_debug_str_of_node(

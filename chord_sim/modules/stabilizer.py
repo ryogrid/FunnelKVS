@@ -50,6 +50,9 @@ class Stabilizer:
                     self.existing_node.node_info.successor_info_list.remove(node_info)
                     continue
 
+    # TODO: 経路表データに対してwriteロック（readは許す）をとっていないといけないと思われる
+    #       join
+
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     def join(self, node_address : str):
         # 実装上例外は発生しない.
@@ -325,6 +328,9 @@ class Stabilizer:
 
         return self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
 
+
+    # TODO: 経路表データに対してwriteロック（readは許す）をとっていないといけないと思われる
+    #       stabilize_successor
 
     # successorListに関するstabilize処理を行う
     # コメントにおいては、successorListの構造を意識した記述の場合、一番近いsuccessorを successor[0] と

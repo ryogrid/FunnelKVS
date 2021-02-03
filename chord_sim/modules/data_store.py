@@ -280,6 +280,8 @@ class DataStore:
         # ことになるかもしれないが、それは新担当の管轄なので、非効率ともなるがひとまず削除させる）
         # 削除が完了するまで本メソッドは終了しないため、新担当がレプリカを配布する処理と以下の処理が
         # バッティングすることはない
+        # TODO: successor_info_listのreadロックをとっておく必要あり
+        #       on delegate_my_tantou_data
         for node_info in self.existing_node.node_info.successor_info_list:
             try:
                 node : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)

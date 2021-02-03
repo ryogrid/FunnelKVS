@@ -29,6 +29,9 @@ class ChordNode:
     need_put_retry_data_value : str = ""
     need_put_retry_node : Optional['ChordNode'] = None
 
+    # TODO: 経路表データに対してwriteロックをとっていないといけないと思われる
+    #       constructor of ChordNode
+
     # join処理もコンストラクタで行ってしまう
     def __init__(self, node_address: str, first_node=False):
         self.node_info : NodeInfo = NodeInfo()
@@ -116,6 +119,8 @@ class ChordNode:
         # 担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
         # 全てを保持していないノードが存在する場合があるため、receive_replicaメソッド呼び出し時に返ってくる
         # レプリカの保持数が、全件となっていない場合は全て保持させる
+        # TODO: successor_info_listのreadロックをとっておく必要あり
+        #       on put
         for succ_info in self.node_info.successor_info_list:
             try:
                 succ_node : ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
@@ -184,6 +189,8 @@ class ChordNode:
                     ChordUtil.dprint("global_get_1,predecessor is None")
                     break
                 try:
+                    # TODO: predecessor_infoへのreadロックを取得しておく必要あり
+                    #       on global_get
                     cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
                 except NodeIsDownedExceptiopn:
                     # ここでは何も対処はしない
@@ -217,6 +224,8 @@ class ChordNode:
             cur_successor = target_node
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
                 try:
+                    # TODO: successor_info_listのreadロックをとっておく必要あり
+                    #       on global_get
                     cur_successor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_successor.node_info.successor_info_list[0]).address_str)
                 except NodeIsDownedExceptiopn:
                     # ここでは何も対処はしない
@@ -310,6 +319,8 @@ class ChordNode:
                 # 自身の保持しているデータに紐づいている担当ノードの情報を更新する
                 self.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
 
+                # TODO: successor_info_listへのreadロックをとっておく必要あり
+                #       on get
                 # 自身のsuccessorList内のノードに担当ノードの変更を通知する
                 for node_info in self.node_info.successor_info_list:
                     try:

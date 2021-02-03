@@ -27,6 +27,8 @@ class Router:
                              + ChordUtil.gen_debug_str_of_data(id))
             raise AppropriateNodeNotFoundException()
 
+        # TODO: ここからメソッドの最後までsuccessor_info_listのreadロックをとっておく必要あり
+        #       on find_successor
         ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
@@ -48,6 +50,8 @@ class Router:
 
         n_dash : 'ChordNode' = self.existing_node
         # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
+        # TODO: succesor_info_listのreadロックをとっておく必要あり
+        #       on find_predecessor
         while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info_list[0].node_id, id):
             ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(n_dash.node_info))

@@ -20,11 +20,18 @@ class ChordNode:
 
     # global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
     # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+    # TODO: リトライ用情報をlistで保持できるようにする. FIFOとして扱う.
+    #       要素は Dict[str,any] とし、keyは ノードIDとデータIDを結合した文字列とする.
+    #       for get on ChordNode
     need_getting_retry_data_id : int = -1
     need_getting_retry_node : Optional['ChordNode'] = None
 
     # global_put が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
     # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+    # TODO: リトライ用情報をlistで保持できるようにする. FIFOとして扱う.
+    #       要素は Dict[str,any] とし、keyは ノードIDとデータIDを結合した文字列とする.
+    #       （putするvalueはidentifyする目的では意味がないため結合しない）.
+    #       for put on ChordNode
     need_put_retry_data_id : int = -1
     need_put_retry_data_value : str = ""
     need_put_retry_node : Optional['ChordNode'] = None
@@ -67,6 +74,8 @@ class ChordNode:
 
     def global_put(self, data_id : int, value_str : str) -> bool:
 
+        # TODO: リトライ用の情報はlistで保持する形に変更するため、関連処理はそれに合わせて修正必要
+        #       on global_put
         try:
             target_node = self.router.find_successor(data_id)
             # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを

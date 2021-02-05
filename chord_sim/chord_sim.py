@@ -162,6 +162,9 @@ def do_stabilize_once_at_all_node():
     cur_ftable_idx = 0
 
     while True:
+        # TODO: このメソッド中ではロックを取得しないようにする
+        #       on do_stabilize_once_at_all_node
+
         # ロックの取得
         gval.lock_of_all_data.acquire()
 
@@ -227,6 +230,9 @@ def do_stabilize_once_at_all_node():
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
 # アドレスをよろしく解決し、見つかったノードにputの操作を依頼する
 def do_put_on_random_node():
+    # TODO: このメソッド中ではロックを取得しないようにする
+    #       on do_put_on_random_node
+
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
@@ -234,6 +240,9 @@ def do_put_on_random_node():
 
     if ChordNode.need_put_retry_data_id != -1:
         # 前回の呼び出し時に global_putが失敗しており、リトライが必要
+        # TODO: listの形で保持されるようになったリトライ情報に対応する.
+        #       リトライ処理する際は、設定されていた情報をローカルに移動させる
+        #       on do_put_on_random_node
 
         is_retry = True
 
@@ -253,6 +262,8 @@ def do_put_on_random_node():
         gval.all_data_list.append(kv_data)
 
     if is_retry:
+        # TODO: リトライが成功したかはローカルに保持している情報がlist内に再設定されていないかで判定する
+        #       on do_put_on_random_node
         if ChordNode.need_put_retry_data_id == -1:
             # リトライ情報が再設定されていないためリトライに成功したと判断
             ChordUtil.dprint(
@@ -269,6 +280,9 @@ def do_put_on_random_node():
 # グローバル変数であるall_data_listからランダムにデータを選択し、そのデータのIDから
 # Chordネットワーク上の担当ノードのアドレスをよろしく解決し、見つかったノードにgetの操作を依頼する
 def do_get_on_random_node():
+    # TODO: このメソッド中ではロックを取得しないようにする
+    #       on do_get_on_random_node
+
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
@@ -281,6 +295,9 @@ def do_get_on_random_node():
 
     if ChordNode.need_getting_retry_data_id != -1:
         # doing retry
+        # TODO: listの形で保持されるようになったリトライ情報に対応する.
+        #       リトライ処理する際は、設定されていた情報をローカルに移動させる
+        #       on do_get_on_random_node
         is_retry = True
         target_data_id = ChordNode.need_getting_retry_data_id
         node = cast('ChordNode', ChordNode.need_getting_retry_node)
@@ -292,6 +309,8 @@ def do_get_on_random_node():
     node.global_get(target_data_id)
 
     if is_retry:
+        # TODO: リトライが成功したかはローカルに保持している情報がlist内に再設定されていないかで判定する
+        #       on do_get_on_random_node
         if ChordNode.need_getting_retry_data_id == -1:
             # リトライ情報が再設定されていないためリトライに成功したと判断
             ChordUtil.dprint(
@@ -310,6 +329,9 @@ def do_get_on_random_node():
 # グローバル変数であるall_node_dictからランダムにノードを選択し
 # ダウンさせる（is_aliveフィールドをFalseに設定する）
 def do_kill_a_random_node():
+    # TODO: このメソッド（操作）はロックを取得しないようにする
+    #       do_kill_a_random_node
+
     # ロックの取得
     gval.lock_of_all_data.acquire()
 
@@ -328,17 +350,22 @@ def node_join_th():
         time.sleep(gval.JOIN_INTERVAL_SEC)
 
 def stabilize_th():
+    # TODO: stabilize_th も複数スレッド化しないとダメだろうか？（一番しないといけないものな気もする）
     while True:
         # 内部で適宜ロックを解放することで他のスレッドの処理も行えるようにしつつ
         # 呼び出し時点でのノードリストを対象に stabilize 処理を行う
         do_stabilize_once_at_all_node()
 
 def data_put_th():
+    # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
+    #       on data_puth_th
     while True:
         do_put_on_random_node()
         time.sleep(gval.PUT_INTERVAL_SEC)
 
 def data_get_th():
+    # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
+    #       on data_get_th
     while True:
         # 内部でデータのputが一度も行われていなければreturnしてくるので
         # putを行うスレッドと同時に動作を初めても問題ないようにはなっている
@@ -373,12 +400,21 @@ def main():
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()
 
+    # TODO: 同一処理を行う複数スレッドを立てる?
+    #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
+    #       stabilize
     stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
     stabilize_th_handle.start()
 
+    # TODO: 同一処理を行う複数スレッドを立てる
+    #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
+    #       put
     data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     data_put_th_handle.start()
 
+    # TODO: 同一処理を行う複数スレッドを立てる
+    #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
+    #       get
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     data_get_th_handle.start()
 

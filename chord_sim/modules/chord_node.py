@@ -36,7 +36,7 @@ class ChordNode:
     need_put_retry_data_value : str = ""
     need_put_retry_node : Optional['ChordNode'] = None
 
-    # TODO: 経路表データに対してwriteロックをとっていないといけないと思われる
+    # TODO: predecessor_info と successor_info_list に対してwriteロックをとっていないといけないと思われる
     #       constructor of ChordNode
 
     # join処理もコンストラクタで行ってしまう
@@ -194,12 +194,12 @@ class ChordNode:
             # 最初は処理の都合上、最初にgetをかけたノードを設定する
             cur_predecessor = target_node
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
+                # TODO: predecessor_infoへのreadロックをループ一周が終わるまで取得しておく必要あり
+                #       on global_get
                 if cur_predecessor.node_info.predecessor_info == None:
                     ChordUtil.dprint("global_get_1,predecessor is None")
                     break
                 try:
-                    # TODO: predecessor_infoへのreadロックを取得しておく必要あり
-                    #       on global_get
                     cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
                 except NodeIsDownedExceptiopn:
                     # ここでは何も対処はしない
@@ -233,8 +233,6 @@ class ChordNode:
             cur_successor = target_node
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
                 try:
-                    # TODO: successor_info_listのreadロックをとっておく必要あり
-                    #       on global_get
                     cur_successor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_successor.node_info.successor_info_list[0]).address_str)
                 except NodeIsDownedExceptiopn:
                     # ここでは何も対処はしない

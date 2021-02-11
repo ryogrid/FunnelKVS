@@ -23,6 +23,9 @@ class NodeInfo:
         # 必要であれば、その際に下のフィールドにdeepcopyを設定しなおさ
         # なければならない.
 
+        # TODO: successor_info_list と predecessor_info のそれぞれに対応する
+        #       RWロックが可能なロック変数を用意する
+
         # 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
         # ように制御する
         self.successor_info_list: List[NodeInfo] = []

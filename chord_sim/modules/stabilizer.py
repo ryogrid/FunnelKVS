@@ -22,6 +22,8 @@ class Stabilizer:
 
     # successor_info_listの長さをチェックし、規定長を越えていた場合余剰なノードにレプリカを
     # 削除させた上で、リストから取り除く
+    # TODO: メソッド呼びだし中はsuccessor_info_listのwriteロックを取得しておく必要あり
+    #       check_replication_redunduncy
     def check_replication_redunduncy(self):
         ChordUtil.dprint(
             "check_replication_redunduncy_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -50,7 +52,7 @@ class Stabilizer:
                     self.existing_node.node_info.successor_info_list.remove(node_info)
                     continue
 
-    # TODO: 経路表データ全体に対してwriteロックをとっていないといけないと思われる
+    # TODO: predecessor_info と successor_info_listに対してwriteロックを取得している必要あり
     #       join
 
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
@@ -192,6 +194,8 @@ class Stabilizer:
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
     # Attention: TargetNodeDoesNotExistException を raiseする場合がある
+    # TODO: predecessor_info の writeロック、 successor_info_list の readロックをメソッド処理中は取得しておくこと
+    #       check_predecessor
     def check_predecessor(self, id : int, node_info : 'NodeInfo'):
         ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
@@ -218,6 +222,8 @@ class Stabilizer:
     #  なノードで、諸々の処理の結果、self の successor[0] となるべきノードであると確認されたノードを返す.
     #　注: この呼び出しにより、self.existing_node.node_info.successor_info_list[0] は更新される
     #  規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
+    # TODO: メソッド呼び出し中は successor_info_list と finger_table の writeロックを取得しておく必要あり
+    #       stabilize_successor_inner
     def stabilize_successor_inner(self) -> 'NodeInfo':
         # 本メソッド呼び出しでsuccessorとして扱うノードはsuccessorListの先頭から生きているもの
         # をサーチし、発見したノードとする.
@@ -329,20 +335,13 @@ class Stabilizer:
         return self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
 
 
-    # TODO: 経路表データ全体に対してwriteロックをとってないといけないと思われる
+    # TODO: predecessor_info と successor_info_list に対してwriteロックを取得している必要あり
     #       stabilize_successor
 
     # successorListに関するstabilize処理を行う
     # コメントにおいては、successorListの構造を意識した記述の場合、一番近いsuccessorを successor[0] と
     # 記述し、以降に位置するノードは近い順に successor[idx] と記述する
     def stabilize_successor(self):
-        # TODO: put時にレプリカを全て、もしくは一部持っていないノードについてはケアされる
-        #       ため、大局的には問題ないと思われるが、ノードダウンを検出した場合や、未認識
-        #       であったノードを発見した場合に、レプリカの配置状態が前述のケアでカバーできない
-        #       ような状態とならないか確認する
-        #       on stabilize_successor
-        #       for 契機4
-
         ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 

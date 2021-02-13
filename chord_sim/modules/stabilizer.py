@@ -23,6 +23,9 @@ class Stabilizer:
     # successor_info_listの長さをチェックし、規定長を越えていた場合余剰なノードにレプリカを
     # 削除させた上で、リストから取り除く
     # TODO: メソッド呼びだし中はsuccessor_info_listのwriteロックを取得しておく必要あり
+    #       writeロックの取得には30秒程度のタイムアウトを設定し、タイムアウトした場合にそれが
+    #       stabilize_successorの延長での呼び出しであった場合は stabilize処理自体を失敗として
+    #       終了させる. リトライは行わない
     #       check_replication_redunduncy
     def check_replication_redunduncy(self):
         ChordUtil.dprint(
@@ -194,7 +197,10 @@ class Stabilizer:
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
     # Attention: TargetNodeDoesNotExistException を raiseする場合がある
-    # TODO: predecessor_info の writeロック、 successor_info_list の readロックをメソッド処理中は取得しておくこと
+    # TODO: predecessor_info の writeロックをメソッド処理中は取得しておくこと
+    #       writeロックの取得には30秒程度のタイムアウトを設定し、タイムアウトした場合にそれが
+    #       stabilize_successorの延長での呼び出しであった場合は stabilize処理自体を失敗として
+    #       終了させる. リトライは行わない
     #       check_predecessor
     def check_predecessor(self, id : int, node_info : 'NodeInfo'):
         ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -222,7 +228,10 @@ class Stabilizer:
     #  なノードで、諸々の処理の結果、self の successor[0] となるべきノードであると確認されたノードを返す.
     #　注: この呼び出しにより、self.existing_node.node_info.successor_info_list[0] は更新される
     #  規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
-    # TODO: メソッド呼び出し中は successor_info_list と finger_table の writeロックを取得しておく必要あり
+    # TODO: メソッド呼び出し中は successor_info_list と predecessor_info の writeロックを取得しておく必要あり
+    #       writeロックの取得には30秒程度のタイムアウトを設定し、タイムアウトした場合にそれが
+    #       stabilize_successorの延長での呼び出しであった場合は stabilize処理自体を失敗として
+    #       終了させる. stabilize処理のリトライは行わない
     #       stabilize_successor_inner
     def stabilize_successor_inner(self) -> 'NodeInfo':
         # 本メソッド呼び出しでsuccessorとして扱うノードはsuccessorListの先頭から生きているもの
@@ -336,6 +345,8 @@ class Stabilizer:
 
 
     # TODO: predecessor_info と successor_info_list に対してwriteロックを取得している必要あり
+    #       writeロックの取得には30秒程度のタイムアウトを設定し、タイムアウトした場合はメソッド呼び出しを
+    #       失敗させる. リトライは行わない.
     #       stabilize_successor
 
     # successorListに関するstabilize処理を行う

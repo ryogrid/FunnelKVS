@@ -178,7 +178,7 @@ class Stabilizer:
                     ChordUtil.dprint("join_9,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(node_info))
-                    # ノードがダウンしていた場合は無視して次のノードに進む.
+                    # ノードがダウンしていた場合は無視して先に進む.
                     # ノードダウンに関する対処とそれに関連したレプリカの適切な配置はそれぞれ stabilize処理 と
                     # put処理 の中で後ほど行われるためここでは対処しない
                     pass

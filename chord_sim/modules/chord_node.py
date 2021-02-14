@@ -54,19 +54,20 @@ class ChordNode:
         # シミュレーション時のみ必要なフィールド（実システムでは不要）
         self.is_alive = True
 
-        if first_node:
-            # 最初の1ノードの場合
+        with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
+            if first_node:
+                # 最初の1ノードの場合
 
-            # successorとpredecessorは自身として終了する
-            self.node_info.successor_info_list.append(self.node_info.get_partial_deepcopy())
-            self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+                # successorとpredecessorは自身として終了する
+                self.node_info.successor_info_list.append(self.node_info.get_partial_deepcopy())
+                self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
 
-            # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
-            # データの委譲は必要ない
+                # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+                # データの委譲は必要ない
 
-            return
-        else:
-            self.stabilizer.join(node_address)
+                return
+            else:
+                self.stabilizer.join(node_address)
 
     def global_put(self, data_id : int, value_str : str) -> bool:
 

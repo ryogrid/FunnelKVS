@@ -122,8 +122,8 @@ def add_new_node():
 
     if Stabilizer.need_join_retry_node != None:
         # 前回の呼び出しが失敗していた場合はリトライを行う
-        tyukai_node = ChordNode.need_join_retry_tyukai_node
-        new_node = ChordNode.need_join_retry_node
+        tyukai_node = Stabilizer.need_join_retry_tyukai_node
+        new_node = Stabilizer.need_join_retry_node
         new_node.stabilizer.join(tyukai_node.node_info.address_str)
         if Stabilizer.need_join_retry_node == None:
             # リトライ情報が再設定されていないためリトライに成功したと判断
@@ -139,6 +139,9 @@ def add_new_node():
     if Stabilizer.need_join_retry_node == None:
         # join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
         gval.all_node_dict[new_node.node_info.address_str] = new_node
+
+    # # TODO: for Debugging
+    # gval.all_node_dict[new_node.node_info.address_str] = new_node
 
     # # ロックの解放
     # gval.lock_of_all_data.release()

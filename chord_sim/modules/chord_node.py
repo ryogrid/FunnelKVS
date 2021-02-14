@@ -47,7 +47,6 @@ class ChordNode:
         self.stabilizer : Stabilizer = Stabilizer(self)
         self.router : Router = Router(self)
 
-
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chorネットワーク上でのIDを決定する
         self.node_info.address_str = ChordUtil.gen_address_str()
         self.node_info.node_id = ChordUtil.hash_str_to_int(self.node_info.address_str)

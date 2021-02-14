@@ -61,4 +61,4 @@ all_data_list : List['KeyValue'] = []
 already_born_node_num = 0
 
 #lock_of_all_data = threading.Lock()
-lock_of_all_data = (rwlock.RWLockFair()).gen_wlock()
+#lock_of_all_data = (rwlock.RWLockFair()).gen_wlock()

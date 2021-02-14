@@ -4,6 +4,7 @@ import copy
 from typing import List, Optional
 
 from . import gval
+from readerwriterlock import rwlock
 
 # メモ: オブジェクトをdictのキーとして使用可能としてある
 class NodeInfo:
@@ -23,19 +24,25 @@ class NodeInfo:
         # 必要であれば、その際に下のフィールドにdeepcopyを設定しなおさ
         # なければならない.
 
-        # TODO: successor_info_list と predecessor_info のそれぞれに対応する
-        #       RWロックが可能なロック変数を用意する
-
         # 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
         # ように制御する
         self.successor_info_list: List[NodeInfo] = []
         # join後はNoneになることのないように制御される
         self.predecessor_info: Optional[NodeInfo] = None
 
+        # predecessor_info と successor_info_list のそれぞれに対応する
+        # readロック変数とwriteロック変数
+        self.lock_core_of_pred_info : rwlock.RWLock = rwlock.RWLockFair()
+        self.read_lock_of_pred_info = self.lock_core_of_pred_info.gen_rlock()
+        self.write_lock_of_pred_info = self.lock_core_of_pred_info.gen_wlock()
+
+        self.lock_core_of_succ_infos : rwlock.RWLock = rwlock.RWLockFair()
+        self.read_lock_of_succ_infos = self.lock_core_of_succ_infos.gen_rlock()
+        self.write_lock_of_succ_infos = self.lock_core_of_succ_infos.gen_wlock()
+
         # NodeInfoオブジェクトを要素として持つリスト
         # インデックスの小さい方から狭い範囲が格納される形で保持する
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
-
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table: List[Optional[NodeInfo]] = [None] * gval.ID_SPACE_BITS
 
@@ -58,6 +65,11 @@ class NodeInfo:
         ret_node_info.born_id = copy.copy(self.born_id)
         ret_node_info.successor_info_list = []
         ret_node_info.predecessor_info = None
+
+        # ロック関連のフィールドは本メソッドでコピーすることで生まれた
+        # オブジェクトにおいて利用されることがあったとしても、ロックの
+        # 対象は上記でコピーしているオブジェクトではなく、フィールドそのもの
+        # であるため、コピーの必要はない
 
         return ret_node_info
 

@@ -284,7 +284,7 @@ def do_get_on_random_node():
 
     # まだ put が行われていなかったら何もせずに終了する
     if len(gval.all_data_list) == 0:
-        gval.lock_of_all_data.release()
+        # gval.lock_of_all_data.release()
         return
 
     is_retry = False

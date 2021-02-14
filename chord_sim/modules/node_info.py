@@ -4,7 +4,7 @@ import copy
 from typing import List, Optional
 
 from . import gval
-from readerwriterlock import rwlock
+import threading
 
 # メモ: オブジェクトをdictのキーとして使用可能としてある
 class NodeInfo:
@@ -31,14 +31,9 @@ class NodeInfo:
         self.predecessor_info: Optional[NodeInfo] = None
 
         # predecessor_info と successor_info_list のそれぞれに対応する
-        # readロック変数とwriteロック変数
-        self.lock_core_of_pred_info : rwlock.RWLock = rwlock.RWLockFair()
-        self.read_lock_of_pred_info = self.lock_core_of_pred_info.gen_rlock()
-        self.write_lock_of_pred_info = self.lock_core_of_pred_info.gen_wlock()
-
-        self.lock_core_of_succ_infos : rwlock.RWLock = rwlock.RWLockFair()
-        self.read_lock_of_succ_infos = self.lock_core_of_succ_infos.gen_rlock()
-        self.write_lock_of_succ_infos = self.lock_core_of_succ_infos.gen_wlock()
+        # ロック変数(re-entrantロック)
+        self.lock_of_pred_info : threading.RLock = threading.RLock()
+        self.lock_of_succ_infos : threading.RLock = threading.RLock()
 
         # NodeInfoオブジェクトを要素として持つリスト
         # インデックスの小さい方から狭い範囲が格納される形で保持する

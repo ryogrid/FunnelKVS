@@ -27,21 +27,20 @@ class Router:
                              + ChordUtil.gen_debug_str_of_data(id))
             raise AppropriateNodeNotFoundException()
 
-        # TODO: ここからメソッドの最後までsuccessor_info_listのreadロックをとっておく必要あり
-        #       on find_successor
-        ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
-                         + ChordUtil.gen_debug_str_of_data(id))
-
-        try:
-            # 取得しようとしたノードがダウンしていた場合 NodeIsDownedException が raise される
-            return ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
-        except NodeIsDownedExceptiopn:
-            # ここでは何も対処しない
-            ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+        with self.existing_node.node_info.lock_of_succ_infos:
+            ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
                              + ChordUtil.gen_debug_str_of_data(id))
-            raise AppropriateNodeNotFoundException()
+
+            try:
+                # 取得しようとしたノードがダウンしていた場合 NodeIsDownedException が raise される
+                return ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
+            except NodeIsDownedExceptiopn:
+                # ここでは何も対処しない
+                ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(id))
+                raise AppropriateNodeNotFoundException()
 
 
     # id(int)　の前で一番近い位置に存在するノードを探索する
@@ -49,48 +48,48 @@ class Router:
         ChordUtil.dprint("find_predecessor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
 
         n_dash : 'ChordNode' = self.existing_node
-        # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
-        # TODO: succesor_info_listのreadロックをとっておく必要あり
-        #       on find_predecessor
-        while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info_list[0].node_id, id):
-            ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
-            n_dash_found = n_dash.router.closest_preceding_finger(id)
 
-            if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
-                # 見つかったノードが、n_dash と同じで、変わらなかった場合
-                # 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
-                # なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
-                ChordUtil.dprint("find_predecessor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+        with self.existing_node.node_info.lock_of_succ_infos:
+            # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
+            while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info_list[0].node_id, id):
+                ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
-                return n_dash_found
+                n_dash_found = n_dash.router.closest_preceding_finger(id)
 
-            # closelst_preceding_finger は id を通り越してしまったノードは返さない
-            # という前提の元で以下のチェックを行う
-            distance_old = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash.node_info.node_id)
-            distance_found = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash_found.node_info.node_id)
-            distance_data_id = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, id)
-            if distance_found < distance_old and not (distance_old >= distance_data_id):
-                # 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
-                # 自ノードからはより遠い位置の値になっていくということのはずである
-                # 従って、そうなっていなかった場合は、繰り返しを継続しても意味が無く、最悪、無限ループになってしまう
-                # 可能性があるため、探索を打ち切り、探索結果は古いn_dashを返す.
-                # ただし、古い n_dash が 一回目の探索の場合 self であり、同じ node_idの距離は ID_SPACE_RANGE となるようにしている
-                # ため、上記の条件が常に成り立ってしまう. 従って、その場合は例外とする（n_dashが更新される場合は、更新されたn_dashのnode_idが
-                # 探索対象のデータのid を通り越すことは無い）
+                if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
+                    # 見つかったノードが、n_dash と同じで、変わらなかった場合
+                    # 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
+                    # なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
+                    ChordUtil.dprint("find_predecessor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
+                    return n_dash_found
 
-                ChordUtil.dprint("find_predecessor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
+                # closelst_preceding_finger は id を通り越してしまったノードは返さない
+                # という前提の元で以下のチェックを行う
+                distance_old = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash.node_info.node_id)
+                distance_found = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash_found.node_info.node_id)
+                distance_data_id = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, id)
+                if distance_found < distance_old and not (distance_old >= distance_data_id):
+                    # 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
+                    # 自ノードからはより遠い位置の値になっていくということのはずである
+                    # 従って、そうなっていなかった場合は、繰り返しを継続しても意味が無く、最悪、無限ループになってしまう
+                    # 可能性があるため、探索を打ち切り、探索結果は古いn_dashを返す.
+                    # ただし、古い n_dash が 一回目の探索の場合 self であり、同じ node_idの距離は ID_SPACE_RANGE となるようにしている
+                    # ため、上記の条件が常に成り立ってしまう. 従って、その場合は例外とする（n_dashが更新される場合は、更新されたn_dashのnode_idが
+                    # 探索対象のデータのid を通り越すことは無い）
 
-                return n_dash
+                    ChordUtil.dprint("find_predecessor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
 
-            ChordUtil.dprint("find_predecessor_5_n_dash_updated," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + "->"
-                             + ChordUtil.gen_debug_str_of_node(n_dash_found.node_info))
+                    return n_dash
 
-            # チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
-            # ノード情報 n_dash_foundに置き換える
-            n_dash = n_dash_found
+                ChordUtil.dprint("find_predecessor_5_n_dash_updated," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + "->"
+                                 + ChordUtil.gen_debug_str_of_node(n_dash_found.node_info))
+
+                # チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
+                # ノード情報 n_dash_foundに置き換える
+                n_dash = n_dash_found
 
         return n_dash
 

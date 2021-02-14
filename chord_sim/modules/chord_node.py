@@ -36,9 +36,6 @@ class ChordNode:
     need_put_retry_data_value : str = ""
     need_put_retry_node : Optional['ChordNode'] = None
 
-    # TODO: predecessor_info と successor_info_list に対してwriteロックをとっていないといけないと思われる
-    #       constructor of ChordNode
-
     # join処理もコンストラクタで行ってしまう
     def __init__(self, node_address: str, first_node=False):
         self.node_info : NodeInfo = NodeInfo()
@@ -127,38 +124,38 @@ class ChordNode:
         # 担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
         # 全てを保持していないノードが存在する場合があるため、receive_replicaメソッド呼び出し時に返ってくる
         # レプリカの保持数が、全件となっていない場合は全て保持させる
-        # TODO: successor_info_listのreadロックをとっておく必要あり
-        #       on put
-        for succ_info in self.node_info.successor_info_list:
-            try:
-                succ_node : ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
-            except NodeIsDownedExceptiopn:
-                # stabilize処理 と put処理 を経ていずれ正常な状態に
-                # なるため、ここでは何もせずに次のノードに移る
-                ChordUtil.dprint("put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+
+        with self.node_info.lock_of_succ_infos:
+            for succ_info in self.node_info.successor_info_list:
+                try:
+                    succ_node : ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
+                except NodeIsDownedExceptiopn:
+                    # stabilize処理 と put処理 を経ていずれ正常な状態に
+                    # なるため、ここでは何もせずに次のノードに移る
+                    ChordUtil.dprint("put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                                     + ChordUtil.gen_debug_str_of_node(succ_info))
+                    continue
+
+                has_replica_cnt = succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(),[
+                                                                         DataIdAndValue(
+                                                                           data_id=data_id,
+                                                                           value_data=value_str
+                                                                         )])
+                correct_replica_cnt = self.data_store.get_replica_cnt_by_master_node(self.node_info.node_id)
+
+                # レプリカを渡したノードが保持しているべき自ノードのレプリカを全て保持していない場合
+                # 全て保持させる
+                if has_replica_cnt != correct_replica_cnt:
+                    replica_list = self.data_store.get_all_replica_by_master_node(self.node_info.node_id)
+                    succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(), replica_list, replace_all=True)
+                    ChordUtil.dprint("put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                                     + ChordUtil.gen_debug_str_of_node(succ_info))
+
+                ChordUtil.dprint("put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(data_id) + ","
                                  + ChordUtil.gen_debug_str_of_node(succ_info))
-                continue
-
-            has_replica_cnt = succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(),[
-                                                                     DataIdAndValue(
-                                                                       data_id=data_id,
-                                                                       value_data=value_str
-                                                                     )])
-            correct_replica_cnt = self.data_store.get_replica_cnt_by_master_node(self.node_info.node_id)
-
-            # レプリカを渡したノードが保持しているべき自ノードのレプリカを全て保持していない場合
-            # 全て保持させる
-            if has_replica_cnt != correct_replica_cnt:
-                replica_list = self.data_store.get_all_replica_by_master_node(self.node_info.node_id)
-                succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(), replica_list, replace_all=True)
-                ChordUtil.dprint("put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                                 + ChordUtil.gen_debug_str_of_node(succ_info))
-
-            ChordUtil.dprint("put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                             + ChordUtil.gen_debug_str_of_node(succ_info))
 
         ChordUtil.dprint("put_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -193,36 +190,35 @@ class ChordNode:
             # 最初は処理の都合上、最初にgetをかけたノードを設定する
             cur_predecessor = target_node
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
-                # TODO: predecessor_infoへのreadロックをループ一周が終わるまで取得しておく必要あり
-                #       on global_get
-                if cur_predecessor.node_info.predecessor_info == None:
-                    ChordUtil.dprint("global_get_1,predecessor is None")
-                    break
-                try:
-                    cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
-                except NodeIsDownedExceptiopn:
-                    # ここでは何も対処はしない
-                    ChordUtil.dprint("global_get_1,NODE_IS_DOWNED")
-                    break
+                with cur_predecessor.node_info.lock_of_pred_info:
+                    if cur_predecessor.node_info.predecessor_info == None:
+                        ChordUtil.dprint("global_get_1,predecessor is None")
+                        break
+                    try:
+                        cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
+                    except NodeIsDownedExceptiopn:
+                        # ここでは何も対処はしない
+                        ChordUtil.dprint("global_get_1,NODE_IS_DOWNED")
+                        break
 
-                got_value_str = cur_predecessor.get(data_id)
-                tried_node_num += 1
-                ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                                 + got_value_str + "," + str(tried_node_num))
-                if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-                    # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
-                    # 前方に位置するpredecessorを辿ることでデータを取得することができた
-                    ChordUtil.dprint("global_get_1_1," + "data found at predecessor,"
-                                     + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
-                    break
-                else:
-                    # できなかった
-                    ChordUtil.dprint("global_get_1_1," + "data not found at predecessor,"
-                                     + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
+                    got_value_str = cur_predecessor.get(data_id)
+                    tried_node_num += 1
+                    ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                                     + got_value_str + "," + str(tried_node_num))
+                    if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+                        # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
+                        # 前方に位置するpredecessorを辿ることでデータを取得することができた
+                        ChordUtil.dprint("global_get_1_1," + "data found at predecessor,"
+                                         + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
+                        break
+                    else:
+                        # できなかった
+                        ChordUtil.dprint("global_get_1_1," + "data not found at predecessor,"
+                                         + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
         # 一定数の successor を辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
@@ -325,24 +321,23 @@ class ChordNode:
                 # 自身の保持しているデータに紐づいている担当ノードの情報を更新する
                 self.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
 
-                # TODO: successor_info_listへのreadロックをとっておく必要あり
-                #       on get
-                # 自身のsuccessorList内のノードに担当ノードの変更を通知する
-                for node_info in self.node_info.successor_info_list:
-                    try:
-                        node_obj : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
-                        node_obj.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
-                        ChordUtil.dprint("get_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                         + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
-                                         + ChordUtil.gen_debug_str_of_data(data_id))
-                    except NodeIsDownedExceptiopn:
-                        # ノードがダウンしていた場合は無視して次のノードに進む
-                        # ノードダウンに関する対処は stabilize処理の中で後ほど行われるためここでは
-                        # 何もしない
-                        ChordUtil.dprint("get_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                         + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
-                                         + ChordUtil.gen_debug_str_of_data(data_id))
-                        continue
+                with self.node_info.lock_of_succ_infos:
+                    # 自身のsuccessorList内のノードに担当ノードの変更を通知する
+                    for node_info in self.node_info.successor_info_list:
+                        try:
+                            node_obj : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
+                            node_obj.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
+                            ChordUtil.dprint("get_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                             + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
+                                             + ChordUtil.gen_debug_str_of_data(data_id))
+                        except NodeIsDownedExceptiopn:
+                            # ノードがダウンしていた場合は無視して次のノードに進む
+                            # ノードダウンに関する対処は stabilize処理の中で後ほど行われるためここでは
+                            # 何もしない
+                            ChordUtil.dprint("get_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                             + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
+                                             + ChordUtil.gen_debug_str_of_data(data_id))
+                            continue
 
                 ret_value_str = sv_entry.value_data
 

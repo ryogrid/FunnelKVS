@@ -1,7 +1,6 @@
 # coding:utf-8
 
 import threading
-from readerwriterlock import rwlock
 from typing import Dict, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -61,4 +60,3 @@ all_data_list : List['KeyValue'] = []
 already_born_node_num = 0
 
 #lock_of_all_data = threading.Lock()
-#lock_of_all_data = (rwlock.RWLockFair()).gen_wlock()

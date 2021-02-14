@@ -280,26 +280,25 @@ class DataStore:
         # ことになるかもしれないが、それは新担当の管轄なので、非効率ともなるがひとまず削除させる）
         # 削除が完了するまで本メソッドは終了しないため、新担当がレプリカを配布する処理と以下の処理が
         # バッティングすることはない
-        # TODO: successor_info_listのreadロックをとっておく必要あり
-        #       on delegate_my_tantou_data
-        for node_info in self.existing_node.node_info.successor_info_list:
-            try:
-                node : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
-                # マスターノードが自ノードとして設定されているデータのうち自ノードが担当でなくなるデータを削除させる.
-                # 少なくとも、自ノードが担当となる範囲以外は自身の担当でなくなるため、担当範囲以外全てを指定して要請する.
-                # 始点・終点の指定としては、左周りで考えた時に自ノードから、委譲先ノードまでの範囲が、担当が自ノードから
-                # 変化していないID範囲であることを踏まえると、Chordネットワークを右回りでたどった時に、自ノードから委譲
-                # 先のノードに至るID範囲は自身が担当でない全てのID範囲と考えることができる
-                node.data_store.delete_replica(self.existing_node.node_info, self.existing_node.node_info.node_id, node_id)
-                ChordUtil.dprint(
-                    "delegate_my_tantou_data_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node.node_info))
-            except NodeIsDownedExceptiopn:
-                # stablize処理 がよろしくやってくれるのでここでは何もしない
-                ChordUtil.dprint(
-                    "delegate_my_tantou_data_4,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node.node_info))
-                continue
+        with self.existing_node.node_info.lock_of_succ_infos:
+            for node_info in self.existing_node.node_info.successor_info_list:
+                try:
+                    node : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
+                    # マスターノードが自ノードとして設定されているデータのうち自ノードが担当でなくなるデータを削除させる.
+                    # 少なくとも、自ノードが担当となる範囲以外は自身の担当でなくなるため、担当範囲以外全てを指定して要請する.
+                    # 始点・終点の指定としては、左周りで考えた時に自ノードから、委譲先ノードまでの範囲が、担当が自ノードから
+                    # 変化していないID範囲であることを踏まえると、Chordネットワークを右回りでたどった時に、自ノードから委譲
+                    # 先のノードに至るID範囲は自身が担当でない全てのID範囲と考えることができる
+                    node.data_store.delete_replica(self.existing_node.node_info, self.existing_node.node_info.node_id, node_id)
+                    ChordUtil.dprint(
+                        "delegate_my_tantou_data_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node.node_info))
+                except NodeIsDownedExceptiopn:
+                    # stablize処理 がよろしくやってくれるのでここでは何もしない
+                    ChordUtil.dprint(
+                        "delegate_my_tantou_data_4,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node.node_info))
+                    continue
 
         return ret_datas
 

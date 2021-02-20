@@ -231,6 +231,7 @@ class Stabilizer:
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            self.existing_node.node_info.lock_of_pred_info.release()
             raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
 
         try:
@@ -355,6 +356,7 @@ class Stabilizer:
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            self.existing_node.node_info.lock_of_pred_info.release()
             raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
         try:
             ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

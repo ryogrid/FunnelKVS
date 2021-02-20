@@ -152,8 +152,8 @@ class ChordUtil:
     #     return ceiled_value - 1 # 0オリジンのため
 
     @classmethod
-    def dprint(cls, print_str : str):
-        print(str(datetime.datetime.now()) + "," + print_str)
+    def dprint(cls, print_str : str, flush=False):
+        print(str(datetime.datetime.now()) + "," + print_str, flush=flush)
 
     @classmethod
     def print_no_lf(cls, print_str : str):

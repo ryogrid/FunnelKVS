@@ -170,6 +170,7 @@ class ChordNode:
 
         try:
             target_node = self.router.find_successor(data_id)
+            got_value_str = target_node.get(data_id)
         except (AppropriateNodeNotFoundException, InternalControlFlowException):
             # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
 
@@ -181,8 +182,6 @@ class ChordNode:
                              + ChordUtil.gen_debug_str_of_data(data_id))
             # 処理を終える
             return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
-
-        got_value_str = target_node.get(data_id)
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
         # 一定数の predecessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
@@ -197,6 +196,7 @@ class ChordNode:
                         break
                     try:
                         cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
+                        got_value_str = cur_predecessor.get(data_id)
                     except NodeIsDownedExceptiopn:
                         # ここでは何も対処はしない
                         ChordUtil.dprint("global_get_0,NODE_IS_DOWNED")
@@ -206,7 +206,6 @@ class ChordNode:
                         ChordUtil.dprint("global_get_0,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                         break
 
-                    got_value_str = cur_predecessor.get(data_id)
                     tried_node_num += 1
                     ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info) + ","
@@ -234,6 +233,7 @@ class ChordNode:
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
                 try:
                     cur_successor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_successor.node_info.successor_info_list[0]).address_str)
+                    got_value_str = cur_successor.get(data_id)
                 except NodeIsDownedExceptiopn:
                     # ここでは何も対処はしない
                     ChordUtil.dprint("global_get_2,NODE_IS_DOWNED")
@@ -243,7 +243,6 @@ class ChordNode:
                     ChordUtil.dprint("global_get_2,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                     break
 
-                got_value_str = cur_successor.get(data_id)
                 tried_node_num += 1
                 ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(cur_successor.node_info) + ","
@@ -339,8 +338,8 @@ class ChordNode:
                             ChordUtil.dprint("get_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_data(data_id))
-                        except NodeIsDownedExceptiopn:
-                            # ノードがダウンしていた場合は無視して次のノードに進む
+                        except (NodeIsDownedExceptiopn, InternalControlFlowException):
+                            # ノードがダウンしていた場合や内部エラーが発生した場合は無視して次のノードに進む
                             # ノードダウンに関する対処は stabilize処理の中で後ほど行われるためここでは
                             # 何もしない
                             ChordUtil.dprint("get_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","

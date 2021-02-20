@@ -8,7 +8,7 @@ from .data_store import DataStore
 from .stabilizer import Stabilizer
 from .router import Router
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
-    TargetNodeDoesNotExistException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
+    InternalControlFlowException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
@@ -78,7 +78,7 @@ class ChordNode:
             # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
             # 初期化しておく
             ChordNode.need_put_retry_data_id = -1
-        except (AppropriateNodeNotFoundException, TargetNodeDoesNotExistException):
+        except (AppropriateNodeNotFoundException, InternalControlFlowException):
             # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
             # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
             ChordNode.need_put_retry_data_id = data_id
@@ -130,7 +130,7 @@ class ChordNode:
             for succ_info in self.node_info.successor_info_list:
                 try:
                     succ_node : ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
-                except NodeIsDownedExceptiopn:
+                except (NodeIsDownedExceptiopn, InternalControlFlowException):
                     # stabilize処理 と put処理 を経ていずれ正常な状態に
                     # なるため、ここでは何もせずに次のノードに移る
                     ChordUtil.dprint("put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -170,8 +170,8 @@ class ChordNode:
 
         try:
             target_node = self.router.find_successor(data_id)
-        except AppropriateNodeNotFoundException:
-            # 適切なノードを得ることができなかった
+        except (AppropriateNodeNotFoundException, InternalControlFlowException):
+            # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
 
             # リトライに必要な情報をクラス変数に設定しておく
             ChordNode.need_getting_retry_data_id = data_id
@@ -199,7 +199,11 @@ class ChordNode:
                         cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
                     except NodeIsDownedExceptiopn:
                         # ここでは何も対処はしない
-                        ChordUtil.dprint("global_get_1,NODE_IS_DOWNED")
+                        ChordUtil.dprint("global_get_0,NODE_IS_DOWNED")
+                        break
+                    except InternalControlFlowException:
+                        # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
+                        ChordUtil.dprint("global_get_0,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                         break
 
                     got_value_str = cur_predecessor.get(data_id)
@@ -233,6 +237,10 @@ class ChordNode:
                 except NodeIsDownedExceptiopn:
                     # ここでは何も対処はしない
                     ChordUtil.dprint("global_get_2,NODE_IS_DOWNED")
+                    break
+                except InternalControlFlowException:
+                    # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
+                    ChordUtil.dprint("global_get_2,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                     break
 
                 got_value_str = cur_successor.get(data_id)

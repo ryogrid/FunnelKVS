@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
 import modules.gval as gval
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
-    TargetNodeDoesNotExistException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
+    InternalControlFlowException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
 
 if TYPE_CHECKING:
     from .node_info import NodeInfo
@@ -22,13 +22,11 @@ class Stabilizer:
 
     # successor_info_listの長さをチェックし、規定長を越えていた場合余剰なノードにレプリカを
     # 削除させた上で、リストから取り除く
-    # TODO: メソッド呼びだし中はsuccessor_info_listのwriteロックを取得しておく必要あり
-    #       writeロックの取得には30秒程度のタイムアウトを設定し、タイムアウトした場合にそれが
-    #       stabilize_successorの延長での呼び出しであった場合は stabilize処理自体を失敗として
-    #       終了させる. リトライは行わない （タイムアウトの設定のみ未実装）
-    #       check_replication_redunduncy
     def check_replication_redunduncy(self):
-        with self.existing_node.node_info.lock_of_succ_infos:
+        if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+
+        try:
             ChordUtil.dprint(
                 "check_replication_redunduncy_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                 + str(len(self.existing_node.node_info.successor_info_list)))
@@ -55,6 +53,8 @@ class Stabilizer:
                         # 特にレプリカに関するケアは行わず、余剰となったノードとして successorListから取り除く
                         self.existing_node.node_info.successor_info_list.remove(node_info)
                         continue
+        finally:
+            self.existing_node.node_info.lock_of_succ_infos.release()
 
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     def join(self, node_address : str):
@@ -195,14 +195,11 @@ class Stabilizer:
 
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
-    # Attention: TargetNodeDoesNotExistException を raiseする場合がある
-    # TODO: predecessor_info の writeロックをメソッド処理中は取得しておくこと
-    #       writeロックの取得には30秒程度のタイムアウトを設定し、タイムアウトした場合にそれが
-    #       stabilize_successorの延長での呼び出しであった場合は stabilize処理自体を失敗として
-    #       終了させる. リトライは行わない (タイムアウトの設定のみ未実装)
-    #       check_predecessor
+    # Attention: InternalControlFlowException を raiseする場合がある
     def check_predecessor(self, id : int, node_info : 'NodeInfo'):
-        with self.existing_node.node_info.lock_of_succ_infos:
+        if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+        try:
             ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                   + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
@@ -223,18 +220,20 @@ class Stabilizer:
                           + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.predecessor_info))
             else: # predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
                 self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy()
+        finally:
+            self.existing_node.node_info.lock_of_pred_info.release()
 
     #  ノードダウンしておらず、チェーンの接続関係が正常 (predecessorの情報が適切でそのノードが生きている)
     #  なノードで、諸々の処理の結果、self の successor[0] となるべきノードであると確認されたノードを返す.
     #　注: この呼び出しにより、self.existing_node.node_info.successor_info_list[0] は更新される
     #  規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
-    # TODO: メソッド呼び出し中は successor_info_list と predecessor_info の writeロックを取得しておく必要あり
-    #       writeロックの取得には30秒程度のタイムアウトを設定し、タイムアウトした場合にそれが
-    #       stabilize_successorの延長での呼び出しであった場合は stabilize処理自体を失敗として
-    #       終了させる. stabilize処理のリトライは行わない (タイムアウトの設定のみ未実装)
-    #       stabilize_successor_inner
     def stabilize_successor_inner(self) -> 'NodeInfo':
-        with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
+        if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+        if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+
+        try:
             # 本メソッド呼び出しでsuccessorとして扱うノードはsuccessorListの先頭から生きているもの
             # をサーチし、発見したノードとする.
             ChordUtil.dprint("stabilize_successor_inner_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
@@ -250,7 +249,7 @@ class Stabilizer:
                         ChordUtil.dprint("stabilize_successor_inner_1,SUCCESSOR_IS_DOWNED,"
                                          + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                          + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx]))
-                except TargetNodeDoesNotExistException:
+                except InternalControlFlowException:
                     # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
                     # した際に発生してしまうので、ここで対処する
                     # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなので、後続の処理を行わず successor[0]を返す
@@ -336,7 +335,7 @@ class Stabilizer:
                             ChordUtil.dprint("stabilize_successor_inner_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
-                except TargetNodeDoesNotExistException:
+                except InternalControlFlowException:
                     # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
                     # した際にcheck_predecessorで発生する場合があるので、ここで対処する
                     # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなの特に処理は不要であり
@@ -345,16 +344,19 @@ class Stabilizer:
                                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
             return self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
+        finally:
+            self.existing_node.node_info.lock_of_succ_infos.release()
+            self.existing_node.node_info.lock_of_pred_info.release()
 
     # successorListに関するstabilize処理を行う
     # コメントにおいては、successorListの構造を意識した記述の場合、一番近いsuccessorを successor[0] と
     # 記述し、以降に位置するノードは近い順に successor[idx] と記述する
-    # TODO: predecessor_info と successor_info_list に対してwriteロックを取得している必要あり
-    #       writeロックの取得には30秒程度のタイムアウトを設定し、タイムアウトした場合はメソッド呼び出しを
-    #       失敗させる. リトライは行わない. (タイムアウトの設定のみ未実装)
-    #       stabilize_successor
     def stabilize_successor(self):
-        with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
+        if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+        if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+        try:
             ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                   + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
@@ -373,30 +375,32 @@ class Stabilizer:
             cur_node : 'ChordNode' = self.existing_node
 
             while len(updated_list) < gval.SUCCESSOR_LIST_NORMAL_LEN:
-                cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
-                ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(cur_node_info))
-                if cur_node_info.node_id == self.existing_node.node_info.node_id:
-                    # Chordネットワークに (downしていない状態で) 存在するノード数が gval.SUCCESSOR_LIST_NORMAL_LEN
-                    # より少ない場合 successorをたどっていった結果、自ノードにたどり着いてしまうため、その場合は規定の
-                    # ノード数を満たしていないが、successor_info_list の更新処理は終了する
-                    ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(cur_node_info))
-                    if len(updated_list) == 0:
-                        # first node の場合の考慮
-                        # second node が 未joinの場合、successsor[0] がリストに存在しない状態となってしまうため
-                        # その場合のみ、updated_list で self.existing_node.node_info.successor_info_listを上書きせずにreturnする
-                        ChordUtil.dprint("stabilize_successor_2_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
-                        return
-
-                    break
-
                 try:
+                    cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
+                    ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                    if cur_node_info.node_id == self.existing_node.node_info.node_id:
+                        # Chordネットワークに (downしていない状態で) 存在するノード数が gval.SUCCESSOR_LIST_NORMAL_LEN
+                        # より少ない場合 successorをたどっていった結果、自ノードにたどり着いてしまうため、その場合は規定の
+                        # ノード数を満たしていないが、successor_info_list の更新処理は終了する
+                        ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                        if len(updated_list) == 0:
+                            # first node の場合の考慮
+                            # second node が 未joinの場合、successsor[0] がリストに存在しない状態となってしまうため
+                            # その場合のみ、updated_list で self.existing_node.node_info.successor_info_listを上書きせずにreturnする
+                            ChordUtil.dprint("stabilize_successor_2_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                             + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                            return
+
+                        break
+
+
                     cur_node = ChordUtil.get_node_by_address(cur_node_info.address_str)
                     updated_list.append(cur_node_info)
-                except TargetNodeDoesNotExistException:
-                    # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまった
+                except InternalControlFlowException:
+                    # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
+                    # もしくは、ロックの取得でタイムアウトが発生した
                     if len(updated_list) == 0:
                         # この場合は、successsor_info_listを更新することなく処理を終了する
                         ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -413,6 +417,9 @@ class Stabilizer:
             self.existing_node.node_info.successor_info_list = updated_list
             ChordUtil.dprint("stabilize_successor_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + str(self.existing_node.node_info.successor_info_list))
+        finally:
+            self.existing_node.node_info.lock_of_succ_infos.release()
+            self.existing_node.node_info.lock_of_pred_info.release()
 
     # FingerTableに関するstabilize処理を行う
     # 一回の呼び出しで1エントリを更新する

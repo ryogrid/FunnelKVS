@@ -8,7 +8,7 @@ from typing import List, cast
 import modules.gval as gval
 from modules.node_info import NodeInfo
 from modules.chord_util import ChordUtil, KeyValue
-from modules.chord_node import ChordNode, NodeIsDownedExceptiopn, TargetNodeDoesNotExistException
+from modules.chord_node import ChordNode, NodeIsDownedExceptiopn, InternalControlFlowException
 from modules.stabilizer import Stabilizer
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
@@ -47,7 +47,7 @@ def check_nodes_connectivity():
             print("")
             ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")
             return
-        except TargetNodeDoesNotExistException:
+        except InternalControlFlowException:
             # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
             # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
             print("")
@@ -89,7 +89,7 @@ def check_nodes_connectivity():
             print("")
             ChordUtil.dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
             return
-        except TargetNodeDoesNotExistException:
+        except InternalControlFlowException:
             # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
             # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
             print("")
@@ -211,7 +211,7 @@ def do_stabilize_once_at_all_node():
                 if node.is_alive == True:
                     try:
                         node.stabilizer.stabilize_successor()
-                    except TargetNodeDoesNotExistException:
+                    except InternalControlFlowException:
                         # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
                         # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
                         ChordUtil.dprint(
@@ -234,7 +234,7 @@ def do_stabilize_once_at_all_node():
                         + str(cur_ftable_idx))
                     try:
                         node.stabilizer.stabilize_finger_table(cur_ftable_idx)
-                    except TargetNodeDoesNotExistException:
+                    except InternalControlFlowException:
                         # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
                         # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
                         ChordUtil.dprint(

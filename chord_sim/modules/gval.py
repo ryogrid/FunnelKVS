@@ -17,7 +17,7 @@ PUT_INTERVAL_SEC = 0.5 # 1
 GET_INTERVAL_SEC = 0.5 # 1
 
 # ノード増加の勢いは 係数-1/係数 となる
-NODE_KILL_INTERVAL_SEC = JOIN_INTERVAL_SEC * 3
+NODE_KILL_INTERVAL_SEC = JOIN_INTERVAL_SEC * 5
 
 # 全ノードがstabilize_successorを実行することを1バッチとした際に
 # stabilize処理担当のスレッドにより呼び出されるstabilize処理を行わせる
@@ -29,7 +29,7 @@ STABILIZE_SUCCESSOR_BATCH_TIMES = 20 #10 #20
 STABILIZE_FTABLE_BATCH_TIMES = 2 #1
 
 # 一時的にこれより短くなる場合もある
-SUCCESSOR_LIST_NORMAL_LEN = 3
+SUCCESSOR_LIST_NORMAL_LEN = 8
 
 # # 160bit符号なし整数の最大値
 # # Chordネットワーク上のID空間の上限
@@ -42,6 +42,8 @@ SUCCESSOR_LIST_NORMAL_LEN = 3
 ID_MAX = ID_SPACE_RANGE - 1
 
 NODE_NUM_MAX = 1000
+
+LOCK_ACQUIRE_TIMEOUT = 10
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している

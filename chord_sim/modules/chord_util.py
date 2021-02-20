@@ -179,12 +179,11 @@ class ChordUtil:
             # join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
             # traceback.print_stack(file=sys.stdout)
             # print("KeyError occured", flush=True)
-            raise TargetNodeDoesNotExistException()
+            raise InternalControlFlowException("accessed to join operation progressing node.")
         # except KeyError:
         #     traceback.print_stack(file=sys.stdout)
         #     print("KeyError occured", flush=True)
         #     sys.exit(1)
-
 
         if ret_val.is_alive == False:
             ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
@@ -192,14 +191,11 @@ class ChordUtil:
 
         return ret_val
 
-    # Attention: TargetNodeDoesNotExistException を raiseする場合がある
+    # Attention: InternalControlFlowException を raiseする場合がある
     @classmethod
     def is_node_alive(cls, address : str) -> bool:
         try:
             node_obj = ChordUtil.get_node_by_address(address)
-        except KeyError:
-            # join処理の途中で構築中のノード情報をチェックしてしまいにいった場合に発生する
-            raise TargetNodeDoesNotExistException()
         except NodeIsDownedExceptiopn:
             return False
 
@@ -258,8 +254,8 @@ class AppropriateNodeNotFoundException(Exception):
         super(AppropriateNodeNotFoundException, self).__init__("Appropriate node is not found.")
 
 # 通常、join時に all_node_dictにノードオブジェクトが登録される前に
-# ノードのアドレスによる取得を試みた場合のみしか発生しない
-class TargetNodeDoesNotExistException(Exception):
+# ノードのアドレスによる取得を試みた場合など、設計上起きてしまうことがある例外について総じて利用する
+class InternalControlFlowException(Exception):
 
-    def __init__(self):
-        super(TargetNodeDoesNotExistException, self).__init__("Target node is not exist on kvs network yet.")
+    def __init__(self, msg_str):
+        super(InternalControlFlowException, self).__init__(msg_str)

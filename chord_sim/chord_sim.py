@@ -8,13 +8,14 @@ from typing import List, cast
 import modules.gval as gval
 from modules.node_info import NodeInfo
 from modules.chord_util import ChordUtil, KeyValue
-from modules.chord_node import ChordNode, NodeIsDownedExceptiopn
+from modules.chord_node import ChordNode, NodeIsDownedExceptiopn, TargetNodeDoesNotExistException
 from modules.stabilizer import Stabilizer
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
+# また、is_initializedフィールドがFalseとなっているノードも返さない
 def get_a_random_node() -> ChordNode:
-    alive_nodes_list : List[ChordNode] = list(filter(lambda node: node.is_alive == True,list(gval.all_node_dict.values())))
+    alive_nodes_list : List[ChordNode] = list(filter(lambda node: node.is_alive == True and node.is_initialized == True, list(gval.all_node_dict.values())))
     return ChordUtil.get_random_elem(alive_nodes_list)
 
 
@@ -46,6 +47,12 @@ def check_nodes_connectivity():
         except NodeIsDownedExceptiopn:
             print("")
             ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")
+            return
+        except TargetNodeDoesNotExistException:
+            # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+            # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
+            print("")
+            ChordUtil.dprint("check_nodes_connectivity__succ,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
             return
 
         if cur_node_info == None:
@@ -82,6 +89,12 @@ def check_nodes_connectivity():
         except NodeIsDownedExceptiopn:
             print("")
             ChordUtil.dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
+            return
+        except TargetNodeDoesNotExistException:
+            # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+            # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
+            print("")
+            ChordUtil.dprint("check_nodes_connectivity__pred,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
             return
 
         # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
@@ -197,9 +210,19 @@ def do_stabilize_once_at_all_node():
             if selected_operation == "successor":
                 node = shuffled_node_list_successor.pop()
                 if node.is_alive == True:
-                    node.stabilizer.stabilize_successor()
-                    ChordUtil.dprint("do_stabilize_on_random_node__successor," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                    try:
+                        node.stabilizer.stabilize_successor()
+                    except TargetNodeDoesNotExistException:
+                        # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                        # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
+                        ChordUtil.dprint(
+                            "do_stabilize_on_random_node__successor_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                            + str(cur_ftable_idx) + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                        pass
+
+                    ChordUtil.dprint("do_stabilize_on_random_node__successor_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                                        + str(done_stabilize_successor_cnt))
+
                 done_stabilize_successor_cnt += 1
             else: # "ftable"
                 # 1ノードの1エントリを更新する
@@ -208,9 +231,19 @@ def do_stabilize_once_at_all_node():
                 node = shuffled_node_list_ftable.pop()
                 if node.is_alive == True:
                     ChordUtil.dprint(
-                        "do_stabilize_on_random_node__ftable," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                        "do_stabilize_on_random_node__ftable_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                         + str(cur_ftable_idx))
-                    node.stabilizer.stabilize_finger_table(cur_ftable_idx)
+                    try:
+                        node.stabilizer.stabilize_finger_table(cur_ftable_idx)
+                    except TargetNodeDoesNotExistException:
+                        # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                        # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+                        ChordUtil.dprint(
+                            "do_stabilize_on_random_node__ftable_2," + ChordUtil.gen_debug_str_of_node(
+                                node.node_info) + ","
+                            + str(cur_ftable_idx) + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                        pass
+
                 done_stabilize_ftable_cnt += 1
 
                 if done_stabilize_ftable_cnt % cur_node_num == 0:

@@ -1,9 +1,11 @@
 # coding:utf-8
 
+import sys
 import time
 import random
 import datetime
 import dataclasses
+import traceback
 from typing import List, Any, Optional, cast, TYPE_CHECKING
 
 from . import gval
@@ -171,7 +173,19 @@ class ChordUtil:
     #            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
     @classmethod
     def get_node_by_address(cls, address : str) -> 'ChordNode':
-        ret_val = gval.all_node_dict[address]
+        try:
+            ret_val = gval.all_node_dict[address]
+        except KeyError:
+            # join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
+            # traceback.print_stack(file=sys.stdout)
+            # print("KeyError occured", flush=True)
+            raise TargetNodeDoesNotExistException()
+        # except KeyError:
+        #     traceback.print_stack(file=sys.stdout)
+        #     print("KeyError occured", flush=True)
+        #     sys.exit(1)
+
+
         if ret_val.is_alive == False:
             ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
             raise NodeIsDownedExceptiopn()

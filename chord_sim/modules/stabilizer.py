@@ -188,6 +188,9 @@ class Stabilizer:
             passed_all_replica: Dict[NodeInfo, List[DataIdAndValue]] = successor.data_store.pass_all_replica()
             self.existing_node.data_store.store_replica_of_several_masters(passed_all_replica)
 
+            # 初期化が済んだことをマーク
+            self.existing_node.is_initialized = True
+
             # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
             ChordUtil.dprint("join_10," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
@@ -254,6 +257,8 @@ class Stabilizer:
                     # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
                     # した際に発生してしまうので、ここで対処する
                     # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなので、後続の処理を行わず successor[0]を返す
+                    # TODO: なお、join処理中のノードがsuccessor_info_listに入っていた場合も同様に例外がraiseされるケースがあるがひとまず同様の対処として
+                    #       みる
                     return self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
 
             if successor_tmp != None:
@@ -390,12 +395,26 @@ class Stabilizer:
 
                     break
 
-                updated_list.append(cur_node_info)
-                # この呼び出しで例外は発生しない
-                cur_node = ChordUtil.get_node_by_address(cur_node_info.address_str)
+                try:
+                    cur_node = ChordUtil.get_node_by_address(cur_node_info.address_str)
+                    updated_list.append(cur_node_info)
+                except TargetNodeDoesNotExistException:
+                    # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまった
+                    if len(updated_list) == 0:
+                        # この場合は、successsor_info_listを更新することなく処理を終了する
+                        ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_node(cur_node_info)
+                                         + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                        return
+                    else:
+                        # この場合は規定数を満たしてないはずだが、作成済みのリストで successor_info_listを更新してしまう
+                        ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                         + ChordUtil.gen_debug_str_of_node(cur_node_info)
+                                         + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                        break
 
             self.existing_node.node_info.successor_info_list = updated_list
-            ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+            ChordUtil.dprint("stabilize_successor_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + str(self.existing_node.node_info.successor_info_list))
 
     # FingerTableに関するstabilize処理を行う

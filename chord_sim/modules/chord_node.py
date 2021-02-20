@@ -54,6 +54,11 @@ class ChordNode:
         # シミュレーション時のみ必要なフィールド（実システムでは不要）
         self.is_alive = True
 
+        # シミュレータでだけ利用するフラグ
+        # get, put, stabilize などの操作を行って問題のない状態までノードオブジェクトの
+        # 初期化が完了しているかを示す
+        self.is_initialized : bool = False
+
         with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
             if first_node:
                 # 最初の1ノードの場合
@@ -64,6 +69,9 @@ class ChordNode:
 
                 # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
                 # データの委譲は必要ない
+
+                # 初期化が済んだことをマーク
+                self.is_initialized = True
 
                 return
             else:
@@ -78,9 +86,9 @@ class ChordNode:
             # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
             # 初期化しておく
             ChordNode.need_put_retry_data_id = -1
-        except AppropriateNodeNotFoundException:
-            # 適切なノードを得られなかったため次回呼び出し時にリトライする形で呼び出しを
-            # うけられるように情報を設定しておく
+        except (AppropriateNodeNotFoundException, TargetNodeDoesNotExistException):
+            # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
+            # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
             ChordNode.need_put_retry_data_id = data_id
             ChordNode.need_put_retry_node = self
             ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","

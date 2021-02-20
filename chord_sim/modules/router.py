@@ -39,7 +39,7 @@ class Router:
                 return ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
             except NodeIsDownedExceptiopn:
                 # ここでは何も対処しない
-                ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(id))
                 raise AppropriateNodeNotFoundException()
 

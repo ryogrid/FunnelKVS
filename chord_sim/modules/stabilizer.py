@@ -188,9 +188,6 @@ class Stabilizer:
             passed_all_replica: Dict[NodeInfo, List[DataIdAndValue]] = successor.data_store.pass_all_replica()
             self.existing_node.data_store.store_replica_of_several_masters(passed_all_replica)
 
-            # 初期化が済んだことをマーク
-            self.existing_node.is_initialized = True
-
             # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
             ChordUtil.dprint("join_10," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","

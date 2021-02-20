@@ -13,9 +13,8 @@ from modules.stabilizer import Stabilizer
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
-# また、is_initializedフィールドがFalseとなっているノードも返さない
 def get_a_random_node() -> ChordNode:
-    alive_nodes_list : List[ChordNode] = list(filter(lambda node: node.is_alive == True and node.is_initialized == True, list(gval.all_node_dict.values())))
+    alive_nodes_list : List[ChordNode] = list(filter(lambda node: node.is_alive == True, list(gval.all_node_dict.values())))
     return ChordUtil.get_random_elem(alive_nodes_list)
 
 
@@ -411,7 +410,7 @@ def node_kill_th():
     while True:
         # ネットワークに存在するノードが5ノードを越えたらノードをダウンさせる処理を有効にする
         # しかし、リトライされなければならない処理が存在した場合は抑制する
-        if len(gval.all_node_dict) > 5 \
+        if len(gval.all_node_dict) > 10 \
                 and (ChordNode.need_getting_retry_data_id == -1
                      and ChordNode.need_put_retry_data_id == -1
                      and Stabilizer.need_join_retry_node == None) :

@@ -54,11 +54,6 @@ class ChordNode:
         # シミュレーション時のみ必要なフィールド（実システムでは不要）
         self.is_alive = True
 
-        # シミュレータでだけ利用するフラグ
-        # get, put, stabilize などの操作を行って問題のない状態までノードオブジェクトの
-        # 初期化が完了しているかを示す
-        self.is_initialized : bool = False
-
         with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
             if first_node:
                 # 最初の1ノードの場合
@@ -69,9 +64,6 @@ class ChordNode:
 
                 # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
                 # データの委譲は必要ない
-
-                # 初期化が済んだことをマーク
-                self.is_initialized = True
 
                 return
             else:

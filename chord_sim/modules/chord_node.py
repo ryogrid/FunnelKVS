@@ -54,8 +54,8 @@ class ChordNode:
         # シミュレーション時のみ必要なフィールド（実システムでは不要）
         self.is_alive = True
 
-        with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
-            if first_node:
+        if first_node:
+            with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
                 # 最初の1ノードの場合
 
                 # successorとpredecessorは自身として終了する
@@ -66,8 +66,8 @@ class ChordNode:
                 # データの委譲は必要ない
 
                 return
-            else:
-                self.stabilizer.join(node_address)
+        else:
+            self.stabilizer.join(node_address)
 
     def global_put(self, data_id : int, value_str : str) -> bool:
 
@@ -118,15 +118,17 @@ class ChordNode:
         if not ChordUtil.exist_between_two_nodes_right_mawari(cast(NodeInfo,self.node_info.predecessor_info).node_id, self.node_info.node_id, data_id):
             return False
 
-        self.data_store.store_new_data(data_id, value_str)
+        if self.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            # 今回は失敗としてしまう
+            return False
+        try:
+            self.data_store.store_new_data(data_id, value_str)
 
-        # レプリカを successorList内のノードに渡す
-        # なお、新規ノードのjoin時のレプリカのコピーにおいて、predecessorのさらに前に位置するノードが
-        # 担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
-        # 全てを保持していないノードが存在する場合があるため、receive_replicaメソッド呼び出し時に返ってくる
-        # レプリカの保持数が、全件となっていない場合は全て保持させる
-
-        with self.node_info.lock_of_succ_infos:
+            # レプリカを successorList内のノードに渡す
+            # なお、新規ノードのjoin時のレプリカのコピーにおいて、predecessorのさらに前に位置するノードが
+            # 担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
+            # 全てを保持していないノードが存在する場合があるため、receive_replicaメソッド呼び出し時に返ってくる
+            # レプリカの保持数が、全件となっていない場合は全て保持させる
             for succ_info in self.node_info.successor_info_list:
                 try:
                     succ_node : ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
@@ -157,6 +159,8 @@ class ChordNode:
                 ChordUtil.dprint("put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(data_id) + ","
                                  + ChordUtil.gen_debug_str_of_node(succ_info))
+        finally:
+            self.node_info.lock_of_succ_infos.release()
 
         ChordUtil.dprint("put_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -190,7 +194,9 @@ class ChordNode:
             # 最初は処理の都合上、最初にgetをかけたノードを設定する
             cur_predecessor = target_node
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
-                with cur_predecessor.node_info.lock_of_pred_info:
+                if cur_predecessor.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+                    break
+                try:
                     if cur_predecessor.node_info.predecessor_info == None:
                         ChordUtil.dprint("global_get_1,predecessor is None")
                         break
@@ -223,6 +229,8 @@ class ChordNode:
                         ChordUtil.dprint("global_get_1_1," + "data not found at predecessor,"
                                          + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                          + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
+                finally:
+                    cur_predecessor.node_info.lock_of_pred_info.release()
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
         # 一定数の successor を辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
@@ -325,11 +333,15 @@ class ChordNode:
                                  + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
             else:
-                # データの担当ノードであるマスターがダウンしていた.
-                # 自身の保持しているデータに紐づいている担当ノードの情報を更新する
-                self.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
+                if self.node_info.lock_of_succ_infos.acquire() == False:
+                    # 担当ノード変更の処理は後回しにして今回は QUERIED_DATA_NOT_FOUND_STRを返してしまう
+                    return ret_value_str
+                try:
+                    # データの担当ノードであるマスターがダウンしていた.
+                    # 自身の保持しているデータに紐づいている担当ノードの情報を更新する
+                    self.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
 
-                with self.node_info.lock_of_succ_infos:
+
                     # 自身のsuccessorList内のノードに担当ノードの変更を通知する
                     for node_info in self.node_info.successor_info_list:
                         try:
@@ -346,6 +358,8 @@ class ChordNode:
                                              + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_data(data_id))
                             continue
+                finally:
+                    self.node_info.lock_of_succ_infos.release()
 
                 ret_value_str = sv_entry.value_data
 

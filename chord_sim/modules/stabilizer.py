@@ -58,6 +58,7 @@ class Stabilizer:
 
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     def join(self, node_address : str):
+        # TODO: joinする時点でロックが他のスレッドにとられていることは無いはず？
         with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
             # 実装上例外は発生しない.
             # また実システムでもダウンしているノードの情報が与えられることは想定しない

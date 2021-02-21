@@ -241,6 +241,8 @@ class DataStore:
     # rest_copy引数によってコピーを渡すだけか、完全に委譲してしまい自身のデータストアからは渡したデータを削除
     # するかどうか選択できる
     def delegate_my_tantou_data(self, node_id : int, rest_copy : bool = True) -> List[KeyValue]:
+        # TODO: stabilize処理の中で唯一 datastoreのロックをとっている箇所
+        #       対処しないとまずいかもしれない
         with self.existing_node.node_info.lock_of_datastore:
             ChordUtil.dprint("delegate_my_tantou_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(node_id))

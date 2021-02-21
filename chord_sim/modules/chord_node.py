@@ -194,7 +194,8 @@ class ChordNode:
             # 最初は処理の都合上、最初にgetをかけたノードを設定する
             cur_predecessor = target_node
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
-                if cur_predecessor.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+                prev_cur_predecessor = cur_predecessor
+                if prev_cur_predecessor.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
                     break
                 try:
                     if cur_predecessor.node_info.predecessor_info == None:
@@ -230,7 +231,7 @@ class ChordNode:
                                          + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                          + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
                 finally:
-                    cur_predecessor.node_info.lock_of_pred_info.release()
+                    prev_cur_predecessor.node_info.lock_of_pred_info.release()
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
         # 一定数の successor を辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする

@@ -132,25 +132,6 @@ class ChordUtil:
         else:
             return False
 
-    # # あるノードを経路表に入れる際に適切なエントリに入れるために
-    # # 対応するインデックスを求めて返す
-    # # 設定するインデックスは node_id より値が大きくてもっとも近いエントリの
-    # # インデックスとなる
-    # # 値が大きいエントリに入れるのは、担当ノードとしては、そのノードのsuccessorを
-    # # 用いるためである
-    # @classmethod
-    # def calc_idx_of_ftable_from_node_id(cls, from_node_id : int, target_node_id : int) -> int:
-    #     distance : int = ChordUtil.calc_distance_between_nodes_right_mawari(from_node_id, target_node_id)
-    #     if distance == 0:
-    #         # 同じノードを比較しており、2^0である 1 よりも距離が小さいので、finger_tableには入れない
-    #         # ようにさせる
-    #         return -1
-    #
-    #     log2_value = math.log2(distance)
-    #     ceiled_value = math.floor(log2_value)
-    #
-    #     return ceiled_value - 1 # 0オリジンのため
-
     @classmethod
     def dprint(cls, print_str : str, flush=False):
         print(str(datetime.datetime.now()) + "," + print_str, flush=flush)
@@ -235,13 +216,6 @@ class StoredValueEntry:
         if not isinstance(other, StoredValueEntry):
             return False
         return self.data_id == other.data_id
-
-# class StoredValueEntry:
-#
-#     def __init__(self, master_info : NodeInfoPointer, data_id : int, value_data : str):
-#         self.master_info : NodeInfoPointer = master_info
-#         self.data_id : int = data_id
-#         self.value_data : str = value_data
 
 class NodeIsDownedExceptiopn(Exception):
 

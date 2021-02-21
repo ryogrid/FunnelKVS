@@ -267,7 +267,7 @@ class Stabilizer:
                                  + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + str(len(self.existing_node.node_info.successor_info_list)) + ","
                                  + str(self.existing_node.node_info.successor_info_list),
-                                 flash=True)
+                                 flush=True)
                 raise Exception("Maybe some parameters related to fault-tolerance of Chord network are not appropriate")
 
             # 生存が確認されたノードを successor[0] として設定する

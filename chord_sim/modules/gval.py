@@ -17,7 +17,7 @@ PUT_INTERVAL_SEC = 0.5 # 1
 GET_INTERVAL_SEC = 0.5 # 1
 
 # ノード増加の勢いは 係数-1/係数 となる
-NODE_KILL_INTERVAL_SEC = JOIN_INTERVAL_SEC * 5
+NODE_KILL_INTERVAL_SEC = JOIN_INTERVAL_SEC * 10
 
 # 全ノードがstabilize_successorを実行することを1バッチとした際に
 # stabilize処理担当のスレッドにより呼び出されるstabilize処理を行わせる

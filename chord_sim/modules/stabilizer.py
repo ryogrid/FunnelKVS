@@ -24,6 +24,8 @@ class Stabilizer:
     # 削除させた上で、リストから取り除く
     def check_replication_redunduncy(self):
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            ChordUtil.dprint("check_replication_redunduncy_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
 
         try:
@@ -85,9 +87,11 @@ class Stabilizer:
             self.existing_node.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
 
             # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
-            tantou_data_list : List[KeyValue] = successor.data_store.delegate_my_tantou_data(self.existing_node.node_info.node_id, False)
-            for key_value in tantou_data_list:
-                self.existing_node.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)
+            tantou_data_list: List[KeyValue] = successor.data_store.delegate_my_tantou_data(
+                self.existing_node.node_info.node_id, False)
+            with self.existing_node.node_info.lock_of_datastore:
+                for key_value in tantou_data_list:
+                    self.existing_node.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)
 
             # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
             self.existing_node.node_info.finger_table[0] = self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
@@ -199,6 +203,8 @@ class Stabilizer:
     # Attention: InternalControlFlowException を raiseする場合がある
     def check_predecessor(self, id : int, node_info : 'NodeInfo'):
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
         try:
             ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -230,9 +236,13 @@ class Stabilizer:
     #  規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
     def stabilize_successor_inner(self) -> 'NodeInfo':
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            ChordUtil.dprint("stabilize_successor_inner_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             self.existing_node.node_info.lock_of_pred_info.release()
+            ChordUtil.dprint("find_successor_inner_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
 
         try:
@@ -360,9 +370,13 @@ class Stabilizer:
     # 記述し、以降に位置するノードは近い順に successor[idx] と記述する
     def stabilize_successor(self):
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            ChordUtil.dprint("stabilize_successor_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             self.existing_node.node_info.lock_of_pred_info.release()
+            ChordUtil.dprint("stabilize_successor_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
         try:
             ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

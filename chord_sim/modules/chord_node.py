@@ -120,6 +120,8 @@ class ChordNode:
 
         if self.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             # 今回は失敗としてしまう
+            ChordUtil.dprint("put," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             return False
         try:
             self.data_store.store_new_data(data_id, value_str)
@@ -182,7 +184,7 @@ class ChordNode:
             ChordNode.need_getting_retry_data_id = data_id
             ChordNode.need_getting_retry_node = self
 
-            ChordUtil.dprint("global_get_3,FIND_NODE_FAILED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+            ChordUtil.dprint("global_get_0_1,FIND_NODE_FAILED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id))
             # 処理を終える
             return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
@@ -196,6 +198,8 @@ class ChordNode:
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
                 prev_cur_predecessor = cur_predecessor
                 if prev_cur_predecessor.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+                    ChordUtil.dprint("global_get_0_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                                     + "LOCK_ACQUIRE_TIMEOUT")
                     break
                 try:
                     if cur_predecessor.node_info.predecessor_info == None:
@@ -206,11 +210,11 @@ class ChordNode:
                         got_value_str = cur_predecessor.get(data_id)
                     except NodeIsDownedExceptiopn:
                         # ここでは何も対処はしない
-                        ChordUtil.dprint("global_get_0,NODE_IS_DOWNED")
+                        ChordUtil.dprint("global_get_0_3,NODE_IS_DOWNED")
                         break
                     except InternalControlFlowException:
                         # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
-                        ChordUtil.dprint("global_get_0,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
+                        ChordUtil.dprint("global_get_0_4,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                         break
 
                     tried_node_num += 1
@@ -227,7 +231,7 @@ class ChordNode:
                         break
                     else:
                         # できなかった
-                        ChordUtil.dprint("global_get_1_1," + "data not found at predecessor,"
+                        ChordUtil.dprint("global_get_1_2," + "data not found at predecessor,"
                                          + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                          + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
                 finally:
@@ -249,24 +253,24 @@ class ChordNode:
                     break
                 except InternalControlFlowException:
                     # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
-                    ChordUtil.dprint("global_get_2,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
+                    ChordUtil.dprint("global_get_2_2,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                     break
 
                 tried_node_num += 1
-                ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                ChordUtil.dprint("global_get_2_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(cur_successor.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(data_id) + ","
                                  + got_value_str + "," + str(tried_node_num))
                 if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
                     # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
                     # 後方に位置するsuccessorを辿ることでデータを取得することができた
-                    ChordUtil.dprint("global_get_2_1," + "data found at successor,"
+                    ChordUtil.dprint("global_get_2_4," + "data found at successor,"
                                      + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))
                     break
                 else:
                     # できなかった
-                    ChordUtil.dprint("global_get_2_1," + "data not found at successor,"
+                    ChordUtil.dprint("global_get_2_5," + "data not found at successor,"
                                      + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))
 
@@ -274,13 +278,13 @@ class ChordNode:
         if ChordNode.need_getting_retry_data_id != -1:
             if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
                 # リトライに成功した
-                ChordUtil.dprint("global_get_2_5,retry of global_get is succeeded")
+                ChordUtil.dprint("global_get_2_6,retry of global_get is succeeded")
                 # リトライは不要なためクリア
                 ChordNode.need_getting_retry_data_id = -1
                 ChordNode.need_getting_retry_node = None
             else:
                 # リトライに失敗した（何もしない）
-                ChordUtil.dprint("global_get_2_5,retry of global_get is failed")
+                ChordUtil.dprint("global_get_2_7,retry of global_get is failed")
                 pass
 
         # 取得に失敗した場合はリトライに必要な情報をクラス変数に設定しておく

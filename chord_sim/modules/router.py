@@ -20,6 +20,8 @@ class Router:
     def find_successor(self, id : int) -> 'ChordNode':
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             # 失敗させる
+            ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             raise AppropriateNodeNotFoundException()
         try:
             ChordUtil.dprint("find_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -56,6 +58,8 @@ class Router:
 
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             # 最初の n_dash を返してしまい、find_predecessorは失敗したと判断させる
+            ChordUtil.dprint("find_predecessor_1_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
             return n_dash
         try:
             # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する

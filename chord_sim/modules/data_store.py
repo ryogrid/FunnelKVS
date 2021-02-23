@@ -69,7 +69,16 @@ class DataStore:
                 self.master_node_dict_set(str(master_node_info.node_id), ninfo_p)
 
             sv_entry = StoredValueEntry(master_info=ninfo_p, data_id=data_id, value_data=value_str)
+
+            if key_id_str in self.stored_data:
+                # 既に同じキーが存在する. つまりvalueの更新の場合は管理用のデータ内でのエントリの重複が
+                # 起こらないようにするため、既存の記録を削除しておく
+                old_value : StoredValueEntry = self.stored_data[key_id_str]
+                related_list : List[StoredValueEntry] = self.master2data_idx[str(old_value.master_info.node_info.node_id)]
+                related_list.remove(old_value)
+
             self.stored_data[key_id_str] = sv_entry
+
             try:
                 data_list : List[StoredValueEntry] = self.master2data_idx[str(master_node_info.node_id)]
             except KeyError:
@@ -108,6 +117,7 @@ class DataStore:
                                  + str(range_start) + "," + str(range_end) + "," + str(delete_entries))
                 for sv_entry in delete_entries:
                     related_entries.remove(sv_entry)
+                    del self.stored_data[str(sv_entry.data_id)]
 
             # 全範囲の削除が指定されているか、範囲指定での削除の結果、指定されたマスターノードに紐づくデータが
             # 0件となった場合、当該ノードに関連する管理情報は不要であるため削除する

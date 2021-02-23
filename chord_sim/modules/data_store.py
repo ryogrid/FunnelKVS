@@ -247,45 +247,47 @@ class DataStore:
             ChordUtil.dprint("delegate_my_tantou_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(node_id))
             ret_datas : List[KeyValue] = []
-            for key, value in self.stored_data.items():
-                data_id : int = int(key)
+            try:
+                tantou_data: List[StoredValueEntry] = self.master2data_idx[str(self.existing_node.node_info.node_id)]
+            except:
+                ChordUtil.dprint(
+                    "delegate_my_tantou_data_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    + ChordUtil.gen_debug_str_of_data(node_id) + ",NO_TANTOU_DATA_YET")
+                # まだ一つもデータを保持していなかったということなので空リストを返す
+                return []
+
+            for entry in tantou_data:
                 # Chordネットワークを右回りにたどった時に、データの id (data_id) が呼び出し元の node_id から
                 # 自身の node_id の間に位置する場合は、そのデータの担当は自身から変わらないため、渡すデータから
                 # 除外する
-                if ChordUtil.exist_between_two_nodes_right_mawari(node_id, self.existing_node.node_info.node_id, data_id):
+                if ChordUtil.exist_between_two_nodes_right_mawari(node_id, self.existing_node.node_info.node_id, entry.data_id):
                     ChordUtil.dprint(
                         "delegate_my_tantou_data_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_data(data_id))
+                        + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_data(entry.data_id))
                     continue
 
                 # 文字列の参照をそのまま用いてしまうが、文字列はイミュータブルであるため
                 # 問題ない
-                item = KeyValue(None, value.value_data)
-                item.data_id = data_id
+                item = KeyValue(None, entry.value_data)
+                item.data_id = entry.data_id
                 ret_datas.append(item)
 
             # データを委譲する際に元々持っていたノードから削除するよう指定されていた場合
             if rest_copy == False:
                 for kv in ret_datas:
                     del self.stored_data[str(kv.data_id)]
-                # master2data_idxの中の紐づけも削除しないと、参照が残ってしまうのでこちらも処理する
-                try:
-                    all_data : List[StoredValueEntry] = self.master2data_idx[str(self.existing_node.node_info.node_id)]
-                except:
-                    ChordUtil.dprint(
-                        "delegate_my_tantou_data_2_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(node_id) + ",NO_TANTOU_DATA_YET")
-                    # まだ一つもデータを保持していなかったということなので空リストを返す
-                    return []
 
+                # master2data_idxの中の紐づけも削除しないと、参照が残ってしまうのでこちらも処理する
                 delete_data = []
-                for sv_entry in all_data:
-                    if ChordUtil.exist_between_two_nodes_right_mawari(node_id, self.existing_node.node_info.node_id, sv_entry.data_id):
+                for sv_entry in tantou_data:
+                    #if ChordUtil.exist_between_two_nodes_right_mawari(node_id, self.existing_node.node_info.node_id, sv_entry.data_id):
+                    # 自身の新たな担当範囲以外のデータは全て削除する. 自身から委譲先ノードまでを右回りに辿った過程に存在するデータは全て削除してしまってよい
+                    if ChordUtil.exist_between_two_nodes_right_mawari(self.existing_node.node_info.node_id, node_id, sv_entry.data_id):
                         delete_data.append(sv_entry)
                 for sv_entry in delete_data:
-                    all_data.remove(sv_entry)
+                    tantou_data.remove(sv_entry)
                 # 委譲により担当データが0個となっていた場合、データの関連を管理するためのdictから不要となったエントリを削除する
-                if len(all_data) == 0:
+                if len(tantou_data) == 0:
                     self.master2data_idx_del(str(self.existing_node.node_info.node_id))
                     self.master_node_dict_del(str(self.existing_node.node_info.node_id))
 

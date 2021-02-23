@@ -319,7 +319,7 @@ class DataStore:
                     # 始点・終点の指定としては、左周りで考えた時に自ノードから、委譲先ノードまでの範囲が、担当が自ノードから
                     # 変化していないID範囲であることを踏まえると、Chordネットワークを右回りでたどった時に、自ノードから委譲
                     # 先のノードに至るID範囲は自身が担当でない全てのID範囲と考えることができる
-                    node.data_store.delete_replica(self.existing_node.node_info, self.existing_node.node_info.node_id, node_id)
+                    node.data_store.delete_replica(self.existing_node.node_info, range_start=self.existing_node.node_info.node_id, range_end=node_id)
                     ChordUtil.dprint(
                         "delegate_my_tantou_data_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                         + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node.node_info))

@@ -86,13 +86,6 @@ class Stabilizer:
 
             self.existing_node.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
 
-            # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
-            tantou_data_list: List[KeyValue] = successor.data_store.delegate_my_tantou_data(
-                self.existing_node.node_info.node_id, False)
-            with self.existing_node.node_info.lock_of_datastore:
-                for key_value in tantou_data_list:
-                    self.existing_node.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)
-
             # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
             self.existing_node.node_info.finger_table[0] = self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
 
@@ -138,6 +131,13 @@ class Stabilizer:
                                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
                     pass
+
+            # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
+            tantou_data_list: List[KeyValue] = successor.data_store.delegate_my_tantou_data(
+                self.existing_node.node_info.node_id, False)
+            with self.existing_node.node_info.lock_of_datastore:
+                for key_value in tantou_data_list:
+                    self.existing_node.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)
 
             # successor[0] から委譲を受けたデータを successorList 内の全ノードにレプリカとして配る
             for node_info in self.existing_node.node_info.successor_info_list:

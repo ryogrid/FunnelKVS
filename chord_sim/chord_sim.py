@@ -408,7 +408,7 @@ def node_kill_th():
     # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
     #       on data_get_th
     while True:
-        # ネットワークに存在するノードが5ノードを越えたらノードをダウンさせる処理を有効にする
+        # ネットワークに存在するノードが10ノードを越えたらノードをダウンさせる処理を有効にする
         # しかし、リトライされなければならない処理が存在した場合は抑制する
         if len(gval.all_node_dict) > 10 \
                 and (ChordNode.need_getting_retry_data_id == -1

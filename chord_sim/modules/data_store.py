@@ -118,6 +118,10 @@ class DataStore:
                 for sv_entry in delete_entries:
                     related_entries.remove(sv_entry)
                     del self.stored_data[str(sv_entry.data_id)]
+            else:
+                for sv_entry in related_entries:
+                    del self.stored_data[str(sv_entry.data_id)]
+                related_entries.clear()
 
             # 全範囲の削除が指定されているか、範囲指定での削除の結果、指定されたマスターノードに紐づくデータが
             # 0件となった場合、当該ノードに関連する管理情報は不要であるため削除する

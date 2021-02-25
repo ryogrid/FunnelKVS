@@ -334,6 +334,7 @@ class ChordNode:
                 # (返してしまってもほとんどの場合で問題はないが、マスターに put や delete などの更新リクエストが
                 #  かかっていた場合、タイミングによってデータの不整合が起きてしまう)
                 ret_value_str = self.QUERIED_DATA_NOT_FOUND_STR
+
                 ChordUtil.dprint("get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)

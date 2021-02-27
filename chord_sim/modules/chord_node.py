@@ -7,6 +7,7 @@ from .node_info import NodeInfo
 from .data_store import DataStore
 from .stabilizer import Stabilizer
 from .router import Router
+from .taskqueue import TaskQueue
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
     InternalControlFlowException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
 
@@ -43,6 +44,7 @@ class ChordNode:
         self.data_store : DataStore = DataStore(self)
         self.stabilizer : Stabilizer = Stabilizer(self)
         self.router : Router = Router(self)
+        self.tqueue : TaskQueue = TaskQueue(self)
 
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chorネットワーク上でのIDを決定する
         self.node_info.address_str = ChordUtil.gen_address_str()
@@ -53,6 +55,10 @@ class ChordNode:
 
         # シミュレーション時のみ必要なフィールド（実システムでは不要）
         self.is_alive = True
+
+        # join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
+        # 大本から呼び出されないようにするためのフラグ
+        self.is_join_op_finished = False
 
         if first_node:
             with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:

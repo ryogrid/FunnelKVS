@@ -14,9 +14,10 @@ from modules.stabilizer import Stabilizer
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
 def get_a_random_node() -> ChordNode:
-    alive_nodes_list : List[ChordNode] = list(filter(lambda node: node.is_alive == True, list(gval.all_node_dict.values())))
+    alive_nodes_list : List[ChordNode] = list(
+        filter(lambda node: node.is_alive == True and node.is_join_op_finished == True, list(gval.all_node_dict.values()))
+    )
     return ChordUtil.get_random_elem(alive_nodes_list)
-
 
 # stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
 # ランダムに選択したノードからsuccessor方向にsuccessorの繋がりでノードを辿って
@@ -151,9 +152,9 @@ def add_new_node():
     if Stabilizer.need_join_retry_node == None:
         # join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
         gval.all_node_dict[new_node.node_info.address_str] = new_node
-
-    # # TODO: for Debugging
-    # gval.all_node_dict[new_node.node_info.address_str] = new_node
+        # join処理のうち、ネットワーク参加時に必ずしも完了していなくてもデータの整合性やネットワークの安定性に
+        # に問題を生じさせないような処理をここで行う（当該処理がノード内のタスクキューに入っているのでそれを実行する形にする）
+        new_node.tqueue.exec_first()
 
     # # ロックの解放
     # gval.lock_of_all_data.release()
@@ -443,6 +444,7 @@ def main():
 
     # 最初の1ノードはここで登録する
     first_node = ChordNode("THIS_VALUE_IS_NOT_USED", first_node=True)
+    first_node.is_join_op_finished = True
     gval.all_node_dict[first_node.node_info.address_str] = first_node
     time.sleep(0.5) #次に生成するノードが同一のアドレス文字列を持つことを避けるため
 
@@ -467,11 +469,11 @@ def main():
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     data_get_th_handle.start()
 
-    # TODO: 同一処理を行う複数スレッドを立てる
-    #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
-    #       kill
-    node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
-    node_kill_th_handle.start()
+    # # TODO: 同一処理を行う複数スレッドを立てる
+    # #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
+    # #       kill
+    # node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
+    # node_kill_th_handle.start()
 
     while True:
         time.sleep(1)

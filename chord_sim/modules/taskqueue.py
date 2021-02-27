@@ -32,7 +32,3 @@ class TaskQueue:
                     self.tqueue.insert(0, task_code)
                     ChordUtil.dprint("exec_first_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + "INTERNAL_CONTROL_FLOW_EXCEPTION_OCCURED")
-                except KeyError:
-                    # まだ put されていないことを意味するので、無視して正常終了する
-                    ChordUtil.dprint("exec_first_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                     + "SUCCESS_WITH_NO_DELEGATED_DATA")

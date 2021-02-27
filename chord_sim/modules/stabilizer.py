@@ -240,6 +240,11 @@ class Stabilizer:
             # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
             ChordUtil.dprint("partial_join_op_8," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+        except KeyError:
+            # まだ put されていないことを意味するので、無視して正常終了する
+            ChordUtil.dprint("partial_join_op_9," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "SUCCESS_WITH_NO_DELEGATED_DATA")
+            self.existing_node.is_join_op_finished = True
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
             self.existing_node.node_info.lock_of_pred_info.release()

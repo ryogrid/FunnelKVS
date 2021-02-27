@@ -7,7 +7,7 @@ from typing import List, cast
 
 import modules.gval as gval
 from modules.node_info import NodeInfo
-from modules.chord_util import ChordUtil, KeyValue
+from modules.chord_util import ChordUtil, KeyValue, StoredValueEntry
 from modules.chord_node import ChordNode, NodeIsDownedExceptiopn, InternalControlFlowException
 from modules.stabilizer import Stabilizer
 
@@ -368,12 +368,20 @@ def do_kill_a_random_node():
     ChordUtil.dprint(
         "do_kill_a_random_node,"
         + ChordUtil.gen_debug_str_of_node(node.node_info))
+    # with node.node_info.lock_of_datastore:
+    #     for key, value in node.data_store.stored_data.items():
+    #         data_id: str = key
+    #         sv_entry : StoredValueEntry = value
+    #         ChordUtil.dprint(hex(int(data_id)) + "," + hex(sv_entry.data_id))
 
     # # ロックの解放
     # gval.lock_of_all_data.release()
 
 def node_join_th():
     while gval.already_born_node_num < gval.NODE_NUM_MAX:
+        if gval.already_born_node_num == 100:
+            gval.is_network_constructed = True
+            gval.JOIN_INTERVAL_SEC = 20.0
         add_new_node()
         time.sleep(gval.JOIN_INTERVAL_SEC)
 
@@ -389,6 +397,9 @@ def stabilize_th():
 def data_put_th():
     # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
     #       on data_puth_th
+    while gval.is_network_constructed == False:
+        time.sleep(1)
+
     while True:
         do_put_on_random_node()
         time.sleep(gval.PUT_INTERVAL_SEC)
@@ -396,6 +407,9 @@ def data_put_th():
 def data_get_th():
     # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
     #       on data_get_th
+    while gval.is_network_constructed == False:
+        time.sleep(1)
+
     while True:
         # 内部でデータのputが一度も行われていなければreturnしてくるので
         # putを行うスレッドと同時に動作を初めても問題ないようにはなっている
@@ -407,6 +421,9 @@ def data_get_th():
 def node_kill_th():
     # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
     #       on data_get_th
+    while gval.is_network_constructed == False:
+        time.sleep(1)
+
     while True:
         # ネットワークに存在するノードが10ノードを越えたらノードをダウンさせる処理を有効にする
         # しかし、リトライされなければならない処理が存在した場合は抑制する

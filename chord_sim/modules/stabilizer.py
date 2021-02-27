@@ -39,7 +39,12 @@ class Stabilizer:
                 + str(len(self.existing_node.node_info.successor_info_list)))
 
             if len(self.existing_node.node_info.successor_info_list) > gval.SUCCESSOR_LIST_NORMAL_LEN:
-                for idx in range(gval.SUCCESSOR_LIST_NORMAL_LEN, len(self.existing_node.node_info.successor_info_list)):
+                list_len = len(self.existing_node.node_info.successor_info_list)
+                for idx in range(gval.SUCCESSOR_LIST_NORMAL_LEN, list_len):
+                    # successor_info_listからエントリが削除された場合、rangeで得られる数字列全てに要素がない
+                    # 状態が起こるため、最新のlengthでチェックし直す
+                    if idx >= len(self.existing_node.node_info.successor_info_list):
+                        break
                     node_info = self.existing_node.node_info.successor_info_list[idx]
                     try:
                         successor_node : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
@@ -221,8 +226,8 @@ class Stabilizer:
             # successorから保持している全てのレプリカを受け取り格納する（successorよりは前に位置することになるため、
             # 基本的にsuccessorが保持しているレプリカは自身も全て保持している状態とならなければならない）
             try:
-                successor : ChordNode = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0])
-                passed_all_replica: Dict[NodeInfo, List[DataIdAndValue]] = successor.data_store.pass_all_replica()
+                successor : ChordNode = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0].address_str)
+                passed_all_replica: Dict[NodeInfo, List[DataIdAndValue]] = successor.data_store.pass_all_replica(self.existing_node.node_info)
                 self.existing_node.data_store.store_replica_of_several_masters(passed_all_replica)
             except:
                 # ノードがダウンしていた場合等は無視して先に進む.

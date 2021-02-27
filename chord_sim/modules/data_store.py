@@ -156,15 +156,15 @@ class DataStore:
                     + "NO_TANDOU_DATA_YET")
                 return []
 
-    # 自ノードが担当ノードとなっているものを除いて、保持しているデータ（レプリカ）を マスターノード
+    # 自ノードが担当ノードとなっているものと呼び出し元ノードのものを除いて、保持しているデータ（レプリカ）を マスターノード
     # ごとに dict に詰めて返す
-    def pass_all_replica(self) -> Dict['NodeInfo', List[DataIdAndValue]]:
+    def pass_all_replica(self, caller_node: 'NodeInfo') -> Dict['NodeInfo', List[DataIdAndValue]]:
         with self.existing_node.node_info.lock_of_datastore:
             ret_dict : Dict['NodeInfo', List[DataIdAndValue]] = {}
             ChordUtil.dprint("pass_all_replica_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
             for node_id_str, ninfo_p in self.master_node_dict.items():
                 master_info : 'NodeInfo' = ninfo_p.node_info.get_partial_deepcopy()
-                if node_id_str != str(self.existing_node.node_info.node_id):
+                if node_id_str != str(self.existing_node.node_info.node_id) and node_id_str != str(caller_node.node_id):
                     data_list = self.master2data_idx[node_id_str]
                     ret_dict[master_info] = [DataIdAndValue(data_id = data.data_id, value_data=data.value_data ) for data in data_list]
 
@@ -310,6 +310,10 @@ class DataStore:
         # ことになるかもしれないが、それは新担当の管轄なので、非効率ともなるがひとまず削除させる）
         # 削除が完了するまで本メソッドは終了しないため、新担当がレプリカを配布する処理と以下の処理が
         # バッティングすることはない
+        # TODO: 現在の実装では同じスレッドが処理を行い、こちらのメソッドが終わった後にレプリカを配布するため
+        #       バッティングは起きないが、stored_data内のデータを削除する処理ではマスターノードは意識されない
+        #       ため実システム化や複数スレッド化した再は考慮が必要かもしれない
+        #       in delegate_my_node_data
         with self.existing_node.node_info.lock_of_succ_infos, self.existing_node.node_info.lock_of_datastore:
             for node_info in self.existing_node.node_info.successor_info_list:
                 try:

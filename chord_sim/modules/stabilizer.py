@@ -152,6 +152,7 @@ class Stabilizer:
             # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
             tantou_data_list: List[KeyValue] = successor.data_store.delegate_my_tantou_data(
                 self.existing_node.node_info.node_id, False)
+
             with self.existing_node.node_info.lock_of_datastore:
                 for key_value in tantou_data_list:
                     self.existing_node.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)

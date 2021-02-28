@@ -182,6 +182,57 @@ class ChordUtil:
 
         return True
 
+    # デバッグ用のメソッド
+    # グローバル変数にあるデータIDに対応するデータがどのノードに存在するかを記録する
+    # 本メソッドは新たにデータをstoreした際に呼び出す
+    @classmethod
+    def add_data_placement_info(cls, data_id : int, node_info : 'NodeInfo'):
+        try:
+            node_list : List['NodeInfo'] = gval.all_data_placement_dict[str(data_id)]
+        except KeyError:
+            node_list = []
+            gval.all_data_placement_dict[str(data_id)] = node_list
+
+        node_list.append(node_info)
+
+    # デバッグ用のメソッド
+    # グローバル変数にあるデータIDに対応するデータがどのノードに存在するかを記録する
+    # 本メソッドはデータの削除が行われた際に呼び出す
+    @classmethod
+    def remove_data_placement_info(cls, data_id : int, node_info : 'NodeInfo'):
+        try:
+            node_list : List['NodeInfo'] = gval.all_data_placement_dict[str(data_id)]
+        except KeyError:
+            # 本来は起きてはならないエラーだが対処のし様もないのでワーニングを出力しておく
+            ChordUtil.dprint("remove_data_1," + ChordUtil.gen_debug_str_of_node(node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(data_id)
+                             + ",WARNING__DATA_AND_BELONGS_NODE_RERATION_MAY_BE_BROKEN")
+            return
+
+        node_list.remove(node_info)
+
+    # デバッグ用のメソッド
+    # グローバル変数にあるデータIDに対応するデータがどのノードに存在するかを出力する
+    # 本メソッドはデータの削除が行われた際に呼び出す
+    @classmethod
+    def print_data_placement_info(cls, data_id : int):
+        try:
+            node_list : List['NodeInfo'] = gval.all_data_placement_dict[str(data_id)]
+        except KeyError:
+            # データを持っているノードがいないか、記録のバグ
+            ChordUtil.dprint("print_data_placement_info_1,"
+                             + ChordUtil.gen_debug_str_of_data(data_id)
+                             + ",DATA_HAVING_NODE_DOES_NOT_EXIST_OR_INFORMATION_BUG")
+            return
+
+        # ロックをとっていないので面倒な処理が頭に入っている
+        # なお、処理中に node_list の要素が増えた場合や出力済みのデータが削除された場合は
+        # 表示に不整合が生じるが大きな問題ではない認識
+        list_len = len(node_list)
+        for idx in range(0, list_len):
+            if idx < len(node_list):
+                ChordUtil.dprint("print_data_placement_info_INFO," + ChordUtil.gen_debug_str_of_node(node_list[idx]))
+
 # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
 # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
 class NodeInfoPointer:

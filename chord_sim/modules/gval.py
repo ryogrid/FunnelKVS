@@ -5,6 +5,7 @@ from typing import Dict, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
+    from .node_info import NodeInfo
     from .chord_util import KeyValue
     from .chord_node import ChordNode
 
@@ -64,3 +65,11 @@ already_born_node_num = 0
 #lock_of_all_data = threading.Lock()
 
 is_network_constructed = False
+
+# デバッグ用の変数群
+global_get_retry_cnt = 0
+GLOBAL_GET_RETRY_CNT_LIMIT_TO_DEBEUG_PRINT = 30
+
+# マスターデータとレプリカの区別なく、データIDをKeyに、当該IDに対応するデータを
+# 保持しているノードのリストを得られる dict
+all_data_placement_dict : Dict[str, List['NodeInfo']]

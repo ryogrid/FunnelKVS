@@ -128,6 +128,10 @@ def check_nodes_connectivity():
                          + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(cur_node_info))
 
+# TODO: print_data_having_nodes を実装する
+def print_data_having_nodes(data_id : int):
+    raise Exception("not implemented yet")
+
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
     # # ロックの取得
@@ -330,10 +334,21 @@ def do_get_on_random_node():
         # TODO: listの形で保持されるようになったリトライ情報に対応する.
         #       リトライ処理する際は、設定されていた情報をローカルに移動させる
         #       on do_get_on_random_node
+
+        #リトライを行うためカウンタをインクリメントする
+        gval.global_get_retry_cnt += 1
+
+        # リトライ回数が規定回数に達したらデータの所在を出力する
+        if gval.global_get_retry_cnt == gval.GLOBAL_GET_RETRY_CNT_LIMIT_TO_DEBEUG_PRINT:
+            ChordUtil.print_data_placement_info(ChordNode.need_getting_retry_data_id)
+
         is_retry = True
         target_data_id = ChordNode.need_getting_retry_data_id
         node = cast('ChordNode', ChordNode.need_getting_retry_node)
     else:
+        #リトライではない (リトライが無事終了した場合を含む) ためカウンタをリセットする
+        gval.global_get_retry_cnt = 0
+
         target_data = ChordUtil.get_random_elem(gval.all_data_list)
         target_data_id = target_data.data_id
         node = get_a_random_node()
@@ -362,37 +377,39 @@ def do_get_on_random_node():
 # ダウンさせる（is_aliveフィールドをFalseに設定する）
 def do_kill_a_random_node():
     node = get_a_random_node()
-    if node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-        ChordUtil.dprint(
-            "do_kill_a_random_node_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-            + "LOCK_ACQUIRE_TIMEOUT")
-        return
-    if node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-        node.node_info.lock_of_pred_info.release()
-        ChordUtil.dprint(
-            "do_kill_a_random_node_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-            + "LOCK_ACQUIRE_TIMEOUT")
-        return
-    if node.node_info.lock_of_datastore.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-        node.node_info.lock_of_pred_info.release()
-        node.node_info.lock_of_succ_infos.release()
-        ChordUtil.dprint(
-            "do_kill_a_random_node_3," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-            + "LOCK_ACQUIRE_TIMEOUT")
-        return
+    # if node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    #     ChordUtil.dprint(
+    #         "do_kill_a_random_node_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #         + "LOCK_ACQUIRE_TIMEOUT")
+    #     return
+    # if node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    #     node.node_info.lock_of_pred_info.release()
+    #     ChordUtil.dprint(
+    #         "do_kill_a_random_node_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #         + "LOCK_ACQUIRE_TIMEOUT")
+    #     return
+    # if node.node_info.lock_of_datastore.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    #     node.node_info.lock_of_pred_info.release()
+    #     node.node_info.lock_of_succ_infos.release()
+    #     ChordUtil.dprint(
+    #         "do_kill_a_random_node_3," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #         + "LOCK_ACQUIRE_TIMEOUT")
+    #     return
     try:
         node.is_alive = False
         ChordUtil.dprint(
             "do_kill_a_random_node_3,"
             + ChordUtil.gen_debug_str_of_node(node.node_info))
-        for key, value in node.data_store.stored_data.items():
-            data_id: str = key
-            sv_entry : StoredValueEntry = value
-            ChordUtil.dprint(hex(int(data_id)) + "," + hex(sv_entry.data_id))
+        with node.node_info.lock_of_datastore:
+            for key, value in node.data_store.stored_data.items():
+                data_id: str = key
+                sv_entry : StoredValueEntry = value
+                ChordUtil.dprint(hex(int(data_id)) + "," + hex(sv_entry.data_id))
     finally:
-        node.node_info.lock_of_datastore.release()
-        node.node_info.lock_of_succ_infos.release()
-        node.node_info.lock_of_pred_info.release()
+        # node.node_info.lock_of_datastore.release()
+        # node.node_info.lock_of_succ_infos.release()
+        # node.node_info.lock_of_pred_info.release()
+        pass
 
 def node_join_th():
     while gval.already_born_node_num < gval.NODE_NUM_MAX:

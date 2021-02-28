@@ -51,7 +51,8 @@ class DataStore:
             del self.master_node_dict[key_data]
             ChordUtil.dprint("datastore_op," + key_data + ",master_node_dict_del")
 
-
+    # DataStoreクラスオブジェクトのデータ管理の枠組みに従った、各関連フィールドの一貫性を維持したまま
+    # データ追加・更新処理を行うアクセサメソッド
     # master_node引数を指定しなかった場合は、self.existing_node.node_info をデータのマスターの情報として格納する
     def store_new_data(self, data_id : int, value_str : str, master_info : Optional['NodeInfo'] = None):
         with self.existing_node.node_info.lock_of_datastore:
@@ -78,6 +79,9 @@ class DataStore:
                 related_list.remove(old_value)
 
             self.stored_data[key_id_str] = sv_entry
+            # デバッグのためにグローバル変数の形で管理されているデータのロケーション情報を更新する
+            ChordUtil.add_data_placement_info(data_id, self.existing_node.node_info)
+
 
             try:
                 data_list : List[StoredValueEntry] = self.master2data_idx[str(master_node_info.node_id)]
@@ -86,6 +90,56 @@ class DataStore:
                 self.master2data_idx_set(str(master_node_info.node_id), data_list)
 
             data_list.append(sv_entry)
+
+    # DataStoreクラスオブジェクトのデータ管理の枠組みに従った、各関連フィールドの一貫性を維持したまま
+    # データ削除処理を行うアクセサメソッド
+    def remove_data(self, data_id: int, master_node_info : 'NodeInfo'):
+        with self.existing_node.node_info.lock_of_datastore:
+            key_id_str = str(data_id)
+
+            try:
+                del_val = self.stored_data[key_id_str]
+            except:
+                # 本来は起きてはならないエラーだが対処のし様もないのでワーニングだけ出力して処理を終了する
+                ChordUtil.dprint("remove_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(master_node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(data_id)
+                                 + ",WARNING__DATA_AND_BELONGS_NODE_RERATION_MAY_BE_BROKEN")
+                return
+
+            del self.stored_data[key_id_str]
+            # デバッグのためにグローバル変数の形で管理されているデータのロケーション情報を更新する
+            ChordUtil.remove_data_placement_info(data_id, self.existing_node.node_info)
+
+            try:
+                data_list : List[StoredValueEntry] = self.master2data_idx[str(del_val.master_info.node_info.node_id)]
+                data_list.remove(del_val)
+            except KeyError:
+                # 本来は起きてはならないエラーだが対処のし様もないのでワーニングだけ出力する
+                ChordUtil.dprint("remove_data_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(del_val.master_info.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(master_node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(data_id)
+                                 + ",WARNING__DATA_AND_BELONGS_NODE_RERATION_MAY_BE_BROKEN")
+
+            # 認識に誤りがあるのでワーニングを出力しておく
+            if del_val.master_info.node_info.node_id != master_node_info.node_id:
+                ChordUtil.dprint("remove_data_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(del_val.master_info.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(master_node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_data(data_id)
+                                 + ",WARNING__DATA_AND_BELONGS_NODE_RERATION_MAY_BE_BROKEN")
+
+            if len(data_list) == 0:
+                try:
+                    del self.master_node_dict[str(del_val.master_info.node_info.node_id)]
+                except KeyError:
+                    # 本来は起きてはならないエラーだが対処のし様もないのでワーニングだけ出力する
+                    ChordUtil.dprint("remove_data_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(del_val.master_info.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(master_node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_data(data_id)
+                                     + ",WARNING__DATA_AND_BELONGS_NODE_RERATION_MAY_BE_BROKEN")
 
     # 保持しているレプリカを data_id の範囲を指定して削除させる.
     # マスターノードの担当範囲の変更や、新規ノードのjoinにより、レプリカを保持させていた
@@ -116,27 +170,13 @@ class DataStore:
                                  + ChordUtil.gen_debug_str_of_node(master_node) + ","
                                  + str(range_start) + "," + str(range_end) + "," + str(delete_entries))
                 for sv_entry in delete_entries:
-                    related_entries.remove(sv_entry)
-                    del self.stored_data[str(sv_entry.data_id)]
+                    self.remove_data(sv_entry.data_id, master_node)
             else:
-                for sv_entry in related_entries:
-                    del self.stored_data[str(sv_entry.data_id)]
-                related_entries.clear()
-
-            # 全範囲の削除が指定されているか、範囲指定での削除の結果、指定されたマスターノードに紐づくデータが
-            # 0件となった場合、当該ノードに関連する管理情報は不要であるため削除する
-            try:
-                if len(related_entries) == 0 or (range_start == -1 and range_end == -1):
-                    self.master2data_idx_del(str(master_node.node_id))
-                    self.master_node_dict_del(str(master_node.node_id))
-                    ChordUtil.dprint("delete_replica_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(master_node) + ","
-                                     + str(range_start) + "," + str(range_end))
-            except KeyError:
-                ChordUtil.dprint("delete_replica_5,KeyError" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                ChordUtil.dprint("delete_replica_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(master_node) + ","
                                  + str(range_start) + "," + str(range_end))
-                pass
+                for sv_entry in related_entries:
+                    self.remove_data(sv_entry.data_id, master_node)
 
     # 自ノードが担当ノードとして保持しているデータを全て返す
     def pass_tantou_data_for_replication(self) -> List[DataIdAndValue]:
@@ -289,21 +329,7 @@ class DataStore:
             # データを委譲する際に元々持っていたノードから削除するよう指定されていた場合
             if rest_copy == False:
                 for kv in ret_datas:
-                    del self.stored_data[str(kv.data_id)]
-
-                # master2data_idxの中の紐づけも削除しないと、参照が残ってしまうのでこちらも処理する
-                delete_data = []
-                for sv_entry in tantou_data:
-                    #if ChordUtil.exist_between_two_nodes_right_mawari(node_id, self.existing_node.node_info.node_id, sv_entry.data_id):
-                    # 自身の新たな担当範囲以外のデータは全て削除する. 自身から委譲先ノードまでを右回りに辿った過程に存在するデータは全て削除してしまってよい
-                    if ChordUtil.exist_between_two_nodes_right_mawari(self.existing_node.node_info.node_id, node_id, sv_entry.data_id):
-                        delete_data.append(sv_entry)
-                for sv_entry in delete_data:
-                    tantou_data.remove(sv_entry)
-                # 委譲により担当データが0個となっていた場合、データの関連を管理するためのdictから不要となったエントリを削除する
-                if len(tantou_data) == 0:
-                    self.master2data_idx_del(str(self.existing_node.node_info.node_id))
-                    self.master_node_dict_del(str(self.existing_node.node_info.node_id))
+                    self.remove_data(cast('int', kv.data_id), self.existing_node.node_info)
 
                 # 委譲したことで自身が担当ノードで無くなったデータについてsuccessorList
                 # 内のノードに通知し、削除させる（それらのノードは再度同じレプリカを保持する
@@ -349,7 +375,7 @@ class DataStore:
             except KeyError:
                 return 0
 
-    # 自ノードの担当データはレプリカではないが、レプリカと同様に扱う
+    # 自ノードのidが指定された場合、返るデータはマスターデータだが同様に扱うものとする
     def get_all_replica_by_master_node(self, node_id : int) -> List[DataIdAndValue]:
         with self.existing_node.node_info.lock_of_datastore:
             try:

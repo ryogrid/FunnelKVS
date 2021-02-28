@@ -72,4 +72,4 @@ GLOBAL_GET_RETRY_CNT_LIMIT_TO_DEBEUG_PRINT = 30
 
 # マスターデータとレプリカの区別なく、データIDをKeyに、当該IDに対応するデータを
 # 保持しているノードのリストを得られる dict
-all_data_placement_dict : Dict[str, List['NodeInfo']]
+all_data_placement_dict : Dict[str, List['NodeInfo']] = {}

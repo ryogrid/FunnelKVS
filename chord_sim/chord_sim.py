@@ -362,15 +362,22 @@ def do_get_on_random_node():
 # ダウンさせる（is_aliveフィールドをFalseに設定する）
 def do_kill_a_random_node():
     node = get_a_random_node()
-    if node.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    if node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
         ChordUtil.dprint(
             "do_kill_a_random_node_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
             + "LOCK_ACQUIRE_TIMEOUT")
         return
-    if node.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    if node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
         node.node_info.lock_of_pred_info.release()
         ChordUtil.dprint(
             "do_kill_a_random_node_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+            + "LOCK_ACQUIRE_TIMEOUT")
+        return
+    if node.node_info.lock_of_datastore.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+        node.node_info.lock_of_pred_info.release()
+        node.node_info.lock_of_succ_infos.release()
+        ChordUtil.dprint(
+            "do_kill_a_random_node_3," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
             + "LOCK_ACQUIRE_TIMEOUT")
         return
     try:
@@ -383,6 +390,7 @@ def do_kill_a_random_node():
             sv_entry : StoredValueEntry = value
             ChordUtil.dprint(hex(int(data_id)) + "," + hex(sv_entry.data_id))
     finally:
+        node.node_info.lock_of_datastore.release()
         node.node_info.lock_of_succ_infos.release()
         node.node_info.lock_of_pred_info.release()
 

@@ -340,6 +340,8 @@ def do_get_on_random_node():
 
         # リトライ回数が規定回数に達したらデータの所在を出力する
         if gval.global_get_retry_cnt == gval.GLOBAL_GET_RETRY_CNT_LIMIT_TO_DEBEUG_PRINT:
+            ChordUtil.print_data_placement_info(ChordNode.need_getting_retry_data_id, after_notfound_limit=True)
+        else:
             ChordUtil.print_data_placement_info(ChordNode.need_getting_retry_data_id)
 
         is_retry = True
@@ -351,6 +353,10 @@ def do_get_on_random_node():
 
         target_data = ChordUtil.get_random_elem(gval.all_data_list)
         target_data_id = target_data.data_id
+
+        # ログの量の増加が懸念されるが global_getを行うたびに、取得対象データの所在を出力する
+        ChordUtil.print_data_placement_info(target_data_id)
+
         node = get_a_random_node()
 
     node.global_get(target_data_id)

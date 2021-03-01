@@ -215,7 +215,7 @@ class ChordUtil:
     # グローバル変数にあるデータIDに対応するデータがどのノードに存在するかを出力する
     # 本メソッドはデータの削除が行われた際に呼び出す
     @classmethod
-    def print_data_placement_info(cls, data_id : int):
+    def print_data_placement_info(cls, data_id : int, after_notfound_limit = False):
         try:
             node_list : List['NodeInfo'] = gval.all_data_placement_dict[str(data_id)]
         except KeyError:
@@ -225,13 +225,20 @@ class ChordUtil:
                              + ",DATA_HAVING_NODE_DOES_NOT_EXIST_OR_INFORMATION_BUG")
             return
 
+        if after_notfound_limit:
+            additional_str = "NOT_FOUND_LIMIT_REACHED,"
+        else:
+            additional_str = ""
+
         # ロックをとっていないので面倒な処理が頭に入っている
         # なお、処理中に node_list の要素が増えた場合や出力済みのデータが削除された場合は
         # 表示に不整合が生じるが大きな問題ではない認識
         list_len = len(node_list)
         for idx in range(0, list_len):
             if idx < len(node_list):
-                ChordUtil.dprint("print_data_placement_info_INFO," + ChordUtil.gen_debug_str_of_node(node_list[idx]))
+                ChordUtil.dprint("print_data_placement_info_INFO," + additional_str
+                                 + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                                 + ChordUtil.gen_debug_str_of_node(node_list[idx]))
 
 # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
 # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）

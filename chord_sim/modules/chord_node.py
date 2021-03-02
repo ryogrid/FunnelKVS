@@ -334,6 +334,10 @@ class ChordNode:
 
             ret_value_str = self.QUERIED_DATA_NOT_FOUND_STR
 
+            ChordUtil.dprint("get_2_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
+
             if ChordUtil.is_node_alive(sv_entry.master_info.node_info.address_str):
                 # データの担当ノードであるマスターが生きていた.
                 # 自身はレプリカを保持しているが、取得先が誤っているためエラーとして扱う.
@@ -350,9 +354,6 @@ class ChordNode:
                     return ret_value_str
                 try:
                     # データの担当ノードであるマスターがダウンしていた.
-                    # 自身の保持しているデータに紐づいている担当ノードの情報を更新する
-                    self.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
-
 
                     # 自身のsuccessorList内のノードに担当ノードの変更を通知する
                     for node_info in self.node_info.successor_info_list:
@@ -370,6 +371,10 @@ class ChordNode:
                                              + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_data(data_id))
                             continue
+
+                    # 自身の保持しているデータに紐づいている担当ノードの情報を更新する
+                    self.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
+
                 finally:
                     self.node_info.lock_of_succ_infos.release()
 

@@ -128,10 +128,6 @@ def check_nodes_connectivity():
                          + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(cur_node_info))
 
-# TODO: print_data_having_nodes を実装する
-def print_data_having_nodes(data_id : int):
-    raise Exception("not implemented yet")
-
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
     # # ロックの取得
@@ -382,6 +378,9 @@ def do_get_on_random_node():
 # グローバル変数であるall_node_dictからランダムにノードを選択し
 # ダウンさせる（is_aliveフィールドをFalseに設定する）
 def do_kill_a_random_node():
+    # # ロックの取得
+    # gval.lock_of_all_data.acquire()
+
     node = get_a_random_node()
     # if node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     #     ChordUtil.dprint(
@@ -416,6 +415,9 @@ def do_kill_a_random_node():
         # node.node_info.lock_of_succ_infos.release()
         # node.node_info.lock_of_pred_info.release()
         pass
+
+    # # ロックの解放
+    # gval.lock_of_all_data.release()
 
 def node_join_th():
     while gval.already_born_node_num < gval.NODE_NUM_MAX:

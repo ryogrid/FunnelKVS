@@ -240,6 +240,13 @@ class ChordUtil:
                                  + ChordUtil.gen_debug_str_of_data(data_id) + ","
                                  + ChordUtil.gen_debug_str_of_node(node_list[idx]))
 
+    @classmethod
+    def dprint_data_storage_operations(cls, callee_node : 'NodeInfo', master_node : 'NodeInfo', operation_type : str, data_id : int):
+        ChordUtil.dprint("dprint_data_storage_operations," + ChordUtil.gen_debug_str_of_node(callee_node) + ","
+                         + ChordUtil.gen_debug_str_of_node(master_node) + ","
+                         + operation_type + "," + ChordUtil.gen_debug_str_of_data(data_id)
+                         , flush=True)
+
 # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
 # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
 class NodeInfoPointer:

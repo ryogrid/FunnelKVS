@@ -403,13 +403,15 @@ def do_kill_a_random_node():
     try:
         node.is_alive = False
         ChordUtil.dprint(
-            "do_kill_a_random_node_3,"
+            "do_kill_a_random_node_1,"
             + ChordUtil.gen_debug_str_of_node(node.node_info))
         with node.node_info.lock_of_datastore:
             for key, value in node.data_store.stored_data.items():
                 data_id: str = key
                 sv_entry : StoredValueEntry = value
-                ChordUtil.dprint(hex(int(data_id)) + "," + hex(sv_entry.data_id))
+                ChordUtil.dprint("do_kill_a_random_node_2,"
+                                 + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                                 + hex(int(data_id)) + "," + hex(sv_entry.data_id))
     finally:
         # node.node_info.lock_of_datastore.release()
         # node.node_info.lock_of_succ_infos.release()

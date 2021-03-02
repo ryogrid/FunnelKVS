@@ -11,6 +11,9 @@ if TYPE_CHECKING:
 
 class DataStore:
 
+    DATA_STORE_OP_DIRECT_STORE = "DIRECT_STORE"
+    DATA_STORE_OP_DIRECT_REMOVE = "DIRECT_REMOVE"
+
     def __init__(self, existing_node : 'ChordNode'):
         self.existing_node : 'ChordNode' = existing_node
 
@@ -70,6 +73,13 @@ class DataStore:
                 self.master_node_dict_set(str(master_node_info.node_id), ninfo_p)
 
             sv_entry = StoredValueEntry(master_info=ninfo_p, data_id=data_id, value_data=value_str)
+            # デバッグプリント
+            tmp_master_info = cast('NodeInfo', master_info) if master_info != None else self.existing_node.node_info
+            ChordUtil.dprint_data_storage_operations(self.existing_node.node_info,
+                                                     tmp_master_info,
+                                                     DataStore.DATA_STORE_OP_DIRECT_STORE,
+                                                     data_id
+                                                     )
 
             if key_id_str in self.stored_data:
                 # 既に同じキーが存在する. つまりvalueの更新の場合は管理用のデータ内でのエントリの重複が
@@ -110,6 +120,12 @@ class DataStore:
             del self.stored_data[key_id_str]
             # デバッグのためにグローバル変数の形で管理されているデータのロケーション情報を更新する
             ChordUtil.remove_data_placement_info(data_id, self.existing_node.node_info)
+            # デバッグプリント
+            ChordUtil.dprint_data_storage_operations(self.existing_node.node_info,
+                                                     del_val.master_info.node_info,
+                                                     DataStore.DATA_STORE_OP_DIRECT_REMOVE,
+                                                     data_id
+                                                     )
 
             try:
                 data_list : List[StoredValueEntry] = self.master2data_idx[str(del_val.master_info.node_info.node_id)]

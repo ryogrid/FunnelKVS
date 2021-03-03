@@ -218,10 +218,11 @@ class Stabilizer:
 
                     # TODO: NOT_FONDが継続する状態の調査のために check_replication_redunduncy の呼び出しをコメントアウトしている
                     #       根本原因が解決したら、元に戻すこと at partial_join_op
-                    # # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
-                    # # いる場合があるため、そのチェックと、越えていた場合の余剰のノードからレプリカを全て削除させる処理を呼び出す
-                    # # (この呼び出しの中で successorListからの余剰ノード情報削除も行われる）
-                    # self_predeessor_node.stabilizer.check_replication_redunduncy()
+
+                    # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
+                    # いる場合があるため、そのチェックと、越えていた場合の余剰のノードからレプリカを全て削除させる処理を呼び出す
+                    # (この呼び出しの中で successorListからの余剰ノード情報削除も行われる）
+                    self_predeessor_node.stabilizer.check_replication_redunduncy()
                 except (NodeIsDownedExceptiopn, InternalControlFlowException):
                     ChordUtil.dprint("partial_join_op_6,NODE_IS_DOWNED or InternalControlFlowException" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(node_info))
@@ -402,9 +403,10 @@ class Stabilizer:
 
                             # TODO: NOT_FONDが継続する状態の調査のために check_replication_redunduncy の呼び出しをコメントアウトしている
                             #       根本原因が解決したら、元に戻すこと at stabilize_successor_inner
-                            # # successorListから溢れたノードがいた場合、自ノードの担当データのレプリカを削除させ、successorListから取り除く
-                            # # (この呼び出しの中でsuccessorListからのノード情報の削除も行われる)
-                            # self.check_replication_redunduncy()
+
+                            # successorListから溢れたノードがいた場合、自ノードの担当データのレプリカを削除させ、successorListから取り除く
+                            # (この呼び出しの中でsuccessorListからのノード情報の削除も行われる)
+                            self.check_replication_redunduncy()
 
                             # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                             # ば情報を更新してもらう

@@ -4,6 +4,7 @@ import copy
 from typing import List, Optional
 
 from . import gval
+from .chord_util import ChordUtil
 import threading
 
 # メモ: オブジェクトをdictのキーとして使用可能としてある
@@ -79,3 +80,6 @@ class NodeInfo:
 
     def __hash__(self):
         return self.node_id
+
+    def __str__(self):
+        return ChordUtil.gen_debug_str_of_node(self)

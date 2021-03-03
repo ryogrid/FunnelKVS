@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
+import sys
 import modules.gval as gval
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
     InternalControlFlowException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
@@ -160,6 +161,8 @@ class Stabilizer:
             # 残りのレプリカに関する処理は stabilize処理のためのスレッドに別途実行させる
             self.existing_node.tqueue.append_task(TaskQueue.JOIN_PARTIAL)
 
+            ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
+
     # join処理のうちレプリカに関する処理を分割したもの
     # stabilize処理を行うスレッドによって一度だけ(失敗した場合はカウントしないとして)実行される
     def partial_join_op(self):
@@ -174,6 +177,8 @@ class Stabilizer:
                 "partial_join_op_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                 + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+
+        ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 
         try:
             # successor[0] から委譲を受けたデータを successorList 内の全ノードにレプリカとして配る
@@ -265,6 +270,9 @@ class Stabilizer:
             ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+
+        ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
+
         try:
             ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                   + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
@@ -303,6 +311,8 @@ class Stabilizer:
             ChordUtil.dprint("find_successor_inner_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+
+        ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 
         try:
             # 本メソッド呼び出しでsuccessorとして扱うノードはsuccessorListからダウンしているノードを取り除いた上で
@@ -515,22 +525,38 @@ class Stabilizer:
     # 一回の呼び出しで1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
     def stabilize_finger_table(self, idx):
-        ChordUtil.dprint("stabilize_finger_table_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
+        if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            ChordUtil.dprint("stabilize_finger_table_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
+            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+        if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            self.existing_node.node_info.lock_of_pred_info.release()
+            ChordUtil.dprint("stabilize_finger_table_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "LOCK_ACQUIRE_TIMEOUT")
+            raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
 
-        # FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
-        # 担当するノードに最も近いノードが格納される
-        update_id = ChordUtil.overflow_check_and_conv(self.existing_node.node_info.node_id + 2**idx)
         try:
-            found_node = self.existing_node.router.find_successor(update_id)
-        except AppropriateNodeNotFoundException:
-            # 適切な担当ノードを得ることができなかった
-            # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
-            # ことであるので、更新対象のエントリには None を設定しておく
-            self.existing_node.node_info.finger_table[idx] = None
-            ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
-            return
+            ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 
-        self.existing_node.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
+            ChordUtil.dprint("stabilize_finger_table_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
 
-        ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_node(found_node.node_info))
+            # FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
+            # 担当するノードに最も近いノードが格納される
+            update_id = ChordUtil.overflow_check_and_conv(self.existing_node.node_info.node_id + 2**idx)
+            try:
+                found_node = self.existing_node.router.find_successor(update_id)
+            except AppropriateNodeNotFoundException:
+                # 適切な担当ノードを得ることができなかった
+                # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
+                # ことであるので、更新対象のエントリには None を設定しておく
+                self.existing_node.node_info.finger_table[idx] = None
+                ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
+                return
+
+            self.existing_node.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
+
+            ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(found_node.node_info))
+        finally:
+            self.existing_node.node_info.lock_of_succ_infos.release()
+            self.existing_node.node_info.lock_of_pred_info.release()

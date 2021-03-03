@@ -246,6 +246,14 @@ class ChordUtil:
                          + ChordUtil.gen_debug_str_of_node(master_node) + ","
                          + operation_type + "," + ChordUtil.gen_debug_str_of_data(data_id))
 
+    @classmethod
+    def dprint_routing_info(cls, callee_node : 'ChordNode', calee_method : str):
+        ChordUtil.dprint("dprint_routing_info__PRED," + ChordUtil.gen_debug_str_of_node(callee_node.node_info) + ","
+                         + calee_method + "," + "PREDECESSOR_INFO," + str(callee_node.node_info))
+        ChordUtil.dprint("dprint_routing_info__SUCC," +ChordUtil.gen_debug_str_of_node(callee_node.node_info) + "," + calee_method + ","
+                         + "SUCCESSOR_INFO_LIST," + str(len(callee_node.node_info.successor_info_list)) + ","
+                         + " | ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))
+
 # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
 # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
 class NodeInfoPointer:

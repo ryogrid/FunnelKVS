@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional, cast
 
+import sys
 import modules.gval as gval
 from .node_info import NodeInfo
 from .data_store import DataStore
@@ -352,6 +353,9 @@ class ChordNode:
                 if self.node_info.lock_of_succ_infos.acquire() == False:
                     # 担当ノード変更の処理は後回しにして今回は QUERIED_DATA_NOT_FOUND_STRを返してしまう
                     return ret_value_str
+
+                ChordUtil.dprint_routing_info(self, sys._getframe().f_code.co_name)
+
                 try:
                     # データの担当ノードであるマスターがダウンしていた.
 

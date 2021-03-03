@@ -211,10 +211,12 @@ class Stabilizer:
                     ChordUtil.dprint("partial_join_op_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(self_predeessor_node.node_info) + "," + str(len(pred_tantou_datas)))
 
-                    # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
-                    # いる場合があるため、そのチェックと、越えていた場合の余剰のノードからレプリカを全て削除させる処理を呼び出す
-                    # (この呼び出しの中で successorListからの余剰ノード情報削除も行われる）
-                    self_predeessor_node.stabilizer.check_replication_redunduncy()
+                    # TODO: NOT_FONDが継続する状態の調査のために check_replication_redunduncy の呼び出しをコメントアウトしている
+                    #       根本原因が解決したら、元に戻すこと at partial_join_op
+                    # # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
+                    # # いる場合があるため、そのチェックと、越えていた場合の余剰のノードからレプリカを全て削除させる処理を呼び出す
+                    # # (この呼び出しの中で successorListからの余剰ノード情報削除も行われる）
+                    # self_predeessor_node.stabilizer.check_replication_redunduncy()
                 except (NodeIsDownedExceptiopn, InternalControlFlowException):
                     ChordUtil.dprint("partial_join_op_6,NODE_IS_DOWNED or InternalControlFlowException" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(node_info))
@@ -338,37 +340,6 @@ class Stabilizer:
                 self.existing_node.node_info.successor_info_list = successor_list_tmp
                 successor =  ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0].address_str)
 
-            # successor : 'ChordNode'
-            # successor_tmp : Optional['ChordNode'] = None
-            # for idx in range(len(self.existing_node.node_info.successor_info_list)):
-            #     try:
-            #         if ChordUtil.is_node_alive(self.existing_node.node_info.successor_info_list[idx].address_str):
-            #             successor_tmp = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[idx].address_str)
-            #             break
-            #         else:
-            #             ChordUtil.dprint("stabilize_successor_inner_1,SUCCESSOR_IS_DOWNED,"
-            #                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-            #                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx]))
-            #     except InternalControlFlowException:
-            #         # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
-            #         # した際に発生してしまうので、ここで対処する
-            #         # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなので、後続の処理を行わず successor[0]を返す
-            #         # TODO: なお、join処理中のノードがsuccessor_info_listに入っていた場合も同様に例外がraiseされるケースがあるがひとまず同様の対処として
-            #         #       みる
-            #         return self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
-            #
-            # if successor_tmp != None:
-            #     successor = cast('ChordNode', successor_tmp)
-            # else:
-            #     # successorListの全てのノードを当たっても、生きているノードが存在しなかった場合
-            #     # 起きてはいけない状況なので例外を投げてプログラムを終了させる
-            #     ChordUtil.dprint("stabilize_successor_inner_1_1,,"
-            #                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-            #                      + str(len(self.existing_node.node_info.successor_info_list)) + ","
-            #                      + str(self.existing_node.node_info.successor_info_list),
-            #                      flush=True)
-            #     raise Exception("Maybe some parameters related to fault-tolerance of Chord network are not appropriate")
-
             # 生存が確認されたノードを successor[0] として設定する
             self.existing_node.node_info.successor_info_list[0] = successor.node_info.get_partial_deepcopy()
 
@@ -419,9 +390,11 @@ class Stabilizer:
                             new_successor.data_store.receive_replica(self.existing_node.node_info.get_partial_deepcopy(),
                                                                      tantou_data_list, replace_all=True)
 
-                            # successorListから溢れたノードがいた場合、自ノードの担当データのレプリカを削除させ、successorListから取り除く
-                            # (この呼び出しの中でsuccessorListからのノード情報の削除も行われる)
-                            self.check_replication_redunduncy()
+                            # TODO: NOT_FONDが継続する状態の調査のために check_replication_redunduncy の呼び出しをコメントアウトしている
+                            #       根本原因が解決したら、元に戻すこと at stabilize_successor_inner
+                            # # successorListから溢れたノードがいた場合、自ノードの担当データのレプリカを削除させ、successorListから取り除く
+                            # # (この呼び出しの中でsuccessorListからのノード情報の削除も行われる)
+                            # self.check_replication_redunduncy()
 
                             # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                             # ば情報を更新してもらう

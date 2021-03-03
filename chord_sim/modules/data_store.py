@@ -373,7 +373,7 @@ class DataStore:
                             # stablize処理 がよろしくやってくれるのでここでは何もしない
                             ChordUtil.dprint(
                                 "delegate_my_tantou_data_4,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node.node_info))
+                                + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node_info))
                             continue
 
         return ret_datas

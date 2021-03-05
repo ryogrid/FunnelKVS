@@ -41,6 +41,7 @@ class Stabilizer:
 
             if len(self.existing_node.node_info.successor_info_list) > gval.SUCCESSOR_LIST_NORMAL_LEN:
                 list_len = len(self.existing_node.node_info.successor_info_list)
+                delete_elem_list : List['NodeInfo'] = []
                 for idx in range(gval.SUCCESSOR_LIST_NORMAL_LEN, list_len):
                     # successor_info_listからエントリが削除された場合、rangeで得られる数字列全てに要素がない
                     # 状態が起こるため、最新のlengthでチェックし直す
@@ -54,10 +55,11 @@ class Stabilizer:
                             "check_replication_redunduncy_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                             + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx])
                             + str(len(self.existing_node.node_info.successor_info_list)))
+
                         # 余剰となったノードを successorListから取り除く
                         #self.existing_node.node_info.successor_info_list.remove(node_info)
-                        del self.existing_node.node_info.successor_info_list[idx]
-
+                        #del self.existing_node.node_info.successor_info_list[idx]
+                        delete_elem_list.append(self.existing_node.node_info.successor_info_list[idx])
                     except NodeIsDownedExceptiopn:
                         # 余剰ノードがダウンしていた場合はここでは何も対処しない
                         ChordUtil.dprint(
@@ -67,8 +69,14 @@ class Stabilizer:
                         # ダウンしているので、レプリカを削除させることはできないが、それが取得されてしまうことも無いため
                         # 特にレプリカに関するケアは行わず、余剰となったノードとして successorListから取り除く
                         # self.existing_node.node_info.successor_info_list.remove(node_info)
-                        del self.existing_node.node_info.successor_info_list[idx]
+                        # del self.existing_node.node_info.successor_info_list[idx]
+                        delete_elem_list.append(self.existing_node.node_info.successor_info_list[idx])
+
                         continue
+
+                # 上のループで削除すると決まった要素を取り除く
+                for elem in delete_elem_list:
+                    self.existing_node.node_info.successor_info_list.remove(elem)
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
 

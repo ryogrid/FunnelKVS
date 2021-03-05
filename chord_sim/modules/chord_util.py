@@ -249,7 +249,7 @@ class ChordUtil:
     @classmethod
     def dprint_routing_info(cls, callee_node : 'ChordNode', calee_method : str):
         ChordUtil.dprint("dprint_routing_info__PRED," + ChordUtil.gen_debug_str_of_node(callee_node.node_info) + ","
-                         + calee_method + "," + "PREDECESSOR_INFO," + str(callee_node.node_info))
+                         + calee_method + "," + "PREDECESSOR_INFO," + str(callee_node.node_info.predecessor_info))
         ChordUtil.dprint("dprint_routing_info__SUCC," +ChordUtil.gen_debug_str_of_node(callee_node.node_info) + "," + calee_method + ","
                          + "SUCCESSOR_INFO_LIST," + str(len(callee_node.node_info.successor_info_list)) + ","
                          + " | ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))

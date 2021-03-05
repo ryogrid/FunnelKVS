@@ -40,7 +40,7 @@ class Router:
                              + ChordUtil.gen_debug_str_of_data(id))
 
             try:
-                # 取得しようとしたノードがダウンしていた場合 NodeIsDownedException が raise される
+                # 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
                 return ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
             except NodeIsDownedExceptiopn:
                 # ここでは何も対処しない

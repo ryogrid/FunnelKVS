@@ -125,7 +125,7 @@ class Stabilizer:
                 # successor_info_listを埋めておく
                 succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
                 list_len = len(succ_list_of_succ)
-                for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN):
+                for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
                     if idx < list_len:
                         self.existing_node.node_info.successor_info_list.append(
                             succ_list_of_succ[idx].get_partial_deepcopy())
@@ -351,8 +351,8 @@ class Stabilizer:
                 self.existing_node.node_info.successor_info_list = successor_list_tmp
                 successor =  ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0].address_str)
 
-            # 生存が確認されたノードを successor[0] として設定する
-            self.existing_node.node_info.successor_info_list[0] = successor.node_info.get_partial_deepcopy()
+            # # 生存が確認されたノードを successor[0] として設定する
+            # self.existing_node.node_info.successor_info_list[0] = successor.node_info.get_partial_deepcopy()
 
             ChordUtil.dprint("stabilize_successor_inner_1_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
@@ -415,7 +415,7 @@ class Stabilizer:
                             ChordUtil.dprint("stabilize_successor_inner_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
                                              + ChordUtil.gen_debug_str_of_node(new_successor.node_info))
-                        except NodeIsDownedExceptiopn:
+                        except (NodeIsDownedExceptiopn, InternalControlFlowException):
                             # 例外発生時は張り替えを中止する
                             #   - successorは変更しない
                             #   - この時点でのsuccessor[0]が認識するpredecessorを自身とする(successr[0]のcheck_predecessorを呼び出す)

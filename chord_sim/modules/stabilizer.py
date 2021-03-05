@@ -122,13 +122,16 @@ class Stabilizer:
                 self.existing_node.node_info.predecessor_info = cast('NodeInfo', successor.node_info.predecessor_info).get_partial_deepcopy()
                 successor.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
 
-                # successor_info_listを埋めておく
-                succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
-                list_len = len(succ_list_of_succ)
-                for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
-                    if idx < list_len:
-                        self.existing_node.node_info.successor_info_list.append(
-                            succ_list_of_succ[idx].get_partial_deepcopy())
+                #TODO: 下のコメントアウトはデバッグのため。コメントアウトしても現象に変化がなければ、元に戻すこと！
+                #      at join
+
+                # # successor_info_listを埋めておく
+                # succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
+                # list_len = len(succ_list_of_succ)
+                # for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
+                #     if idx < list_len:
+                #         self.existing_node.node_info.successor_info_list.append(
+                #             succ_list_of_succ[idx].get_partial_deepcopy())
 
                 # 例外発生時は取得を試みたノードはダウンしているが、無視してpredecessorに設定したままにしておく.
                 # 不正な状態に一時的になるが、predecessorをsuccessor_info_listに持つノードが
@@ -474,6 +477,9 @@ class Stabilizer:
                     cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
                     ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                    # TODO: succesorの中に、自ノードをsuccessorと持っているノードがいる場合がある問題の暫定対処
+                    #       として、以下の条件が成立しても、自身のsuccessorListの内容を参照するなどして、返ってきた自ノードは
+                    #       無視して処理を継続するようにすれば良いのではないだろうか
                     if cur_node_info.node_id == self.existing_node.node_info.node_id:
                         # Chordネットワークに (downしていない状態で) 存在するノード数が gval.SUCCESSOR_LIST_NORMAL_LEN
                         # より少ない場合 successorをたどっていった結果、自ノードにたどり着いてしまうため、その場合は規定の

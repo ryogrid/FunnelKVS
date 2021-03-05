@@ -55,7 +55,9 @@ class Stabilizer:
                             + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx])
                             + str(len(self.existing_node.node_info.successor_info_list)))
                         # 余剰となったノードを successorListから取り除く
-                        self.existing_node.node_info.successor_info_list.remove(node_info)
+                        #self.existing_node.node_info.successor_info_list.remove(node_info)
+                        del self.existing_node.node_info.successor_info_list[idx]
+
                     except NodeIsDownedExceptiopn:
                         # 余剰ノードがダウンしていた場合はここでは何も対処しない
                         ChordUtil.dprint(
@@ -64,7 +66,8 @@ class Stabilizer:
                             + str(len(self.existing_node.node_info.successor_info_list)) + ",NODE_IS_DOWNED")
                         # ダウンしているので、レプリカを削除させることはできないが、それが取得されてしまうことも無いため
                         # 特にレプリカに関するケアは行わず、余剰となったノードとして successorListから取り除く
-                        self.existing_node.node_info.successor_info_list.remove(node_info)
+                        # self.existing_node.node_info.successor_info_list.remove(node_info)
+                        del self.existing_node.node_info.successor_info_list[idx]
                         continue
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
@@ -122,16 +125,13 @@ class Stabilizer:
                 self.existing_node.node_info.predecessor_info = cast('NodeInfo', successor.node_info.predecessor_info).get_partial_deepcopy()
                 successor.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
 
-                #TODO: 下のコメントアウトはデバッグのため。コメントアウトしても現象に変化がなければ、元に戻すこと！
-                #      at join
-
-                # # successor_info_listを埋めておく
-                # succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
-                # list_len = len(succ_list_of_succ)
-                # for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
-                #     if idx < list_len:
-                #         self.existing_node.node_info.successor_info_list.append(
-                #             succ_list_of_succ[idx].get_partial_deepcopy())
+                # successor_info_listを埋めておく
+                succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
+                list_len = len(succ_list_of_succ)
+                for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
+                    if idx < list_len:
+                        self.existing_node.node_info.successor_info_list.append(
+                            succ_list_of_succ[idx].get_partial_deepcopy())
 
                 # 例外発生時は取得を試みたノードはダウンしているが、無視してpredecessorに設定したままにしておく.
                 # 不正な状態に一時的になるが、predecessorをsuccessor_info_listに持つノードが
@@ -472,6 +472,8 @@ class Stabilizer:
             # 最初は自ノードを指定してそのsuccessor[0]を取得するところからスタートする
             cur_node : 'ChordNode' = self.existing_node
 
+            # 返されたノード情報を設定する node_info_list の index になるはずの値
+            cur_target_node_idx = 0
             while len(updated_list) < gval.SUCCESSOR_LIST_NORMAL_LEN:
                 try:
                     cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
@@ -480,49 +482,79 @@ class Stabilizer:
                     # TODO: succesorの中に、自ノードをsuccessorと持っているノードがいる場合がある問題の暫定対処
                     #       として、以下の条件が成立しても、自身のsuccessorListの内容を参照するなどして、返ってきた自ノードは
                     #       無視して処理を継続するようにすれば良いのではないだろうか
+
+                    # if cur_node_info.node_id == self.existing_node.node_info.node_id:
+                    #     # Chordネットワークに (downしていない状態で) 存在するノード数が gval.SUCCESSOR_LIST_NORMAL_LEN
+                    #     # より少ない場合 successorをたどっていった結果、自ノードにたどり着いてしまうため、その場合は規定の
+                    #     # ノード数を満たしていないが、successor_info_list の更新処理は終了する
+                    #     ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    #                      + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                    #     if len(updated_list) == 0:
+                    #         # first node の場合の考慮
+                    #         # second node が 未joinの場合、successsor[0] がリストに存在しない状態となってしまうため
+                    #         # その場合のみ、updated_list で self.existing_node.node_info.successor_info_listを上書きせずにreturnする
+                    #         ChordUtil.dprint("stabilize_successor_2_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    #                          + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                    #         return
+                    #
+                    #     break
+
                     if cur_node_info.node_id == self.existing_node.node_info.node_id:
-                        # Chordネットワークに (downしていない状態で) 存在するノード数が gval.SUCCESSOR_LIST_NORMAL_LEN
-                        # より少ない場合 successorをたどっていった結果、自ノードにたどり着いてしまうため、その場合は規定の
-                        # ノード数を満たしていないが、successor_info_list の更新処理は終了する
-                        ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                         + ChordUtil.gen_debug_str_of_node(cur_node_info))
-                        if len(updated_list) == 0:
-                            # first node の場合の考慮
-                            # second node が 未joinの場合、successsor[0] がリストに存在しない状態となってしまうため
-                            # その場合のみ、updated_list で self.existing_node.node_info.successor_info_listを上書きせずにreturnする
-                            ChordUtil.dprint("stabilize_successor_2_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        # 返ってきたノード情報は無視し、元々持っている node_info_list内のノードを返ってきたノード情報として扱う
+                        # 長さが足りなかった場合はあきらめる
+                        if cur_target_node_idx < len(self.existing_node.node_info.successor_info_list):
+                            ChordUtil.dprint("stabilize_successor_2,RETURNED_NODE_SAME_AS_SELF," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_node(cur_node_info))
-                            return
-
-                        break
-
+                            cur_node_info = self.existing_node.node_info.successor_info_list[cur_target_node_idx].get_partial_deepcopy()
+                        else:
+                            ChordUtil.dprint("stabilize_successor_2_5,RETURNED_NODE_SAME_AS_SELF_AND_END_SEARCH_SUCCESSOR," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                             + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                            break
 
                     cur_node = ChordUtil.get_node_by_address(cur_node_info.address_str)
+
                     updated_list.append(cur_node_info)
+                    cur_target_node_idx += 1
                 except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
                     # ロックの取得でタイムアウトが発生した
                     # あるいは、cur_node(selfの場合もあれば他ノードの場合もある)が、生存している状態が通常期待される
                     # ところで、node_kill_th の処理がノードをダウン状態にしてしまった
-                    if len(updated_list) == 0:
-                        # この場合は、successsor_info_listを更新することなく処理を終了する
-                        ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                         + ChordUtil.gen_debug_str_of_node(cur_node_info)
-                                         + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-                        return
-                    else:
-                        # TODO: successor_info_listの[1]あたりがダウンしていた場合、ずっとsuccessor_info_listの長さが1になってしまう
-                        #       ことが起こるのかも。最初にダウンしているものだけpassして、successor_info_listのアップデート候補を作る用にすればよい？
-                        #       そこはstabilize_successor_innerの中の修正で対応すべき？
-                        #       in stabilize_successor
 
-                        # この場合は規定数を満たしてないはずだが、作成済みのリストで successor_info_listを更新してしまう
-                        ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                         + ChordUtil.gen_debug_str_of_node(cur_node_info)
-                                         + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-                        break
+                    # if len(updated_list) == 0:
+                    #     # この場合は、successsor_info_listを更新することなく処理を終了する
+                    #     ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    #                      + ChordUtil.gen_debug_str_of_node(cur_node_info)
+                    #                      + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                    #     return
 
-            self.existing_node.node_info.successor_info_list = updated_list
+                    ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_node_info)
+                                     + ",TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                    cur_target_node_idx += 1
+                    continue
+
+                    # else:
+                    #     # TODO: successor_info_listの[1]あたりがダウンしていた場合、ずっとsuccessor_info_listの長さが1になってしまう
+                    #     #       ことが起こるのかも。最初にダウンしているものだけpassして、successor_info_listのアップデート候補を作る用にすればよい？
+                    #     #       そこはstabilize_successor_innerの中の修正で対応すべき？
+                    #     #       in stabilize_successor
+                    #
+                    #     # この場合は規定数を満たしてないはずだが、作成済みのリストで successor_info_listを更新してしまう
+                    #     ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    #                      + ChordUtil.gen_debug_str_of_node(cur_node_info)
+                    #                      + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                    #     break
+
+            # self.existing_node.node_info.successor_info_list = updated_list
+
+            if len(updated_list) == 0:
+                # first node の場合の考慮
+                # successor_info_listを更新しないで処理を終える
+                pass
+            else:
+                self.existing_node.node_info.successor_info_list = updated_list
+
             ChordUtil.dprint("stabilize_successor_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + str(self.existing_node.node_info.successor_info_list))
         finally:

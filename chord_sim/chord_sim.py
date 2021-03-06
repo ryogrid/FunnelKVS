@@ -369,34 +369,38 @@ def do_get_on_random_node():
 
     got_result : str = node.global_get(target_data_id)
 
+    # 関数内関数
+    def print_data_consistency():
+        # TODO: gval.all_data_list は 検索のコストを考えると dict にした方がいいかも
+        #       at do_get_on_random_node
+        with gval.lock_of_all_data_list:
+            for idx in reversed(range(0, len(gval.all_data_list))):
+                if gval.all_data_list[idx].data_id == target_data_id:
+                    latest_elem = gval.all_data_list[idx]
+
+        if got_result == latest_elem.value_data:
+            ChordUtil.dprint(
+                "do_get_on_random_node_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(target_data_id) + ","
+                + got_result
+                + ",OK_GOT_VALUE_WAS_LATEST")
+        else:
+            ChordUtil.dprint(
+                "do_get_on_random_node_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                + ChordUtil.gen_debug_str_of_data(target_data_id) + ","
+                + got_result
+                + ",WARN__GOT_VALUE_WAS_INCONSISTENT")
+
     if is_retry:
         # TODO: リトライが成功したかはローカルに保持している情報がlist内に再設定されていないかで判定する
         #       on do_get_on_random_node
         if ChordNode.need_getting_retry_data_id == -1:
             # リトライ情報が再設定されていないためリトライに成功したと判断
 
-            # TODO: gval.all_data_list は 検索のコストを考えると dict にした方がいいかも
-            #       at do_get_on_random_node
-            with gval.lock_of_all_data_list:
-                for idx in reversed(range(0, len(gval.all_data_list))):
-                    if gval.all_data_list[idx].data_id == target_data_id:
-                        latest_elem = gval.all_data_list[idx]
-
-            if got_result == latest_elem.value_data:
-                ChordUtil.dprint(
-                    "do_get_on_random_node_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(target_data_id) + ","
-                    + got_result
-                    + ",OK_GOT_VALUE_WAS_LATEST")
-            else:
-                ChordUtil.dprint(
-                    "do_get_on_random_node_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(target_data_id) + ","
-                    + got_result
-                    + ",WARN__GOT_VALUE_WAS_INCONSISTENT")
+            print_data_consistency()
 
             ChordUtil.dprint(
-                "do_get_on_random_node_1,retry of global_get is succeeded," + ChordUtil.gen_debug_str_of_node(
+                "do_get_on_random_node_2,retry of global_get is succeeded," + ChordUtil.gen_debug_str_of_node(
                     node.node_info) + ","
                 + ChordUtil.gen_debug_str_of_data(target_data_id))
         else:
@@ -404,6 +408,8 @@ def do_get_on_random_node():
                 "do_get_on_random_node_2,retry of global_get is failed," + ChordUtil.gen_debug_str_of_node(
                     node.node_info) + ","
                 + ChordUtil.gen_debug_str_of_data(target_data_id))
+    else:
+        print_data_consistency()
 
     # # ロックの解放
     # gval.lock_of_all_data.release()

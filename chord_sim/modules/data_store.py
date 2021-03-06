@@ -85,6 +85,11 @@ class DataStore:
                 # 既に同じキーが存在する. つまりvalueの更新の場合は管理用のデータ内でのエントリの重複が
                 # 起こらないようにするため、既存の記録を削除しておく
                 old_value : StoredValueEntry = self.stored_data[key_id_str]
+
+                # TODO: デバッグのため。不要なら消すこと
+                if old_value.master_info.node_info.node_id != master_info:
+                    raise Exception("store_new_data: added data's master differ with already existing entry.")
+
                 related_list : List[StoredValueEntry] = self.master2data_idx[str(old_value.master_info.node_info.node_id)]
                 related_list.remove(old_value)
 
@@ -237,8 +242,12 @@ class DataStore:
             ChordUtil.dprint("receive_replica_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(master_node) + ","
                              + str(len(pass_datas)) + "," + str(replace_all))
-            if replace_all:
-                self.delete_replica(master_node)
+
+            # TODO: デバッグのために replace_all が True であった際の処理を コメントアウトする。変化がなければ必ずあと戻すこと!
+            #       at receive_replica
+
+            # if replace_all:
+            #     self.delete_replica(master_node)
 
             copied_master_node = master_node.get_partial_deepcopy()
             for id_value in pass_datas:
@@ -319,7 +328,7 @@ class DataStore:
             ret_datas : List[KeyValue] = []
             try:
                 tantou_data: List[StoredValueEntry] = self.master2data_idx[str(self.existing_node.node_info.node_id)]
-            except:
+            except KeyError:
                 ChordUtil.dprint(
                     "delegate_my_tantou_data_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                     + ChordUtil.gen_debug_str_of_data(node_id) + ",NO_TANTOU_DATA_YET")

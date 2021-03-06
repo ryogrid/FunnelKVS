@@ -60,8 +60,8 @@ class Stabilizer:
                         #self.existing_node.node_info.successor_info_list.remove(node_info)
                         #del self.existing_node.node_info.successor_info_list[idx]
                         delete_elem_list.append(self.existing_node.node_info.successor_info_list[idx])
-                    except NodeIsDownedExceptiopn:
-                        # 余剰ノードがダウンしていた場合はここでは何も対処しない
+                    except (NodeIsDownedExceptiopn, InternalControlFlowException):
+                        # 余剰ノードがダウンしていた場合等はここでは何も対処しない
                         ChordUtil.dprint(
                             "check_replication_redunduncy_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                             + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx])

@@ -511,7 +511,6 @@ class Stabilizer:
                     # ところで、node_kill_th の処理がノードをダウン状態にしてしまった
 
                     ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(cur_node_info)
                                      + ",TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
                     cur_target_node_idx += 1
                     continue

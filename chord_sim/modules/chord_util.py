@@ -37,6 +37,11 @@ class ChordUtil:
         idx = random.randint(0, length - 1)
         return list_like[idx]
 
+    @classmethod
+    def get_random_data(cls) -> 'KeyValue':
+        with gval.lock_of_all_data_list:
+            return ChordUtil.get_random_elem(gval.all_data_list)
+
     # UNIXTIME（ミリ秒精度）にいくつか値を加算した値からアドレス文字列を生成する
     @classmethod
     def gen_address_str(cls) -> str:
@@ -243,7 +248,6 @@ class ChordUtil:
     @classmethod
     def dprint_data_storage_operations(cls, callee_node : 'NodeInfo', operation_type : str, data_id : int):
         ChordUtil.dprint("dprint_data_storage_operations," + ChordUtil.gen_debug_str_of_node(callee_node) + ","
-                         + ChordUtil.gen_debug_str_of_node(master_node) + ","
                          + operation_type + "," + ChordUtil.gen_debug_str_of_data(data_id))
 
     @classmethod
@@ -252,7 +256,7 @@ class ChordUtil:
                          + calee_method + "," + "PREDECESSOR_INFO," + str(callee_node.node_info.predecessor_info))
         ChordUtil.dprint("dprint_routing_info__SUCC," +ChordUtil.gen_debug_str_of_node(callee_node.node_info) + "," + calee_method + ","
                          + "SUCCESSOR_INFO_LIST," + str(len(callee_node.node_info.successor_info_list)) + ","
-                         + " | ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))
+                         + " ,| ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))
 
 # # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
 # # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
@@ -272,6 +276,11 @@ class KeyValue:
             self.data_id = None
         else:
             self.data_id = ChordUtil.hash_str_to_int(cast(str, key))
+
+    def __eq__(self, other):
+        if not isinstance(other, KeyValue):
+            return False
+        return self.data_id == other.data_id
 
 @dataclasses.dataclass
 class DataIdAndValue:

@@ -30,7 +30,7 @@ STABILIZE_SUCCESSOR_BATCH_TIMES = 20 #10 #20
 STABILIZE_FTABLE_BATCH_TIMES = 2 #1
 
 # 一時的にこれより短くなる場合もある
-SUCCESSOR_LIST_NORMAL_LEN = 8
+SUCCESSOR_LIST_NORMAL_LEN = 3
 
 # # 160bit符号なし整数の最大値
 # # Chordネットワーク上のID空間の上限
@@ -63,6 +63,7 @@ all_data_list : List['KeyValue'] = []
 already_born_node_num = 0
 
 # lock_of_all_data = threading.Lock()
+lock_of_all_data_list = threading.Lock()
 
 is_network_constructed = False
 
@@ -73,3 +74,6 @@ GLOBAL_GET_RETRY_CNT_LIMIT_TO_DEBEUG_PRINT = 30
 # マスターデータとレプリカの区別なく、データIDをKeyに、当該IDに対応するデータを
 # 保持しているノードのリストを得られる dict
 all_data_placement_dict : Dict[str, List['NodeInfo']] = {}
+
+# 既に発行したputの回数
+already_issued_put_cnt = 0

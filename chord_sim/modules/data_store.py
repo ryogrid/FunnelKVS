@@ -62,14 +62,14 @@ class DataStore:
                                                      )
 
     # 自ノードが担当ノードとなる保持データを全て返す
-    def pass_tantou_data_for_replication(self) -> List[DataIdAndValue]:
+    def get_all_tantou_data(self) -> List[DataIdAndValue]:
         with self.existing_node.node_info.lock_of_datastore:
             ChordUtil.dprint(
                 "pass_tantou_data_for_replication_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
 
             ret_data_list : List[DataIdAndValue] = []
             for key, value in self.stored_data.items():
-                if ChordUtil.exist_between_two_nodes_right_mawari(self.existing_node.node_info.predecessor_info.node_id, self.existing_node.node_info.node_id, int(key)):
+                if ChordUtil.exist_between_two_nodes_right_mawari(cast('NodeInfo', self.existing_node.node_info.predecessor_info).node_id, self.existing_node.node_info.node_id, int(key)):
                     ret_data_list.append(DataIdAndValue(data_id=int(key), value_data=value.value_data))
 
             ChordUtil.dprint("pass_tantou_data_for_replication_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -114,21 +114,12 @@ class DataStore:
     # 範囲のデータの委譲を行うために、新規ノードから呼び出される形で用いられる.
     # rest_copy引数によってコピーを渡すだけか、完全に委譲してしまい自身のデータストアからは渡したデータを削除
     # するかどうか選択できる
-    def delegate_my_tantou_data(self, node_id : int, rest_copy : bool = True) -> List[KeyValue]:
-        # TODO: stabilize処理の中で唯一 datastoreのロックをとっている箇所
-        #       対処しないとまずいかもしれない
+    def delegate_my_tantou_data(self, node_id : int) -> List[KeyValue]:
         with self.existing_node.node_info.lock_of_datastore:
             ChordUtil.dprint("delegate_my_tantou_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(node_id))
             ret_datas : List[KeyValue] = []
-            try:
-                tantou_data: List[StoredValueEntry] = self.master2data_idx[str(self.existing_node.node_info.node_id)]
-            except KeyError:
-                ChordUtil.dprint(
-                    "delegate_my_tantou_data_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(node_id) + ",NO_TANTOU_DATA_YET")
-                # まだ一つもデータを保持していなかったということなので空リストを返す
-                return []
+            tantou_data: List[DataIdAndValue] = self.get_all_tantou_data()
 
             for entry in tantou_data:
                 # Chordネットワークを右回りにたどった時に、データの id (data_id) が呼び出し元の node_id から
@@ -146,40 +137,6 @@ class DataStore:
                 item.data_id = entry.data_id
                 ret_datas.append(item)
 
-            # データを委譲する際に元々持っていたノードから削除するよう指定されていた場合
-            if rest_copy == False:
-                for kv in ret_datas:
-                    self.remove_data(cast('int', kv.data_id), self.existing_node.node_info)
-
-                # 委譲したことで自身が担当ノードで無くなったデータについてsuccessorList
-                # 内のノードに通知し、削除させる（それらのノードは再度同じレプリカを保持する
-                # ことになるかもしれないが、それは新担当の管轄なので、非効率ともなるがひとまず削除させる）
-                # 削除が完了するまで本メソッドは終了しないため、新担当がレプリカを配布する処理と以下の処理が
-                # バッティングすることはない
-                # TODO: 現在の実装では同じスレッドが処理を行い、こちらのメソッドが終わった後にレプリカを配布するため
-                #       バッティングは起きないが、stored_data内のデータを削除する処理ではマスターノードは意識されない
-                #       ため実システム化や複数スレッド化した再は考慮が必要かもしれない
-                #       in delegate_my_node_data
-                with self.existing_node.node_info.lock_of_succ_infos, self.existing_node.node_info.lock_of_datastore:
-                    for node_info in self.existing_node.node_info.successor_info_list:
-                        try:
-                            node : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
-                            # マスターノードが自ノードとして設定されているデータのうち自ノードが担当でなくなるデータを削除させる.
-                            # 少なくとも、自ノードが担当となる範囲以外は自身の担当でなくなるため、担当範囲以外全てを指定して要請する.
-                            # 始点・終点の指定としては、左周りで考えた時に自ノードから、委譲先ノードまでの範囲が、担当が自ノードから
-                            # 変化していないID範囲であることを踏まえると、Chordネットワークを右回りでたどった時に、自ノードから委譲
-                            # 先のノードに至るID範囲は自身が担当でない全てのID範囲と考えることができる
-                            node.data_store.delete_replica(self.existing_node.node_info, range_start=self.existing_node.node_info.node_id, range_end=node_id)
-                            ChordUtil.dprint(
-                                "delegate_my_tantou_data_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node.node_info))
-                        except NodeIsDownedExceptiopn:
-                            # stablize処理 がよろしくやってくれるのでここでは何もしない
-                            ChordUtil.dprint(
-                                "delegate_my_tantou_data_4,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                + ChordUtil.gen_debug_str_of_data(node_id) + "," + ChordUtil.gen_debug_str_of_node(node_info))
-                            continue
-
         return ret_datas
 
     # 存在しないKeyが与えられた場合 KeyErrorがraiseされる
@@ -187,9 +144,9 @@ class DataStore:
         with self.existing_node.node_info.lock_of_datastore:
             return self.stored_data[str(data_id)]
 
-    # 自ノードのidが指定された場合、返るデータはマスターデータだが同様に扱うものとする
-    def pass_all_replica(self) -> List[DataIdAndValue]:
-        ChordUtil.dprint("pass_all_replica_1," + ChordUtil.gen_debug_str_of_node(
+    # 全ての保持しているデータを返す
+    def get_all_data(self) -> List[DataIdAndValue]:
+        ChordUtil.dprint("get_all_data_1," + ChordUtil.gen_debug_str_of_node(
             self.existing_node.node_info))
 
         with self.existing_node.node_info.lock_of_datastore:
@@ -197,7 +154,7 @@ class DataStore:
             for key, value in self.stored_data.items():
                 ret_data_list.append(DataIdAndValue(data_id=int(key), value_data=value.value_data))
 
-            ChordUtil.dprint("pass_all_replica_2," + ChordUtil.gen_debug_str_of_node(
+            ChordUtil.dprint("get_all_data_2," + ChordUtil.gen_debug_str_of_node(
                 self.existing_node.node_info) + ","
                 + str(len(ret_data_list)))
 

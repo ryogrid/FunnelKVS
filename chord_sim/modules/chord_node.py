@@ -9,8 +9,8 @@ from .data_store import DataStore
 from .stabilizer import Stabilizer
 from .router import Router
 from .taskqueue import TaskQueue
-from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
-    InternalControlFlowException, StoredValueEntry, NodeInfoPointer, DataIdAndValue
+from .chord_util import ChordUtil, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
+    InternalControlFlowException, StoredValueEntry, DataIdAndValue
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
@@ -114,52 +114,39 @@ class ChordNode:
 
         # 担当範囲（predecessorのidと自身のidの間）のデータであるかのチェック処理を加える
         # そこに収まっていなかった場合、一定時間後リトライが行われるようエラーを返す.
-        # (predecessorの生死をチェックし、生きていればエラーとし、ダウンしていたら担当である
-        #  とも、そうでないとも確定しないため、リクエストを受けるという実装も可能だが、stabilize処理
-        #  で predecessor が生きているノードとなるまで下手にデータを持たない方が、データ配置の整合性
-        #  を壊すリスクが減りそうな気がするので、そうする)
+        # リクエストを受けるという実装も可能だが、stabilize処理で predecessor が生きて
+        # いるノードとなるまで下手にデータを持たない方が、データ配置の整合性を壊すリスクが
+        # 減りそうな気がするので、そうする
         if self.node_info.predecessor_info == None:
             return False
         # Chordネットワークを右回りにたどった時に、データの id (data_id) が predecessor の node_id から
-        # 自身の node_id の間に位置する場合は、そのデータは自身の担当だが、そうではない場合
+        # 自身の node_id の間に位置する場合、そのデータは自身の担当だが、そうではない場合
         if not ChordUtil.exist_between_two_nodes_right_mawari(cast(NodeInfo,self.node_info.predecessor_info).node_id, self.node_info.node_id, data_id):
             return False
 
         if self.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             # 今回は失敗としてしまう
-            ChordUtil.dprint("put," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+            ChordUtil.dprint("put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
             return False
         try:
             self.data_store.store_new_data(data_id, value_str)
 
-            tantou_data_list: List[DataIdAndValue] = self.data_store.pass_tantou_data_for_replication()
+            tantou_data_list: List[DataIdAndValue] = self.data_store.get_all_tantou_data()
 
-            # レプリカを successorList内のノードに渡す
-            # なお、新規ノードのjoin時のレプリカのコピーにおいて、predecessorのさらに前に位置するノードが
-            # 担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
-            # 全てを保持していないノードが存在する場合があるため、receive_replicaメソッド呼び出し時に返ってくる
-            # レプリカの保持数が、全件となっていない場合は全て保持させる
+            # レプリカを successorList内のノードに渡す（手抜きでputされたもの含めた全てを渡してしまう）
             for succ_info in self.node_info.successor_info_list:
                 try:
                     succ_node : ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
                 except (NodeIsDownedExceptiopn, InternalControlFlowException):
                     # stabilize処理 と put処理 を経ていずれ正常な状態に
                     # なるため、ここでは何もせずに次のノードに移る
-                    ChordUtil.dprint("put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                    ChordUtil.dprint("put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_data(data_id) + ","
                                      + ChordUtil.gen_debug_str_of_node(succ_info))
                     continue
 
-                # succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(),[
-                #                                                          DataIdAndValue(
-                #                                                            data_id=data_id,
-                #                                                            value_data=value_str
-                #                                                          )])
-                # is_have_all : bool = succ_node.data_store.get_replica_cnt_by_master_node()
-                # correct_replica_cnt = self.data_store.get_replica_cnt_by_master_node(self.node_info.node_id)
-
-                # 面倒なので非効率だが、putを受けるたびに持っている担当データを全て渡してしまう
+                # 非効率だが、putを受けるたびに持っている担当データを全て渡す
                 # TODO: putされるたびに担当データを全てレプリカノードに渡すのはあまりに非効率なので、担当データのIDリストを渡して
                 #       持っていないデータのIDのリストを返してもらい、それらのデータのみ渡すようにいずれ修正する
                 succ_node.data_store.receive_replica(tantou_data_list)
@@ -313,46 +300,25 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
             return err_str
 
-
-        if sv_entry.master_info.node_info.node_id == self.node_info.node_id:
-            # 自ノードが担当ノード（マスター）のデータであった
+        # Chordネットワークを右回りにたどった時に、データの id (data_id) がpredecessorの node_id から
+        # 自身の node_id の間に位置した.
+        # つまり、自身の担当ID範囲であった
+        if ChordUtil.exist_between_two_nodes_right_mawari(cast('NodeInfo', self.node_info.predecessor_info).node_id,
+                                                          self.node_info.node_id,
+                                                          data_id):
+            # 担当ノード（マスター）のデータであった
             ret_value_str = sv_entry.value_data
             ChordUtil.dprint("get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
         else:
-            # get要求に応じたデータを参照した際に自身が担当でないノードであった場合は、
-            # 担当ノードの生死をチェックし、生きていれば QUERIED_DATA_NOT_FOUND_STR
-            # を返し、ダウンしていた場合は、自身がダウンしていた担当ノードに成り代わる.
-            # 具体的には、以下を行った上で、保持しているデータを返す
-            #   - 自身の保持しているデータに紐づいている担当ノードの情報を更新する
-            #   - 自身のsuccessorList内のノードに担当ノードの変更を通知する（データの紐づけを変えさせる）
-            #     notify_master_node_changeメソッドを利用する
-            #  通常、担当が切り替わった場合、レプリカの保有ノード数が規定数より少なくなってしまうが、
-            #  少なくとも次に新たなデータの put を受けた際に、不足状態が解消される処理が走るため
-            #  ここでは、レプリカの保持ノードを増やすような処理は行わない
-
+            # 自身の担当範囲のIDのデータでは無かった
+            # 該当IDのデータを保持していたとしてもレプリカであるので返さずにエラー文字列を返す
             ret_value_str = self.QUERIED_DATA_NOT_FOUND_STR
 
-            ChordUtil.dprint("get_2_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
+            ChordUtil.dprint("get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
 
-            if ChordUtil.is_node_alive(sv_entry.master_info.node_info.address_str):
-                # データの担当ノードであるマスターが生きていた.
-                # 自身はレプリカを保持しているが、取得先が誤っているためエラーとして扱う.
-                # (返してしまってもほとんどの場合で問題はないが、マスターに put や delete などの更新リクエストが
-                #  かかっていた場合、タイミングによってデータの不整合が起きてしまう)
-                ret_value_str = self.QUERIED_DATA_NOT_FOUND_STR
-
-                ChordUtil.dprint("get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
-            else:
-                ret_value_str = sv_entry.value_data
-
-
-        ChordUtil.dprint("get_6," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        ChordUtil.dprint("get_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
 
         return ret_value_str

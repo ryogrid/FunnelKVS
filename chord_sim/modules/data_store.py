@@ -159,3 +159,29 @@ class DataStore:
                 + str(len(ret_data_list)))
 
         return ret_data_list
+
+    # 担当データ全てのレプリカを successor_info_list内のノードに配る
+    # 必要なロックは呼び出し元でとってある前提
+    def distribute_replica(self):
+        ChordUtil.dprint("distribute_replica_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
+
+        tantou_data_list: List[DataIdAndValue] = self.get_all_tantou_data()
+
+        # レプリカを successorList内のノードに渡す（手抜きでputされたもの含めた全てを渡してしまう）
+        for succ_info in self.existing_node.node_info.successor_info_list:
+            try:
+                succ_node: ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
+            except (NodeIsDownedExceptiopn, InternalControlFlowException):
+                # stabilize処理 と put処理 を経ていずれ正常な状態に
+                # なるため、ここでは何もせずに次のノードに移る
+                ChordUtil.dprint("distribute_replica_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(succ_info))
+                continue
+
+            # 非効率だが、putやstabilize_successorなどの度に担当データを全て渡してしまう
+            # TODO: putやstabilize_successorが呼び出される担当データ全てのレプリカを渡すのはあまりに非効率なので、担当データのIDリストを渡して
+            #       持っていないデータのIDのリストを返してもらい、それらのデータのみ渡すようにいずれ修正する
+            succ_node.data_store.receive_replica(tantou_data_list)
+
+            ChordUtil.dprint("distribute_replica_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(succ_info))

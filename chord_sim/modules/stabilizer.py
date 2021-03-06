@@ -457,6 +457,11 @@ class Stabilizer:
             ChordUtil.dprint("stabilize_successor_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
             raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+        with self.existing_node.node_info.lock_of_datastore:
+            # stabilizeの度に、担当データとして保持しているデータ全てのレプリカを successor_info_list 内のノードに
+            # 配布する
+            self.existing_node.data_store.distribute_replica()
+
         try:
             ChordUtil.dprint("stabilize_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                   + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))

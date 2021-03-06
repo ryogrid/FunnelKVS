@@ -409,7 +409,9 @@ def do_get_on_random_node():
                     node.node_info) + ","
                 + ChordUtil.gen_debug_str_of_data(target_data_id))
     else:
-        print_data_consistency()
+        if ChordNode.need_getting_retry_data_id == -1:
+            # global_getが成功していた場合のみチェックを行う
+            print_data_consistency()
 
     # # ロックの解放
     # gval.lock_of_all_data.release()

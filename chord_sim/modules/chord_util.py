@@ -241,7 +241,7 @@ class ChordUtil:
                                  + ChordUtil.gen_debug_str_of_node(node_list[idx]))
 
     @classmethod
-    def dprint_data_storage_operations(cls, callee_node : 'NodeInfo', master_node : 'NodeInfo', operation_type : str, data_id : int):
+    def dprint_data_storage_operations(cls, callee_node : 'NodeInfo', operation_type : str, data_id : int):
         ChordUtil.dprint("dprint_data_storage_operations," + ChordUtil.gen_debug_str_of_node(callee_node) + ","
                          + ChordUtil.gen_debug_str_of_node(master_node) + ","
                          + operation_type + "," + ChordUtil.gen_debug_str_of_data(data_id))
@@ -254,12 +254,12 @@ class ChordUtil:
                          + "SUCCESSOR_INFO_LIST," + str(len(callee_node.node_info.successor_info_list)) + ","
                          + " | ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))
 
-# 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
-# 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
-class NodeInfoPointer:
-
-    def __init__(self, node_info : 'NodeInfo'):
-        self.node_info : NodeInfo = node_info
+# # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
+# # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
+# class NodeInfoPointer:
+#
+#     def __init__(self, node_info : 'NodeInfo'):
+#         self.node_info : NodeInfo = node_info
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:
@@ -280,7 +280,7 @@ class DataIdAndValue:
 
 @dataclasses.dataclass
 class StoredValueEntry:
-    master_info : NodeInfoPointer
+    # master_info : NodeInfoPointer
     data_id : int
     value_data : str
 

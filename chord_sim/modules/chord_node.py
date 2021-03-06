@@ -133,6 +133,8 @@ class ChordNode:
         try:
             self.data_store.store_new_data(data_id, value_str)
 
+            tantou_data_list: List[DataIdAndValue] = self.data_store.pass_tantou_data_for_replication()
+
             # レプリカを successorList内のノードに渡す
             # なお、新規ノードのjoin時のレプリカのコピーにおいて、predecessorのさらに前に位置するノードが
             # 担当するデータのレプリカは考慮されないため、successorList内のノードで自身の保持データのレプリカ
@@ -149,21 +151,18 @@ class ChordNode:
                                      + ChordUtil.gen_debug_str_of_node(succ_info))
                     continue
 
-                has_replica_cnt = succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(),[
-                                                                         DataIdAndValue(
-                                                                           data_id=data_id,
-                                                                           value_data=value_str
-                                                                         )])
-                correct_replica_cnt = self.data_store.get_replica_cnt_by_master_node(self.node_info.node_id)
+                # succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(),[
+                #                                                          DataIdAndValue(
+                #                                                            data_id=data_id,
+                #                                                            value_data=value_str
+                #                                                          )])
+                # is_have_all : bool = succ_node.data_store.get_replica_cnt_by_master_node()
+                # correct_replica_cnt = self.data_store.get_replica_cnt_by_master_node(self.node_info.node_id)
 
-                # レプリカを渡したノードが保持しているべき自ノードのレプリカを全て保持していない場合
-                # 全て保持させる
-                if has_replica_cnt != correct_replica_cnt:
-                    replica_list = self.data_store.get_all_replica_by_master_node(self.node_info.node_id)
-                    succ_node.data_store.receive_replica(self.node_info.get_partial_deepcopy(), replica_list, replace_all=True)
-                    ChordUtil.dprint("put_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                                     + ChordUtil.gen_debug_str_of_node(succ_info))
+                # 面倒なので非効率だが、putを受けるたびに持っている担当データを全て渡してしまう
+                # TODO: putされるたびに担当データを全てレプリカノードに渡すのはあまりに非効率なので、担当データのIDリストを渡して
+                #       持っていないデータのIDのリストを返してもらい、それらのデータのみ渡すようにいずれ修正する
+                succ_node.data_store.receive_replica(tantou_data_list)
 
                 ChordUtil.dprint("put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(data_id) + ","
@@ -350,38 +349,6 @@ class ChordNode:
                                  + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
             else:
-                if self.node_info.lock_of_succ_infos.acquire() == False:
-                    # 担当ノード変更の処理は後回しにして今回は QUERIED_DATA_NOT_FOUND_STRを返してしまう
-                    return ret_value_str
-
-                ChordUtil.dprint_routing_info(self, sys._getframe().f_code.co_name)
-
-                try:
-                    # データの担当ノードであるマスターがダウンしていた.
-
-                    # 自身のsuccessorList内のノードに担当ノードの変更を通知する
-                    for node_info in self.node_info.successor_info_list:
-                        try:
-                            node_obj : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
-                            node_obj.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
-                            ChordUtil.dprint("get_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                             + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
-                                             + ChordUtil.gen_debug_str_of_data(data_id))
-                        except (NodeIsDownedExceptiopn, InternalControlFlowException):
-                            # ノードがダウンしていた場合や内部エラーが発生した場合は無視して次のノードに進む
-                            # ノードダウンに関する対処は stabilize処理の中で後ほど行われるためここでは
-                            # 何もしない
-                            ChordUtil.dprint("get_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                             + ChordUtil.gen_debug_str_of_node(sv_entry.master_info.node_info) + ","
-                                             + ChordUtil.gen_debug_str_of_data(data_id))
-                            continue
-
-                    # 自身の保持しているデータに紐づいている担当ノードの情報を更新する
-                    self.data_store.notify_master_node_change(sv_entry.master_info.node_info, self.node_info)
-
-                finally:
-                    self.node_info.lock_of_succ_infos.release()
-
                 ret_value_str = sv_entry.value_data
 
 

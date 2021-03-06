@@ -50,7 +50,6 @@ class Stabilizer:
                     node_info = self.existing_node.node_info.successor_info_list[idx]
                     try:
                         successor_node : ChordNode = ChordUtil.get_node_by_address(node_info.address_str)
-                        successor_node.data_store.delete_replica(self.existing_node.node_info)
                         ChordUtil.dprint(
                             "check_replication_redunduncy_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                             + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[idx])
@@ -247,8 +246,8 @@ class Stabilizer:
             # 基本的にsuccessorが保持しているレプリカは自身も全て保持している状態とならなければならない）
             try:
                 successor : ChordNode = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0].address_str)
-                passed_all_replica: Dict[NodeInfo, List[DataIdAndValue]] = successor.data_store.pass_all_replica(self.existing_node.node_info)
-                self.existing_node.data_store.store_replica_of_several_masters(passed_all_replica)
+                passed_all_replica: List[DataIdAndValue] = successor.data_store.pass_all_replica()
+                self.existing_node.data_store.store_replica_of_multi_masters(passed_all_replica)
             except:
                 # ノードがダウンしていた場合等は無視して先に進む.
                 # ノードダウンに関する対処とそれに関連したレプリカの適切な配置はそれぞれ stabilize処理 と

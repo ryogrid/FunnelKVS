@@ -82,17 +82,23 @@ class ChordUtil:
             # それにあった値に置き換える
             slided_base_id = gval.ID_MAX + slided_base_id
 
-        # あとは差をとって、符号を逆転させる（前方は値が小さくなる方向を意味するため）
-        distance = -1 * (slided_target_id - slided_base_id)
+        # 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
+        # が結果となる. ここでは slided_target_id は 0 であり、slided_base_id は必ず正の値
+        # となっているので、 slided_base_idの値を返せばよい
 
-        # 求めた値が負の値の場合は入力された値において base_id < target_id
-        # であった場合であり、前方をたどった場合の距離は ID_MAX から得られた値
-        # の絶対値を引いたものであり、ここでは負の値となっているのでそのまま加算
-        # すればよい
-        if distance < 0:
-            distance = gval.ID_MAX + distance
+        return slided_base_id
 
-        return distance
+        # # あとは差をとって、符号を逆転させる（前方は値が小さくなる方向を意味するため）
+        # distance = -1 * (slided_target_id - slided_base_id)
+        #
+        # # 求めた値が負の値の場合は入力された値において base_id < target_id
+        # # であった場合であり、前方をたどった場合の距離は ID_MAX から得られた値
+        # # の絶対値を引いたものであり、ここでは負の値となっているのでそのまま加算
+        # # すればよい
+        # if distance < 0:
+        #     distance = gval.ID_MAX + distance
+        #
+        # return distance
 
     # ID空間が環状になっていることを踏まえて base_id から後方をたどった場合の
     # ノード間の距離を求める
@@ -113,17 +119,23 @@ class ChordUtil:
             # それにあった値に置き換える
             slided_target_id = gval.ID_MAX + slided_target_id
 
-        # あとは単純に差をとる
-        distance = slided_target_id - slided_base_id
+        # 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
+        # が結果となる. ここでは slided_base_id は 0 であり、slided_target_id は必ず正の値
+        # となっているので、 slided_base_idの値を返せばよい
 
-        # 求めた値が負の値の場合は入力された値において target_id < base_id
-        # であった場合であり、前方をたどった場合の距離は ID_MAX から得られた値
-        # の絶対値を引いたものであり、ここでは負の値となっているのでそのまま加算
-        # すればよい
-        if distance < 0:
-            distance = gval.ID_MAX + distance
+        return slided_target_id
 
-        return distance
+        # # あとは単純に差をとる
+        # distance = slided_target_id - slided_base_id
+        #
+        # # 求めた値が負の値の場合は入力された値において target_id < base_id
+        # # であった場合であり、前方をたどった場合の距離は ID_MAX から得られた値
+        # # の絶対値を引いたものであり、ここでは負の値となっているのでそのまま加算
+        # # すればよい
+        # if distance < 0:
+        #     distance = gval.ID_MAX + distance
+        #
+        # return distance
 
     # from_id から IDが大きくなる方向にたどった場合に、 end_id との間に
     # target_idが存在するか否かを bool値で返す
@@ -197,6 +209,11 @@ class ChordUtil:
         except KeyError:
             node_list = []
             gval.all_data_placement_dict[str(data_id)] = node_list
+
+        # 既に引数で指定されたノードでの存在が記録されていた場合、同じノードのエントリが
+        # 重複してしまうので追加せずに終了する
+        if node_info in node_list:
+            return
 
         node_list.append(node_info)
 

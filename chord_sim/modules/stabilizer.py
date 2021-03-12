@@ -525,40 +525,81 @@ class Stabilizer:
             # 最初は自ノードを指定してそのsuccessor[0]を取得するところからスタートする
             cur_node : 'ChordNode' = self.existing_node
 
-            # 返されたノード情報を設定する node_info_list の index になるはずの値
-            cur_target_node_idx = 0
-            while len(updated_list) < gval.SUCCESSOR_LIST_NORMAL_LEN:
+            tried_getting_succ_cnt = 0
+            exception_occured = False
+            cur_backup_succ_list = self.existing_node.node_info.successor_info_list
+            # 正常に、もしくは正常な、successor_info_listに入れるべきノードが取得できなかった
+            # 場合に、バックアップとして利用する cur_backup_succ_listの参照すべきインデックス
+            cur_backup_node_info_idx = 0
+            while len(updated_list) < gval.SUCCESSOR_LIST_NORMAL_LEN and tried_getting_succ_cnt < gval.TRYING_GET_SUCC_TIMES_LIMIT:
                 try:
-                    cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
-                    ChordUtil.dprint("stabilize_successor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                    if exception_occured == False:
+                        cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
 
-                    if cur_node_info.node_id == self.existing_node.node_info.node_id:
+                    if cur_node_info.node_id == self.existing_node.node_info.node_id or exception_occured == True:
                         # 返ってきたノード情報は無視し、元々持っている node_info_list内のノードを返ってきたノード情報として扱う
                         # 長さが足りなかった場合はあきらめる
-                        if cur_target_node_idx < len(self.existing_node.node_info.successor_info_list):
-                            ChordUtil.dprint("stabilize_successor_3,RETURNED_NODE_SAME_AS_SELF," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        if cur_backup_node_info_idx + 1 < len(cur_backup_succ_list):
+                            ChordUtil.dprint("stabilize_successor_2,RETURNED_NODE_SAME_AS_SELF," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_node(cur_node_info))
-                            cur_node_info = self.existing_node.node_info.successor_info_list[cur_target_node_idx].get_partial_deepcopy()
+                            # 返ってきたノードが適切なものでなかったという意味で、正常にループが回った場合や、例外処理が行われた
+                            # 場合のインクリメントに加えて、インクリメントを行っておかなくてはならない
+                            cur_backup_node_info_idx += 1
+                            cur_node_info = cur_backup_succ_list[cur_backup_node_info_idx].get_partial_deepcopy()
                         else:
-                            ChordUtil.dprint("stabilize_successor_3_5,RETURNED_NODE_SAME_AS_SELF_AND_END_SEARCH_SUCCESSOR," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                            ChordUtil.dprint("stabilize_successor_2_5,RETURNED_NODE_SAME_AS_SELF_AND_END_SEARCH_SUCCESSOR," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_node(cur_node_info))
                             break
+                        # if cur_backup_node_info_idx < len(self.existing_node.node_info.successor_info_list):
+                        #     ChordUtil.dprint("stabilize_successor_2,RETURNED_NODE_SAME_AS_SELF," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        #                      + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                        #     cur_node_info = self.existing_node.node_info.successor_info_list[cur_backup_node_info_idx].get_partial_deepcopy()
+                        #     cur_backup_node_info_idx += 1
+                        # else:
+                        #     ChordUtil.dprint("stabilize_successor_2_5,RETURNED_NODE_SAME_AS_SELF_AND_END_SEARCH_SUCCESSOR," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        #                      + ChordUtil.gen_debug_str_of_node(cur_node_info))
+                        #     break
+
+                    ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(cur_node_info) + ","
+                                     + str(exception_occured))
 
                     cur_node = ChordUtil.get_node_by_address(cur_node_info.address_str)
+                    # cur_nodeが取得できたということは、cur_nodeはダウンしていない
+                    # チェーンを辿っている中で、生存しているノードが得られた場合は、辿っていく中で
+                    # 例外が発生した際などに、チェーンを辿らずにノード情報を得るために用いる successorのリスト
+                    # をそちらに置き換える
+                    cur_backup_succ_list = cur_node.stabilizer.pass_successor_list()
+                    # 利用するリストが置き換わったので、それに合わせてインデックスをリセットする
+                    # finally節で +1 するので筋悪ではあるが、-1にしておく
+                    cur_backup_node_info_idx = -1
+
+                    ChordUtil.dprint(
+                        "stabilize_successor_3_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_node(cur_node_info) + ","
+                        + str(cur_backup_succ_list) + ","
+                        + str(cur_backup_node_info_idx) + ","
+                        + str(exception_occured))
 
                     updated_list.append(cur_node_info)
-                    cur_target_node_idx += 1
+                    # cur_backup_node_info_idx += 1
+                    exception_occured = False
                 except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
                     # ロックの取得でタイムアウトが発生した
                     # あるいは、cur_node(selfの場合もあれば他ノードの場合もある)が、生存している状態が通常期待される
                     # ところで、node_kill_th の処理がノードをダウン状態にしてしまった
 
-                    ChordUtil.dprint("stabilize_successor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    ChordUtil.dprint("stabilize_successor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info)
                                      + ",TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-                    cur_target_node_idx += 1
+                    exception_occured = True
+                    #cur_backup_node_info_idx += 1
                     continue
+                finally:
+                    # 正常に処理が終わる場合、例外処理が発生した場合のいずれも1だけインクリメントが必要なため
+                    # ここでそれを行う
+                    cur_backup_node_info_idx += 1
+                    tried_getting_succ_cnt += 1
 
             if len(updated_list) == 0:
                 # first node の場合の考慮

@@ -77,3 +77,6 @@ all_data_placement_dict : Dict[str, List['NodeInfo']] = {}
 
 # 既に発行したputの回数
 already_issued_put_cnt = 0
+
+# stabilize_successorのループの回せる回数の上限
+TRYING_GET_SUCC_TIMES_LIMIT = SUCCESSOR_LIST_NORMAL_LEN * 5

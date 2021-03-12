@@ -23,6 +23,15 @@ class Router:
             ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
             raise AppropriateNodeNotFoundException()
+
+        if self.existing_node.is_alive == False:
+            # 処理の合間でkillされてしまっていた場合の考慮
+            # 何もしないで終了する
+            self.existing_node.node_info.lock_of_pred_info.release()
+            ChordUtil.dprint("find_successor_0_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
+            raise NodeIsDownedExceptiopn()
+
         try:
             ChordUtil.dprint("find_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                   + ChordUtil.gen_debug_str_of_data(id))

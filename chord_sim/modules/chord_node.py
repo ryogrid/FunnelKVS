@@ -85,7 +85,7 @@ class ChordNode:
             # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
             # 初期化しておく
             ChordNode.need_put_retry_data_id = -1
-        except (AppropriateNodeNotFoundException, InternalControlFlowException):
+        except (AppropriateNodeNotFoundException, InternalControlFlowException, NodeIsDownedExceptiopn):
             # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
             # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
             ChordNode.need_put_retry_data_id = data_id
@@ -111,6 +111,13 @@ class ChordNode:
     def put(self, data_id : int, value_str : str) -> bool:
         ChordUtil.dprint("put_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
+
+        if self.is_alive == False:
+            # 処理の合間でkillされてしまっていた場合の考慮
+            # 何もしないで終了する
+            ChordUtil.dprint("put_0_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
+            return False
 
         # 担当範囲（predecessorのidと自身のidの間）のデータであるかのチェック処理を加える
         # そこに収まっていなかった場合、一定時間後リトライが行われるようエラーを返す.
@@ -149,7 +156,7 @@ class ChordNode:
         try:
             target_node = self.router.find_successor(data_id)
             got_value_str = target_node.get(data_id)
-        except (AppropriateNodeNotFoundException, InternalControlFlowException):
+        except (AppropriateNodeNotFoundException, InternalControlFlowException, NodeIsDownedExceptiopn):
             # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
 
             # リトライに必要な情報をクラス変数に設定しておく
@@ -271,6 +278,13 @@ class ChordNode:
 
     # 得られた value の文字列を返す
     def get(self, data_id : int) -> str:
+        if self.is_alive == False:
+            # 処理の合間でkillされてしまっていた場合の考慮
+            # 何もしないで終了する
+            ChordUtil.dprint("get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
+            return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
+
         try:
             sv_entry : StoredValueEntry = self.data_store.get(data_id)
         except:

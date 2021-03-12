@@ -524,6 +524,7 @@ class Stabilizer:
 
             # 最初は自ノードを指定してそのsuccessor[0]を取得するところからスタートする
             cur_node : 'ChordNode' = self.existing_node
+            last_node_info : 'NodeInfo' = self.existing_node.node_info
 
             tried_getting_succ_cnt = 0
             exception_occured = False
@@ -535,6 +536,8 @@ class Stabilizer:
                 try:
                     if exception_occured == False:
                         cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
+                    else:
+                        cur_node_info : 'NodeInfo' = last_node_info
 
                     if cur_node_info.node_id == self.existing_node.node_info.node_id or exception_occured == True:
                         # 返ってきたノード情報は無視し、元々持っている node_info_list内のノードを返ってきたノード情報として扱う
@@ -584,6 +587,7 @@ class Stabilizer:
                     updated_list.append(cur_node_info)
                     # cur_backup_node_info_idx += 1
                     exception_occured = False
+                    last_node_info = cur_node_info
                 except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
                     # ロックの取得でタイムアウトが発生した

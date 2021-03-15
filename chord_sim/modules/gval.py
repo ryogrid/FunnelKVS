@@ -62,7 +62,7 @@ all_data_list : List['KeyValue'] = []
 # のデバッグ用IDを持たせるためのカウンタ
 already_born_node_num = 0
 
-# lock_of_all_data = threading.Lock()
+lock_of_all_data = threading.Lock()
 lock_of_all_data_list = threading.Lock()
 
 is_network_constructed = False

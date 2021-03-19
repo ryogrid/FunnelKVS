@@ -130,8 +130,8 @@ def check_nodes_connectivity():
 
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
-    # ロックの取得
-    gval.lock_of_all_data.acquire()
+    # # ロックの取得
+    # gval.lock_of_all_data.acquire()
 
     if Stabilizer.need_join_retry_node != None:
         # 前回の呼び出しが失敗していた場合はリトライを行う
@@ -156,8 +156,8 @@ def add_new_node():
         # に問題を生じさせないような処理をここで行う（当該処理がノード内のタスクキューに入っているのでそれを実行する形にする）
         new_node.tqueue.exec_first()
 
-    # ロックの解放
-    gval.lock_of_all_data.release()
+    # # ロックの解放
+    # gval.lock_of_all_data.release()
 
 # all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 def do_stabilize_once_at_all_node():
@@ -178,8 +178,8 @@ def do_stabilize_once_at_all_node():
     cur_ftable_idx = 0
 
     while True:
-        # ロックの取得
-        gval.lock_of_all_data.acquire()
+        # # ロックの取得
+        # gval.lock_of_all_data.acquire()
 
         try:
             # まず行う処理を決定する
@@ -257,16 +257,16 @@ def do_stabilize_once_at_all_node():
 
         finally:
             pass
-            # ロックの解放
-            gval.lock_of_all_data.release()
+            # # ロックの解放
+            # gval.lock_of_all_data.release()
 
 
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
 # アドレスをよろしく解決し、見つかったノードにputの操作を依頼する
 def do_put_on_random_node():
 
-    # ロックの取得
-    gval.lock_of_all_data.acquire()
+    # # ロックの取得
+    # gval.lock_of_all_data.acquire()
 
     is_retry = False
 
@@ -321,14 +321,14 @@ def do_put_on_random_node():
                 "do_put_on_random_node_2,retry of global_put is failed," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                 + ChordUtil.gen_debug_str_of_data(kv_data.data_id))
 
-    # ロックの解放
-    gval.lock_of_all_data.release()
+    # # ロックの解放
+    # gval.lock_of_all_data.release()
 
 # グローバル変数であるall_data_listからランダムにデータを選択し、そのデータのIDから
 # Chordネットワーク上の担当ノードのアドレスをよろしく解決し、見つかったノードにgetの操作を依頼する
 def do_get_on_random_node():
-    # ロックの取得
-    gval.lock_of_all_data.acquire()
+    # # ロックの取得
+    # gval.lock_of_all_data.acquire()
 
     # まだ put が行われていなかったら何もせずに終了する
     if len(gval.all_data_list) == 0:
@@ -413,14 +413,14 @@ def do_get_on_random_node():
             # global_getが成功していた場合のみチェックを行う
             print_data_consistency()
 
-    # ロックの解放
-    gval.lock_of_all_data.release()
+    # # ロックの解放
+    # gval.lock_of_all_data.release()
 
 # グローバル変数であるall_node_dictからランダムにノードを選択し
 # ダウンさせる（is_aliveフィールドをFalseに設定する）
 def do_kill_a_random_node():
-    # ロックの取得
-    gval.lock_of_all_data.acquire()
+    # # ロックの取得
+    # gval.lock_of_all_data.acquire()
 
     node = get_a_random_node()
     if node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
@@ -459,17 +459,18 @@ def do_kill_a_random_node():
         node.node_info.lock_of_pred_info.release()
         # pass
 
-    # ロックの解放
-    gval.lock_of_all_data.release()
+    # # ロックの解放
+    # gval.lock_of_all_data.release()
 
 def node_join_th():
     while gval.already_born_node_num < gval.NODE_NUM_MAX:
-        if gval.already_born_node_num == 100:
+        if gval.already_born_node_num == 200:
+            time.sleep(60.0)
             gval.is_network_constructed = True
             gval.JOIN_INTERVAL_SEC = 20.0
-            # # TODO: デバッグのために100ノードに達したらjoinを止める。後で元に戻すこと!
-            # #       at node_join_th
-            # break
+            # TODO: デバッグのために100ノードに達したらjoinを止める。後で元に戻すこと!
+            #       at node_join_th
+            break
 
         add_new_node()
         time.sleep(gval.JOIN_INTERVAL_SEC)

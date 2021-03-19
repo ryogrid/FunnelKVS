@@ -2,6 +2,7 @@
 
 import threading
 from typing import Dict, List, TYPE_CHECKING
+# from readerwriterlock import rwlock
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
@@ -80,3 +81,9 @@ already_issued_put_cnt = 0
 
 # stabilize_successorのループの回せる回数の上限
 TRYING_GET_SUCC_TIMES_LIMIT = SUCCESSOR_LIST_NORMAL_LEN * 5
+
+# # デバッグ用のフラグ
+# # killスレッドがWriter、他のスレッドはReaderとしてロックを取得する
+# kill_thread_lock_factory = rwlock.RWLockFairD()
+# kill_thread_write_lock = kill_thread_lock_factory.gen_wlock()
+# kill_thread_read_lock = kill_thread_lock_factory.gen_rlock()

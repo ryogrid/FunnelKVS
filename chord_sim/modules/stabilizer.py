@@ -109,9 +109,6 @@ class Stabilizer:
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
             else:
-                # TODO: 不具合が発生しなくなるか試すためにjoin時にpredecesorは設定せず、predecessorとしたノードの情報も変更しない
-                #       ようにする. 効果がなかったり基本的な動作すらまともに動かなくなったら元に戻すこと!
-
                 # successorと、successorノードの情報だけ適切なものとする
                 successor.stabilizer.check_predecessor(self.existing_node.node_info)
 

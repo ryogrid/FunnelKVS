@@ -73,7 +73,7 @@ class DataStore:
                     ret_data_list.append(DataIdAndValue(data_id=int(key), value_data=value.value_data))
 
             ChordUtil.dprint("pass_tantou_data_for_replication_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.predecessor_info) + ","
+                             # + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.predecessor_info) + ","
                              + str(len(ret_data_list)))
 
         return ret_data_list

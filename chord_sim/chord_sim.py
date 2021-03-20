@@ -102,8 +102,11 @@ def check_nodes_connectivity():
         # あり得るため、余裕を持たせて5ノード目以降からチェックする
         if cur_node_info == None:
             if all_node_num >= 5:
-                print("", flush=True, end="")
-                raise Exception("no predecessor having node was detected!")
+                # TODO: 暫定的に predecesor_infoが設定されていない場合も存在するようにしたのでチェックを外す
+                #       その修正を元に戻す際はここのチェックも元に戻すこと
+                return
+                # print("", flush=True, end="")
+                # raise Exception("no predecessor having node was detected!")
             else:
                 # 後続の処理は走らないようにする
                 return
@@ -464,13 +467,13 @@ def do_kill_a_random_node():
 
 def node_join_th():
     while gval.already_born_node_num < gval.NODE_NUM_MAX:
-        if gval.already_born_node_num == 200:
+        if gval.already_born_node_num == 100:
             time.sleep(60.0)
             gval.is_network_constructed = True
             gval.JOIN_INTERVAL_SEC = 20.0
-            # TODO: デバッグのために100ノードに達したらjoinを止める。後で元に戻すこと!
-            #       at node_join_th
-            break
+            # # TODO: デバッグのために100ノードに達したらjoinを止める。後で元に戻すこと!
+            # #       at node_join_th
+            # break
 
         add_new_node()
         time.sleep(gval.JOIN_INTERVAL_SEC)

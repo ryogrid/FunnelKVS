@@ -109,10 +109,11 @@ class Stabilizer:
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
             else:
-                # 強制的に自身を既存のチェーンに挿入する
-                # successorは predecessorの 情報を必ず持っていることを前提とする
-                self.existing_node.node_info.predecessor_info = cast('NodeInfo', successor.node_info.predecessor_info).get_partial_deepcopy()
-                successor.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
+                # TODO: 不具合が発生しなくなるか試すためにjoin時にpredecesorは設定せず、predecessorとしたノードの情報も変更しない
+                #       ようにする. 効果がなかったり基本的な動作すらまともに動かなくなったら元に戻すこと!
+
+                # successorと、successorノードの情報だけ適切なものとする
+                successor.stabilizer.check_predecessor(self.existing_node.node_info)
 
                 # successor_info_listを埋めておく
                 succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
@@ -122,23 +123,36 @@ class Stabilizer:
                         self.existing_node.node_info.successor_info_list.append(
                             succ_list_of_succ[idx].get_partial_deepcopy())
 
-                # 例外発生時は取得を試みたノードはダウンしているが、無視してpredecessorに設定したままにしておく.
-                # 不正な状態に一時的になるが、predecessorをsuccessor_info_listに持つノードが
-                # stabilize_successorを実行した時点で解消されるはず
-                try:
-                    predecessor = ChordUtil.get_node_by_address(cast('NodeInfo', self.existing_node.node_info.predecessor_info).address_str)
-                    predecessor.node_info.successor_info_list.insert(0, self.existing_node.node_info.get_partial_deepcopy())
-
-                    ChordUtil.dprint("join_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
-                                     + ChordUtil.gen_debug_str_of_node(predecessor.node_info))
-                except NodeIsDownedExceptiopn:
-                    # ここでは特に何も対処しない
-                    ChordUtil.dprint("join_5,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
-                    pass
+                # # 強制的に自身を既存のチェーンに挿入する
+                # # successorは predecessorの 情報を必ず持っていることを前提とする
+                # self.existing_node.node_info.predecessor_info = cast('NodeInfo', successor.node_info.predecessor_info).get_partial_deepcopy()
+                # successor.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
+                #
+                # # successor_info_listを埋めておく
+                # succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
+                # list_len = len(succ_list_of_succ)
+                # for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
+                #     if idx < list_len:
+                #         self.existing_node.node_info.successor_info_list.append(
+                #             succ_list_of_succ[idx].get_partial_deepcopy())
+                #
+                # # 例外発生時は取得を試みたノードはダウンしているが、無視してpredecessorに設定したままにしておく.
+                # # 不正な状態に一時的になるが、predecessorをsuccessor_info_listに持つノードが
+                # # stabilize_successorを実行した時点で解消されるはず
+                # try:
+                #     predecessor = ChordUtil.get_node_by_address(cast('NodeInfo', self.existing_node.node_info.predecessor_info).address_str)
+                #     predecessor.node_info.successor_info_list.insert(0, self.existing_node.node_info.get_partial_deepcopy())
+                #
+                #     ChordUtil.dprint("join_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                #                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                #                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
+                #                      + ChordUtil.gen_debug_str_of_node(predecessor.node_info))
+                # except NodeIsDownedExceptiopn:
+                #     # ここでは特に何も対処しない
+                #     ChordUtil.dprint("join_5,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                #                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                #                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+                #     pass
 
             # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
             tantou_data_list: List[KeyValue] = successor.data_store.delegate_my_tantou_data(
@@ -214,9 +228,6 @@ class Stabilizer:
                     ChordUtil.dprint("partial_join_op_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(self_predeessor_node.node_info) + "," + str(len(pred_tantou_datas)))
 
-                    # TODO: NOT_FONDが継続する状態の調査のために check_successor_list_length の呼び出しをコメントアウトしている
-                    #       根本原因が解決したら、元に戻すこと at partial_join_op
-
                     # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
                     # いる場合があるため、そのチェックを行う
                     # (この呼び出しの中で successor_info_listからの余剰ノードのエントリ削除も行われる）
@@ -271,6 +282,12 @@ class Stabilizer:
         ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 
         try:
+            if self.existing_node.node_info.predecessor_info == None:
+                # predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
+                self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy()
+                ChordUtil.dprint("check_predecessor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+
             ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                   + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 

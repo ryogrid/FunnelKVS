@@ -123,37 +123,6 @@ class Stabilizer:
                         self.existing_node.node_info.successor_info_list.append(
                             succ_list_of_succ[idx].get_partial_deepcopy())
 
-                # # 強制的に自身を既存のチェーンに挿入する
-                # # successorは predecessorの 情報を必ず持っていることを前提とする
-                # self.existing_node.node_info.predecessor_info = cast('NodeInfo', successor.node_info.predecessor_info).get_partial_deepcopy()
-                # successor.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
-                #
-                # # successor_info_listを埋めておく
-                # succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
-                # list_len = len(succ_list_of_succ)
-                # for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
-                #     if idx < list_len:
-                #         self.existing_node.node_info.successor_info_list.append(
-                #             succ_list_of_succ[idx].get_partial_deepcopy())
-                #
-                # # 例外発生時は取得を試みたノードはダウンしているが、無視してpredecessorに設定したままにしておく.
-                # # 不正な状態に一時的になるが、predecessorをsuccessor_info_listに持つノードが
-                # # stabilize_successorを実行した時点で解消されるはず
-                # try:
-                #     predecessor = ChordUtil.get_node_by_address(cast('NodeInfo', self.existing_node.node_info.predecessor_info).address_str)
-                #     predecessor.node_info.successor_info_list.insert(0, self.existing_node.node_info.get_partial_deepcopy())
-                #
-                #     ChordUtil.dprint("join_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                #                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                #                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
-                #                      + ChordUtil.gen_debug_str_of_node(predecessor.node_info))
-                # except NodeIsDownedExceptiopn:
-                #     # ここでは特に何も対処しない
-                #     ChordUtil.dprint("join_5,NODE_IS_DOWNED" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                #                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                #                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
-                #     pass
-
             # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
             tantou_data_list: List[KeyValue] = successor.data_store.delegate_my_tantou_data(
                 self.existing_node.node_info.node_id)

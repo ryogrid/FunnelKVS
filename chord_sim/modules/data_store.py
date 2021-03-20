@@ -62,17 +62,28 @@ class DataStore:
                                                      )
 
     # 自ノードが担当ノードとなる保持データを全て返す
-    def get_all_tantou_data(self) -> List[DataIdAndValue]:
+    def get_all_tantou_data(self, node_id : Optional[int] = None) -> List[DataIdAndValue]:
         with self.existing_node.node_info.lock_of_datastore:
             ChordUtil.dprint(
                 "pass_tantou_data_for_replication_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
 
+            if self.existing_node.node_info.predecessor_info == None and node_id == None:
+                ChordUtil.dprint(
+                    "pass_tantou_data_for_replication_2," + ChordUtil.gen_debug_str_of_node(
+                        self.existing_node.node_info))
+                return []
+
+            if node_id != None:
+                pred_id = cast(int, node_id)
+            else:
+                pred_id = cast('NodeInfo', self.existing_node.node_info.predecessor_info).node_id
+
             ret_data_list : List[DataIdAndValue] = []
             for key, value in self.stored_data.items():
-                if ChordUtil.exist_between_two_nodes_right_mawari(cast('NodeInfo', self.existing_node.node_info.predecessor_info).node_id, self.existing_node.node_info.node_id, int(key)):
+                if ChordUtil.exist_between_two_nodes_right_mawari(pred_id, self.existing_node.node_info.node_id, int(key)):
                     ret_data_list.append(DataIdAndValue(data_id=int(key), value_data=value.value_data))
 
-            ChordUtil.dprint("pass_tantou_data_for_replication_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+            ChordUtil.dprint("pass_tantou_data_for_replication_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              # + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.predecessor_info) + ","
                              + str(len(ret_data_list)))
 
@@ -119,7 +130,7 @@ class DataStore:
             ChordUtil.dprint("delegate_my_tantou_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(node_id))
             ret_datas : List[KeyValue] = []
-            tantou_data: List[DataIdAndValue] = self.get_all_tantou_data()
+            tantou_data: List[DataIdAndValue] = self.get_all_tantou_data(node_id)
 
             for entry in tantou_data:
                 # Chordネットワークを右回りにたどった時に、データの id (data_id) が呼び出し元の node_id から

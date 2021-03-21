@@ -168,6 +168,7 @@ class ChordNode:
             # 処理を終える
             return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
 
+        is_data_got_on_recovery = False
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
         # 一定数の predecessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
         if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
@@ -186,7 +187,7 @@ class ChordNode:
                         break
                     try:
                         cur_predecessor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_predecessor.node_info.predecessor_info).address_str)
-                        got_value_str = cur_predecessor.get(data_id)
+                        got_value_str = cur_predecessor.get(data_id, for_recovery=True)
                     except NodeIsDownedExceptiopn:
                         # ここでは何も対処はしない
                         ChordUtil.dprint("global_get_0_3,NODE_IS_DOWNED")
@@ -207,6 +208,7 @@ class ChordNode:
                         ChordUtil.dprint("global_get_1_1," + "data found at predecessor,"
                                          + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                          + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
+                        is_data_got_on_recovery = True
                         break
                     else:
                         # できなかった
@@ -225,7 +227,7 @@ class ChordNode:
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
                 try:
                     cur_successor = ChordUtil.get_node_by_address(cast(NodeInfo,cur_successor.node_info.successor_info_list[0]).address_str)
-                    got_value_str = cur_successor.get(data_id)
+                    got_value_str = cur_successor.get(data_id, for_recovery=True)
                 except NodeIsDownedExceptiopn:
                     # ここでは何も対処はしない
                     ChordUtil.dprint("global_get_2,NODE_IS_DOWNED")
@@ -246,6 +248,7 @@ class ChordNode:
                     ChordUtil.dprint("global_get_2_4," + "data found at successor,"
                                      + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))
+                    is_data_got_on_recovery = True
                     break
                 else:
                     # できなかった
@@ -271,13 +274,17 @@ class ChordNode:
             ChordNode.need_getting_retry_data_id = data_id
             ChordNode.need_getting_retry_node = self
 
+        if is_data_got_on_recovery == True:
+            # リカバリ処理でデータを取得した場合は自身のデータストアにもその値を保持しておく
+            self.data_store.store_new_data(data_id, got_value_str)
+
         ChordUtil.dprint("global_get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
               + ChordUtil.gen_debug_str_of_data(data_id) + "," + got_value_str)
         return got_value_str
 
     # 得られた value の文字列を返す
-    def get(self, data_id : int) -> str:
+    def get(self, data_id : int, for_recovery = False) -> str:
         if self.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
             # 何もしないで終了する
@@ -298,8 +305,9 @@ class ChordNode:
         # つまり、自身の担当ID範囲であった
         if ChordUtil.exist_between_two_nodes_right_mawari(cast('NodeInfo', self.node_info.predecessor_info).node_id,
                                                           self.node_info.node_id,
-                                                          data_id):
-            # 担当ノード（マスター）のデータであった
+                                                          data_id) or for_recovery == True:
+            # 担当ノード（マスター）のデータであったか、担当ノードとしてgetを受け付けたがデータを持っていなかったために
+            # 周囲のノードに当該データを持っていないか問い合わせる処理を行っていた場合
             ret_value_str = sv_entry.value_data
             ChordUtil.dprint("get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)

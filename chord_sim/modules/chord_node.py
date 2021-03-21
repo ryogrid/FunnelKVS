@@ -292,6 +292,12 @@ class ChordNode:
                              + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
             return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
 
+        if self.node_info.predecessor_info == None:
+            # まだpredecessorが設定されれていなかった場合の考慮
+            ChordUtil.dprint("get_0_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                             + "REQUEST_RECEIVED_BUT_I_CAN_NOT_KNOW_TANTOU_RANGE")
+            return ChordNode.QUERIED_DATA_NOT_FOUND_STR
+
         try:
             sv_entry : StoredValueEntry = self.data_store.get(data_id)
         except:

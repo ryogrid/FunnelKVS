@@ -485,10 +485,10 @@ class Stabilizer:
                              + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
             return
 
-        with self.existing_node.node_info.lock_of_datastore:
-            # stabilizeの度に、担当データとして保持しているデータ全てのレプリカを successor_info_list 内のノードに
-            # 配布する
-            self.existing_node.data_store.distribute_replica()
+        # with self.existing_node.node_info.lock_of_datastore:
+        #     # stabilizeの度に、担当データとして保持しているデータ全てのレプリカを successor_info_list 内のノードに
+        #     # 配布する
+        #     self.existing_node.data_store.distribute_replica()
 
         try:
             ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

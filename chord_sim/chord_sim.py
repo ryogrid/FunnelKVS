@@ -426,24 +426,24 @@ def do_kill_a_random_node():
     # gval.lock_of_all_data.acquire()
 
     node = get_a_random_node()
-    if node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-        ChordUtil.dprint(
-            "do_kill_a_random_node_0_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-            + "LOCK_ACQUIRE_TIMEOUT")
-        return
-    if node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-        node.node_info.lock_of_pred_info.release()
-        ChordUtil.dprint(
-            "do_kill_a_random_node_0_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-            + "LOCK_ACQUIRE_TIMEOUT")
-        return
-    if node.node_info.lock_of_datastore.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-        node.node_info.lock_of_pred_info.release()
-        node.node_info.lock_of_succ_infos.release()
-        ChordUtil.dprint(
-            "do_kill_a_random_node_0_3," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-            + "LOCK_ACQUIRE_TIMEOUT")
-        return
+    # if node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    #     ChordUtil.dprint(
+    #         "do_kill_a_random_node_0_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #         + "LOCK_ACQUIRE_TIMEOUT")
+    #     return
+    # if node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    #     node.node_info.lock_of_pred_info.release()
+    #     ChordUtil.dprint(
+    #         "do_kill_a_random_node_0_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #         + "LOCK_ACQUIRE_TIMEOUT")
+    #     return
+    # if node.node_info.lock_of_datastore.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    #     node.node_info.lock_of_pred_info.release()
+    #     node.node_info.lock_of_succ_infos.release()
+    #     ChordUtil.dprint(
+    #         "do_kill_a_random_node_0_3," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #         + "LOCK_ACQUIRE_TIMEOUT")
+    #     return
     try:
         node.is_alive = False
         ChordUtil.dprint(
@@ -457,10 +457,10 @@ def do_kill_a_random_node():
                                  + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                                  + hex(int(data_id)) + "," + hex(sv_entry.data_id))
     finally:
-        node.node_info.lock_of_datastore.release()
-        node.node_info.lock_of_succ_infos.release()
-        node.node_info.lock_of_pred_info.release()
-        # pass
+        # node.node_info.lock_of_datastore.release()
+        # node.node_info.lock_of_succ_infos.release()
+        # node.node_info.lock_of_pred_info.release()
+        pass
 
     # # ロックの解放
     # gval.lock_of_all_data.release()
@@ -561,9 +561,6 @@ def main():
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     data_get_th_handle.start()
 
-    # TODO: 同一処理を行う複数スレッドを立てる
-    #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
-    #       kill
     node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
     node_kill_th_handle.start()
 

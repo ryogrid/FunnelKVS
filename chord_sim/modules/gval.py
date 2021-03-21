@@ -87,3 +87,8 @@ TRYING_GET_SUCC_TIMES_LIMIT = SUCCESSOR_LIST_NORMAL_LEN * 5
 # kill_thread_lock_factory = rwlock.RWLockFairD()
 # kill_thread_write_lock = kill_thread_lock_factory.gen_wlock()
 # kill_thread_read_lock = kill_thread_lock_factory.gen_rlock()
+
+STABILIZE_THREAD_NUM = 10
+JOIN_THREAD_NUM = 10
+PUT_THREAD_NUM = 10
+GET_THREAD_NUM = 10

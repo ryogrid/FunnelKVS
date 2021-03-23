@@ -43,7 +43,7 @@ SUCCESSOR_LIST_NORMAL_LEN = 3
 #       を用いているため bit数 を少なくしている
 ID_MAX = ID_SPACE_RANGE - 1
 
-NODE_NUM_MAX = 1000
+NODE_NUM_MAX = 10000
 
 LOCK_ACQUIRE_TIMEOUT = 10
 
@@ -92,3 +92,10 @@ STABILIZE_THREAD_NUM = 10
 JOIN_THREAD_NUM = 10
 PUT_THREAD_NUM = 10
 GET_THREAD_NUM = 10
+
+ENABLE_DATA_STORE_OPERATION_DPRINT = False
+ENABLE_ROUTING_INFO_DPRINT = False
+
+# partial_join_opが実行されることを待っているノードが存在するか否か
+# join と partial_join_op の間で、該当ノードがkillされることを避けるために用いる
+is_waiting_partial_join_op_exists = False

@@ -264,11 +264,15 @@ class ChordUtil:
 
     @classmethod
     def dprint_data_storage_operations(cls, callee_node : 'NodeInfo', operation_type : str, data_id : int):
+        if gval.ENABLE_DATA_STORE_OPERATION_DPRINT == False:
+            return
         ChordUtil.dprint("dprint_data_storage_operations," + ChordUtil.gen_debug_str_of_node(callee_node) + ","
                          + operation_type + "," + ChordUtil.gen_debug_str_of_data(data_id))
 
     @classmethod
     def dprint_routing_info(cls, callee_node : 'ChordNode', calee_method : str):
+        if gval.ENABLE_ROUTING_INFO_DPRINT == False:
+            return
         ChordUtil.dprint("dprint_routing_info__PRED," + ChordUtil.gen_debug_str_of_node(callee_node.node_info) + ","
                          + calee_method + "," + "PREDECESSOR_INFO," + str(callee_node.node_info.predecessor_info))
         ChordUtil.dprint("dprint_routing_info__SUCC," +ChordUtil.gen_debug_str_of_node(callee_node.node_info) + "," + calee_method + ","

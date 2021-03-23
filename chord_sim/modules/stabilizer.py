@@ -130,6 +130,7 @@ class Stabilizer:
 
             # 残りのレプリカに関する処理は stabilize処理のためのスレッドに別途実行させる
             self.existing_node.tqueue.append_task(TaskQueue.JOIN_PARTIAL)
+            gval.is_waiting_partial_join_op_exists = True
 
             ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 
@@ -228,6 +229,8 @@ class Stabilizer:
 
             # join処理が全て終わった
             self.existing_node.is_join_op_finished = True
+            # partial_join_opが終わるまで止めていたkillスレッドを解放する
+            gval.is_waiting_partial_join_op_exists = False
 
             # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
             ChordUtil.dprint("partial_join_op_8," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -485,10 +488,10 @@ class Stabilizer:
                              + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
             return
 
-        # with self.existing_node.node_info.lock_of_datastore:
-        #     # stabilizeの度に、担当データとして保持しているデータ全てのレプリカを successor_info_list 内のノードに
-        #     # 配布する
-        #     self.existing_node.data_store.distribute_replica()
+        with self.existing_node.node_info.lock_of_datastore:
+            # stabilizeの度に、担当データとして保持しているデータ全てのレプリカを successor_info_list 内のノードに
+            # 配布する
+            self.existing_node.data_store.distribute_replica()
 
         try:
             ChordUtil.dprint("stabilize_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

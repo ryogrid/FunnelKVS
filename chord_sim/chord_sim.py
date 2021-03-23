@@ -445,17 +445,22 @@ def do_kill_a_random_node():
             + "LOCK_ACQUIRE_TIMEOUT")
         return
     try:
-        node.is_alive = False
-        ChordUtil.dprint(
-            "do_kill_a_random_node_1,"
-            + ChordUtil.gen_debug_str_of_node(node.node_info))
-        with node.node_info.lock_of_datastore:
-            for key, value in node.data_store.stored_data.items():
-                data_id: str = key
-                sv_entry : StoredValueEntry = value
-                ChordUtil.dprint("do_kill_a_random_node_2,"
-                                 + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                                 + hex(int(data_id)) + "," + hex(sv_entry.data_id))
+        if len(gval.all_node_dict) > 10 \
+                and (ChordNode.need_getting_retry_data_id == -1
+                     and ChordNode.need_put_retry_data_id == -1
+                     and Stabilizer.need_join_retry_node == None
+                     and gval.is_waiting_partial_join_op_exists == False) :
+            node.is_alive = False
+            ChordUtil.dprint(
+                "do_kill_a_random_node_1,"
+                + ChordUtil.gen_debug_str_of_node(node.node_info))
+            with node.node_info.lock_of_datastore:
+                for key, value in node.data_store.stored_data.items():
+                    data_id: str = key
+                    sv_entry : StoredValueEntry = value
+                    ChordUtil.dprint("do_kill_a_random_node_2,"
+                                     + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                                     + hex(int(data_id)) + "," + hex(sv_entry.data_id))
     finally:
         node.node_info.lock_of_datastore.release()
         node.node_info.lock_of_succ_infos.release()
@@ -471,7 +476,7 @@ def node_join_th():
             time.sleep(60.0)
             gval.is_network_constructed = True
             gval.JOIN_INTERVAL_SEC = 20.0
-            # # TODO: デバッグのために100ノードに達したらjoinを止める。後で元に戻すこと!
+            # # TODO: デバッグのために1000ノードに達したらjoinを止める。後で元に戻すこと!
             # #       at node_join_th
             # break
 
@@ -518,13 +523,16 @@ def node_kill_th():
         time.sleep(1)
 
     while True:
-        # ネットワークに存在するノードが10ノードを越えたらノードをダウンさせる処理を有効にする
-        # しかし、リトライされなければならない処理が存在した場合は抑制する
-        if len(gval.all_node_dict) > 10 \
-                and (ChordNode.need_getting_retry_data_id == -1
-                     and ChordNode.need_put_retry_data_id == -1
-                     and Stabilizer.need_join_retry_node == None) :
-            do_kill_a_random_node()
+        # # ネットワークに存在するノードが10ノードを越えたらノードをダウンさせる処理を有効にする
+        # # しかし、リトライされなければならない処理が存在した場合および partial_join_opの実行が必要なノードが
+        # # 存差異する場合は抑制する
+        # if len(gval.all_node_dict) > 10 \
+        #         and (ChordNode.need_getting_retry_data_id == -1
+        #              and ChordNode.need_put_retry_data_id == -1
+        #              and Stabilizer.need_join_retry_node == None
+        #              and gval.is_waiting_partial_join_op_exists == False) :
+        #     do_kill_a_random_node()
+        do_kill_a_random_node()
 
         time.sleep(gval.NODE_KILL_INTERVAL_SEC)
 

@@ -144,7 +144,7 @@ class ChordNode:
             self.node_info.lock_of_succ_infos.release()
 
         ChordUtil.dprint("put_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_data(data_id))
+                         + ChordUtil.gen_debug_str_of_data(data_id) + "," + value_str)
 
         return True
 

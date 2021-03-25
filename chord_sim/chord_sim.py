@@ -475,7 +475,7 @@ def node_join_th():
         if gval.already_born_node_num == 100:
             time.sleep(60.0)
             gval.is_network_constructed = True
-            gval.JOIN_INTERVAL_SEC = 20.0
+            gval.JOIN_INTERVAL_SEC = 120.0 #20.0
             # # TODO: デバッグのために1000ノードに達したらjoinを止める。後で元に戻すこと!
             # #       at node_join_th
             # break

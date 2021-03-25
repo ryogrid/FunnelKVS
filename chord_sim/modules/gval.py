@@ -15,11 +15,11 @@ ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意
 
 # paramaters for executing by PyPy3 on my desktop machine
 JOIN_INTERVAL_SEC = 1.0 #2.0 #0.9 #0.7 # 0.5 # 1
-PUT_INTERVAL_SEC = 0.5 # 0.01 #0.5 # 1
-GET_INTERVAL_SEC = 0.5 # 0.01 #0.5 # 1
+PUT_INTERVAL_SEC = 0.05 #0.5 # 0.01 #0.5 # 1
+GET_INTERVAL_SEC = 0.05 #0.5 # 0.01 #0.5 # 1
 
 # ノード増加の勢いは 係数-1/係数 となる
-NODE_KILL_INTERVAL_SEC = 20 #JOIN_INTERVAL_SEC * 10
+NODE_KILL_INTERVAL_SEC = 120.0 #20 #JOIN_INTERVAL_SEC * 10
 
 # 全ノードがstabilize_successorを実行することを1バッチとした際に
 # stabilize処理担当のスレッドにより呼び出されるstabilize処理を行わせる

@@ -466,9 +466,9 @@ def do_kill_a_random_node():
                                      + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                                      + hex(int(data_id)) + "," + hex(sv_entry.data_id))
     finally:
-        node.node_info.lock_of_datastore.release()
-        node.node_info.lock_of_succ_infos.release()
-        node.node_info.lock_of_pred_info.release()
+        # node.node_info.lock_of_datastore.release()
+        # node.node_info.lock_of_succ_infos.release()
+        # node.node_info.lock_of_pred_info.release()
         pass
 
     # # ロックの解放

@@ -24,8 +24,9 @@ class DataStore:
     # データ追加・更新処理を行うアクセサメソッド
     # master_node引数を指定しなかった場合は、self.existing_node.node_info をデータのマスターの情報として格納する
     def store_new_data(self, data_id : int, value_str : str):
-        ChordUtil.dprint("store_new_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_data(data_id))
+        # ログの量が多くなりすぎるのでコメントアウトしておく
+        # ChordUtil.dprint("store_new_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+        #                  + ChordUtil.gen_debug_str_of_data(data_id))
 
         with self.existing_node.node_info.lock_of_datastore:
             sv_entry = StoredValueEntry(data_id=data_id, value_data=value_str)

@@ -235,7 +235,7 @@ class ChordUtil:
 
     # デバッグ用のメソッド
     # グローバル変数にあるデータIDに対応するデータがどのノードに存在するかを出力する
-    # 本メソッドはデータの削除が行われた際に呼び出す
+    # 本メソッドはglobal_getが行われた際に呼び出す
     @classmethod
     def print_data_placement_info(cls, data_id : int, after_notfound_limit = False):
         try:

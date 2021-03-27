@@ -1,6 +1,7 @@
 # coding:utf-8
 
 import threading
+from threading import Thread
 import time
 import random
 from typing import List, cast
@@ -162,106 +163,184 @@ def add_new_node():
     # # ロックの解放
     # gval.lock_of_all_data.release()
 
+def do_stabilize_successor_th(node_list : List[ChordNode]):
+    for times in range(0, gval.STABILIZE_SUCCESSOR_BATCH_TIMES):
+        for node in node_list:
+            try:
+                node.stabilizer.stabilize_successor()
+            except InternalControlFlowException:
+                # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+                ChordUtil.dprint(
+                    "do_stabilize_successor_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
+                    + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
+
+def do_stabilize_ftable_th(node_list : List[ChordNode]):
+    for times in range(0, gval.STABILIZE_FTABLE_BATCH_TIMES):
+        for table_idx in range(0, gval.ID_SPACE_BITS):
+            for node in node_list:
+                try:
+                    node.stabilizer.stabilize_finger_table(table_idx)
+                except InternalControlFlowException:
+                    # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                    # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+                    ChordUtil.dprint(
+                        "do_stabilize_ftable_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
+                        + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
+
+def do_stabilize_onace_at_all_node_successor(node_list : List[ChordNode]):
+    list_len = len(node_list)
+    range_start = 0
+    # 小数点以下切り捨て
+    basic_pass_node_cnt = int(list_len / gval.STABILIZE_THREAD_NUM)
+    thread_list : List[Thread] = []
+    for thread_idx in range(0, gval.STABILIZE_THREAD_NUM):
+        if thread_idx == gval.STABILIZE_THREAD_NUM - 1:
+            thread = threading.Thread(target=do_stabilize_successor_th, name="successor-" + str(thread_idx),
+                                      args=([node_list[range_start:-1]]))
+        else:
+            thread = threading.Thread(target=do_stabilize_successor_th, name="successor-" + str(thread_idx),
+                                      args=([node_list[range_start:range_start + basic_pass_node_cnt]]))
+            range_start += basic_pass_node_cnt
+        thread.start()
+        thread_list.append(thread)
+
+    # 全てのスレッドが終了するまで待つ
+    # 一つの呼び出しごとにブロックするが、その間に別にスレッドが終了しても
+    # スレッドの処理が終了していることは担保できるため問題ない
+    for thread in thread_list:
+        thread.join()
+
+def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]):
+    list_len = len(node_list)
+    range_start = 0
+    # 小数点以下切り捨て
+    basic_pass_node_cnt = int(list_len / gval.STABILIZE_THREAD_NUM)
+    thread_list : List[Thread] = []
+    for thread_idx in range(0, gval.STABILIZE_THREAD_NUM):
+        if thread_idx == gval.STABILIZE_THREAD_NUM - 1:
+            thread = threading.Thread(target=do_stabilize_ftable_th, name="ftable-" + str(thread_idx),
+                                      args=([node_list[range_start:-1]]))
+        else:
+            thread = threading.Thread(target=do_stabilize_successor_th, name="ftable-" + str(thread_idx),
+                                      args=([node_list[range_start:range_start + basic_pass_node_cnt]]))
+            range_start += basic_pass_node_cnt
+        thread.start()
+        thread_list.append(thread)
+
+    # 全てのスレッドが終了するまで待つ
+    # 一つの呼び出しごとにブロックするが、その間に別にスレッドが終了しても
+    # スレッドの処理が終了していることは担保できるため問題ない
+    for thread in thread_list:
+        thread.join()
+
 # all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 def do_stabilize_once_at_all_node():
-    done_stabilize_successor_cnt = 0
-    done_stabilize_ftable_cnt = 0
-
     node_list = list(gval.all_node_dict.values())
+    shuffled_node_list : List[ChordNode] = random.sample(node_list, len(node_list))
+    do_stabilize_onace_at_all_node_successor(shuffled_node_list)
+    do_stabilize_onace_at_all_node_ftable(shuffled_node_list)
 
-    # 各リストはpopメソッドで要素を取り出して利用されていく
-    # 同じノードは複数回利用されるため、その分コピーしておく（参照がコピーされるだけ）
-    shuffled_node_list_successor : List[ChordNode] = random.sample(node_list, len(node_list))
-    shuffled_node_list_successor = shuffled_node_list_successor * gval.STABILIZE_SUCCESSOR_BATCH_TIMES
-    shuffled_node_list_ftable : List[ChordNode] = random.sample(node_list, len(node_list))
-    shuffled_node_list_ftable = shuffled_node_list_ftable * (gval.STABILIZE_FTABLE_BATCH_TIMES * gval.ID_SPACE_BITS)
+    check_nodes_connectivity()
 
-    cur_node_num = len(node_list)
-    selected_operation = "" # "successor" or "ftable"
-    cur_ftable_idx = 0
-
-    while True:
-        # # ロックの取得
-        # gval.lock_of_all_data.acquire()
-
-        try:
-            # まず行う処理を決定する
-            if done_stabilize_successor_cnt >= gval.STABILIZE_SUCCESSOR_BATCH_TIMES * cur_node_num \
-                and done_stabilize_ftable_cnt >= gval.STABILIZE_FTABLE_BATCH_TIMES * cur_node_num * gval.ID_SPACE_BITS:
-                # 関数呼び出し時点で存在した全ノードについて、2種双方が規定回数の stabilze処理を完了したため
-                # 関数を終了する
-
-                # ノードの接続状況をデバッグ出力
-                check_nodes_connectivity()
-                return
-            elif done_stabilize_successor_cnt >= gval.STABILIZE_SUCCESSOR_BATCH_TIMES * cur_node_num:
-                # 一方は完了しているので他方を実行する
-                selected_operation = "ftable"
-            elif done_stabilize_ftable_cnt >= gval.STABILIZE_FTABLE_BATCH_TIMES * cur_node_num * gval.ID_SPACE_BITS:
-                # 一方は完了しているので他方を実行する
-                selected_operation = "successor"
-            else:
-                # どちらも完了していない
-                zero_or_one = random.randint(0,1)
-
-                if zero_or_one == 0:
-                    selected_operation = "successor"
-                else: # 1
-                    selected_operation = "ftable"
-
-            # 選択された処理を実行する
-            if selected_operation == "successor":
-                node = shuffled_node_list_successor.pop()
-                if node.is_alive == True:
-                    try:
-                        node.stabilizer.stabilize_successor()
-                    except InternalControlFlowException:
-                        # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-                        # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
-                        ChordUtil.dprint(
-                            "do_stabilize_on_random_node__successor_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                            + str(cur_ftable_idx) + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-                        pass
-
-                    ChordUtil.dprint("do_stabilize_on_random_node__successor_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                                       + str(done_stabilize_successor_cnt))
-
-                done_stabilize_successor_cnt += 1
-            else: # "ftable"
-                # 1ノードの1エントリを更新する
-                # 更新するエントリのインデックスはこの関数の呼び出し時点の全ノード
-                # で共通に0からインクリメントされていく
-                node = shuffled_node_list_ftable.pop()
-                if node.is_alive == True:
-                    ChordUtil.dprint(
-                        "do_stabilize_on_random_node__ftable_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                        + str(cur_ftable_idx))
-                    try:
-                        node.stabilizer.stabilize_finger_table(cur_ftable_idx)
-                    except InternalControlFlowException:
-                        # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-                        # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
-                        ChordUtil.dprint(
-                            "do_stabilize_on_random_node__ftable_2," + ChordUtil.gen_debug_str_of_node(
-                                node.node_info) + ","
-                            + str(cur_ftable_idx) + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-                        pass
-
-                done_stabilize_ftable_cnt += 1
-
-                if done_stabilize_ftable_cnt % cur_node_num == 0:
-                    # 全ノードについて同一インデックスのエントリの更新が済んだので
-                    # 次のインデックスに移る
-                    cur_ftable_idx += 1
-
-                if cur_ftable_idx >= gval.ID_SPACE_BITS:
-                    # 全インデックスのエントリの更新が終わったらまた0からスタートする
-                    cur_ftable_idx = 0
-
-        finally:
-            pass
-            # # ロックの解放
-            # gval.lock_of_all_data.release()
+    # done_stabilize_successor_cnt = 0
+    # done_stabilize_ftable_cnt = 0
+    #
+    # node_list = list(gval.all_node_dict.values())
+    #
+    # # 各リストはpopメソッドで要素を取り出して利用されていく
+    # # 同じノードは複数回利用されるため、その分コピーしておく（参照がコピーされるだけ）
+    # shuffled_node_list_successor : List[ChordNode] = random.sample(node_list, len(node_list))
+    # shuffled_node_list_successor = shuffled_node_list_successor * gval.STABILIZE_SUCCESSOR_BATCH_TIMES
+    # shuffled_node_list_ftable : List[ChordNode] = random.sample(node_list, len(node_list))
+    # shuffled_node_list_ftable = shuffled_node_list_ftable * (gval.STABILIZE_FTABLE_BATCH_TIMES * gval.ID_SPACE_BITS)
+    #
+    # cur_node_num = len(node_list)
+    # selected_operation = "" # "successor" or "ftable"
+    # cur_ftable_idx = 0
+    #
+    # while True:
+    #     # # ロックの取得
+    #     # gval.lock_of_all_data.acquire()
+    #
+    #     try:
+    #         # まず行う処理を決定する
+    #         if done_stabilize_successor_cnt >= gval.STABILIZE_SUCCESSOR_BATCH_TIMES * cur_node_num \
+    #             and done_stabilize_ftable_cnt >= gval.STABILIZE_FTABLE_BATCH_TIMES * cur_node_num * gval.ID_SPACE_BITS:
+    #             # 関数呼び出し時点で存在した全ノードについて、2種双方が規定回数の stabilze処理を完了したため
+    #             # 関数を終了する
+    #
+    #             # ノードの接続状況をデバッグ出力
+    #             check_nodes_connectivity()
+    #             return
+    #         elif done_stabilize_successor_cnt >= gval.STABILIZE_SUCCESSOR_BATCH_TIMES * cur_node_num:
+    #             # 一方は完了しているので他方を実行する
+    #             selected_operation = "ftable"
+    #         elif done_stabilize_ftable_cnt >= gval.STABILIZE_FTABLE_BATCH_TIMES * cur_node_num * gval.ID_SPACE_BITS:
+    #             # 一方は完了しているので他方を実行する
+    #             selected_operation = "successor"
+    #         else:
+    #             # どちらも完了していない
+    #             zero_or_one = random.randint(0,1)
+    #
+    #             if zero_or_one == 0:
+    #                 selected_operation = "successor"
+    #             else: # 1
+    #                 selected_operation = "ftable"
+    #
+    #         # 選択された処理を実行する
+    #         if selected_operation == "successor":
+    #             node = shuffled_node_list_successor.pop()
+    #             if node.is_alive == True:
+    #                 try:
+    #                     node.stabilizer.stabilize_successor()
+    #                 except InternalControlFlowException:
+    #                     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+    #                     # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
+    #                     ChordUtil.dprint(
+    #                         "do_stabilize_on_random_node__successor_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #                         + str(cur_ftable_idx) + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+    #                     pass
+    #
+    #                 ChordUtil.dprint("do_stabilize_on_random_node__successor_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #                                    + str(done_stabilize_successor_cnt))
+    #
+    #             done_stabilize_successor_cnt += 1
+    #         else: # "ftable"
+    #             # 1ノードの1エントリを更新する
+    #             # 更新するエントリのインデックスはこの関数の呼び出し時点の全ノード
+    #             # で共通に0からインクリメントされていく
+    #             node = shuffled_node_list_ftable.pop()
+    #             if node.is_alive == True:
+    #                 ChordUtil.dprint(
+    #                     "do_stabilize_on_random_node__ftable_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+    #                     + str(cur_ftable_idx))
+    #                 try:
+    #                     node.stabilizer.stabilize_finger_table(cur_ftable_idx)
+    #                 except InternalControlFlowException:
+    #                     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+    #                     # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+    #                     ChordUtil.dprint(
+    #                         "do_stabilize_on_random_node__ftable_2," + ChordUtil.gen_debug_str_of_node(
+    #                             node.node_info) + ","
+    #                         + str(cur_ftable_idx) + ",STABILIZE_FAILED_DUE_TO_TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+    #                     pass
+    #
+    #             done_stabilize_ftable_cnt += 1
+    #
+    #             if done_stabilize_ftable_cnt % cur_node_num == 0:
+    #                 # 全ノードについて同一インデックスのエントリの更新が済んだので
+    #                 # 次のインデックスに移る
+    #                 cur_ftable_idx += 1
+    #
+    #             if cur_ftable_idx >= gval.ID_SPACE_BITS:
+    #                 # 全インデックスのエントリの更新が終わったらまた0からスタートする
+    #                 cur_ftable_idx = 0
+    #
+    #     finally:
+    #         pass
+    #         # # ロックの解放
+    #         # gval.lock_of_all_data.release()
 
 
 # 適当なデータを生成し、IDを求めて、そのIDなデータを担当するChordネットワーク上のノードの
@@ -573,8 +652,8 @@ def main():
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     data_get_th_handle.start()
 
-    node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
-    node_kill_th_handle.start()
+    # node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
+    # node_kill_th_handle.start()
 
     while True:
         time.sleep(1)

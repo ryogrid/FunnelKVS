@@ -78,7 +78,7 @@ class Stabilizer:
                 # リトライは不要なので、本メソッドの呼び出し元がリトライ処理を行うかの判断に用いる
                 # フィールドをリセットしておく
                 Stabilizer.need_join_retry_node = None
-            except (AppropriateNodeNotFoundException, NodeIsDownedExceptiopn):
+            except (AppropriateNodeNotFoundException, NodeIsDownedExceptiopn, InternalControlFlowException):
                 # リトライに必要な情報を記録しておく
                 Stabilizer.need_join_retry_node = self.existing_node
                 Stabilizer.need_join_retry_tyukai_node = tyukai_node
@@ -135,7 +135,7 @@ class Stabilizer:
                 gval.is_waiting_partial_join_op_exists = True
 
                 ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
-            except (AppropriateNodeNotFoundException, NodeIsDownedExceptiopn):
+            except (InternalControlFlowException, NodeIsDownedExceptiopn):
                 #TODO: 雑に例外処理の対応をしたので問題ないかあとで確認する at join
 
                 # リトライに必要な情報を記録しておく

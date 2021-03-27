@@ -188,7 +188,7 @@ def do_stabilize_ftable_th(node_list : List[ChordNode]):
                         "do_stabilize_ftable_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
                         + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
 
-def do_stabilize_onace_at_all_node_successor(node_list : List[ChordNode]):
+def do_stabilize_onace_at_all_node_successor(node_list : List[ChordNode]) -> List[Thread]:
     list_len = len(node_list)
     range_start = 0
     # 小数点以下切り捨て
@@ -205,13 +205,10 @@ def do_stabilize_onace_at_all_node_successor(node_list : List[ChordNode]):
         thread.start()
         thread_list.append(thread)
 
-    # 全てのスレッドが終了するまで待つ
-    # 一つの呼び出しごとにブロックするが、その間に別にスレッドが終了しても
-    # スレッドの処理が終了していることは担保できるため問題ない
-    for thread in thread_list:
-        thread.join()
+    return thread_list
 
-def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]):
+
+def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]) -> List[Thread]:
     list_len = len(node_list)
     range_start = 0
     # 小数点以下切り捨て
@@ -228,18 +225,22 @@ def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]):
         thread.start()
         thread_list.append(thread)
 
-    # 全てのスレッドが終了するまで待つ
-    # 一つの呼び出しごとにブロックするが、その間に別にスレッドが終了しても
-    # スレッドの処理が終了していることは担保できるため問題ない
-    for thread in thread_list:
-        thread.join()
+    return thread_list
 
 # all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 def do_stabilize_once_at_all_node():
     node_list = list(gval.all_node_dict.values())
     shuffled_node_list : List[ChordNode] = random.sample(node_list, len(node_list))
-    do_stabilize_onace_at_all_node_successor(shuffled_node_list)
-    do_stabilize_onace_at_all_node_ftable(shuffled_node_list)
+    thread_list_succ : List[Thread] = do_stabilize_onace_at_all_node_successor(shuffled_node_list)
+    thread_list_ftable : List[Thread] = do_stabilize_onace_at_all_node_ftable(shuffled_node_list)
+
+    # 全てのスレッドが終了するまで待つ
+    # 一つの呼び出しごとにブロックするが、その間に別にスレッドが終了しても
+    # スレッドの処理が終了していることは担保できるため問題ない
+    for thread in thread_list_succ:
+        thread.join()
+    for thread in thread_list_ftable:
+        thread.join()
 
     check_nodes_connectivity()
 

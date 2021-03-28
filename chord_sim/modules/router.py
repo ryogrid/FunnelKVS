@@ -22,7 +22,7 @@ class Router:
             # 失敗させる
             ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            raise InternalControlFlowException("gettting lock of successor_linfo_list is timedout.")
 
         if self.existing_node.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮

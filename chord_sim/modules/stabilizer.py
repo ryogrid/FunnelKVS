@@ -379,7 +379,7 @@ class Stabilizer:
                 #     を呼び出すまでもなく、successorのpredecessorは自身になっている. 従って後続でノードダウン検出した場合の
                 #     check_predecessorの呼び出しは不要であるが呼び出しは行うようにしておく
                 successor.stabilizer.check_predecessor(self.existing_node.node_info)
-            except InternalControlFlowException:
+            except (InternalControlFlowException, NodeIsDownedExceptiopn):
                 # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
                 # した際にcheck_predecessorで発生する場合があるので、ここで対処する
                 # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなの特に処理は不要
@@ -424,7 +424,7 @@ class Stabilizer:
                                      + ChordUtil.gen_debug_str_of_node(
                         self.existing_node.node_info.successor_info_list[0]) + ","
                                      + ChordUtil.gen_debug_str_of_node(new_successor.node_info))
-                except (NodeIsDownedExceptiopn, InternalControlFlowException):
+                except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # 例外発生時は張り替えを中止する
                     #   - successorは変更しない
                     #   - この時点でのsuccessor[0]が認識するpredecessorを自身とする(successr[0]のcheck_predecessorを呼び出す)
@@ -656,7 +656,7 @@ class Stabilizer:
             update_id = ChordUtil.overflow_check_and_conv(self.existing_node.node_info.node_id + 2**idx)
             try:
                 found_node = self.existing_node.router.find_successor(update_id)
-            except (AppropriateNodeNotFoundException, NodeIsDownedExceptiopn):
+            except (AppropriateNodeNotFoundException, NodeIsDownedExceptiopn, InternalControlFlowException):
                 # 適切な担当ノードを得ることができなかった
                 # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
                 # ことであるので、更新対象のエントリには None を設定しておく

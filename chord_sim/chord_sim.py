@@ -168,7 +168,7 @@ def do_stabilize_successor_th(node_list : List[ChordNode]):
         for node in node_list:
             try:
                 node.stabilizer.stabilize_successor()
-            except InternalControlFlowException:
+            except (InternalControlFlowException, NodeIsDownedExceptiopn):
                 # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
                 # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
                 ChordUtil.dprint(
@@ -181,7 +181,7 @@ def do_stabilize_ftable_th(node_list : List[ChordNode]):
             for node in node_list:
                 try:
                     node.stabilizer.stabilize_finger_table(table_idx)
-                except InternalControlFlowException:
+                except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
                     # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
                     ChordUtil.dprint(

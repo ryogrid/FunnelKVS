@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
-from .chord_util import ChordUtil, InternalControlFlowException
+from .chord_util import ChordUtil, InternalControlFlowException, NodeIsDownedExceptiopn
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
@@ -26,7 +26,7 @@ class TaskQueue:
             if task_code == TaskQueue.JOIN_PARTIAL:
                 try:
                     self.existing_node.stabilizer.partial_join_op()
-                except InternalControlFlowException:
+                except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # 実行に失敗したため再実行すべく先頭に戻す
                     self.tqueue.insert(0, task_code)
                     ChordUtil.dprint("exec_first_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

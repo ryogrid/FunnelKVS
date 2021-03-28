@@ -88,18 +88,6 @@ class ChordUtil:
 
         return slided_base_id
 
-        # # あとは差をとって、符号を逆転させる（前方は値が小さくなる方向を意味するため）
-        # distance = -1 * (slided_target_id - slided_base_id)
-        #
-        # # 求めた値が負の値の場合は入力された値において base_id < target_id
-        # # であった場合であり、前方をたどった場合の距離は ID_MAX から得られた値
-        # # の絶対値を引いたものであり、ここでは負の値となっているのでそのまま加算
-        # # すればよい
-        # if distance < 0:
-        #     distance = gval.ID_MAX + distance
-        #
-        # return distance
-
     # ID空間が環状になっていることを踏まえて base_id から後方をたどった場合の
     # ノード間の距離を求める
     # ここで後方とは、IDの値が大きくなる方向である
@@ -112,7 +100,6 @@ class ChordUtil:
 
         # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
         # 同じ数だけずらす
-        slided_base_id = 0
         slided_target_id = target_id - base_id
         if(slided_target_id < 0):
             # マイナスの値をとった場合は値0を通り越しているので
@@ -124,18 +111,6 @@ class ChordUtil:
         # となっているので、 slided_base_idの値を返せばよい
 
         return slided_target_id
-
-        # # あとは単純に差をとる
-        # distance = slided_target_id - slided_base_id
-        #
-        # # 求めた値が負の値の場合は入力された値において target_id < base_id
-        # # であった場合であり、前方をたどった場合の距離は ID_MAX から得られた値
-        # # の絶対値を引いたものであり、ここでは負の値となっているのでそのまま加算
-        # # すればよい
-        # if distance < 0:
-        #     distance = gval.ID_MAX + distance
-        #
-        # return distance
 
     # from_id から IDが大きくなる方向にたどった場合に、 end_id との間に
     # target_idが存在するか否かを bool値で返す
@@ -308,6 +283,8 @@ class DataIdAndValue:
     data_id : int
     value_data : str
 
+# TODO: DataIdAndValueと実質同じデータ構造が2つある状況になってしまっているので
+#       統一して、残った方には、ディープコピーを取得するメソッドも定義しておきたい at StoredValueEntry
 @dataclasses.dataclass
 class StoredValueEntry:
     # master_info : NodeInfoPointer

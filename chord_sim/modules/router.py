@@ -3,7 +3,7 @@
 from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
 import modules.gval as gval
-from .chord_util import ChordUtil, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException
+from .chord_util import ChordUtil, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, InternalControlFlowException
 
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ class Router:
             # 失敗させる
             ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise AppropriateNodeNotFoundException()
+            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
 
         if self.existing_node.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
@@ -51,7 +51,7 @@ class Router:
             try:
                 # 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
                 return ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
-            except NodeIsDownedExceptiopn:
+            except (InternalControlFlowException, NodeIsDownedExceptiopn):
                 # ここでは何も対処しない
                 ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(id))
@@ -145,7 +145,7 @@ class Router:
                                  + ChordUtil.gen_debug_str_of_node(casted_node_info))
                 try:
                     return ChordUtil.get_node_by_address(casted_node_info.address_str)
-                except NodeIsDownedExceptiopn:
+                except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # ここでは何も対処しない
                     continue
 

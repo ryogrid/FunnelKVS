@@ -24,6 +24,7 @@ class Stabilizer:
         self.existing_node : 'ChordNode' = existing_node
 
     # 自ノードの持っている successor_info_listの deep copy を返す
+    # TODO: 他ノードに公開される pass_successor_list
     def pass_successor_list(self) -> List['NodeInfo']:
         return [ node_info.get_partial_deepcopy() for node_info in self.existing_node.node_info.successor_info_list]
 
@@ -259,6 +260,7 @@ class Stabilizer:
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
     # Attention: InternalControlFlowException を raiseする場合がある
+    # TODO: 他ノードに公開される check_predecesor
     def check_predecessor(self, node_info : 'NodeInfo'):
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -408,9 +410,6 @@ class Stabilizer:
                         self.existing_node.data_store.get_all_tantou_data()
                     new_successor.data_store.receive_replica(tantou_data_list)
 
-                    # TODO: NOT_FONDが継続する状態の調査のために check_successor_list_length の呼び出しをコメントアウトしている
-                    #       根本原因が解決したら、元に戻すこと at stabilize_successor_inner
-
                     # successorListから溢れたノードがいた場合、自ノードの担当データのレプリカを削除させ、successorListから取り除く
                     # (この呼び出しの中でsuccessorListからのノード情報の削除も行われる)
                     self.check_successor_list_length()
@@ -556,15 +555,6 @@ class Stabilizer:
                             ChordUtil.dprint("stabilize_successor_2_5,RETURNED_NODE_SAME_AS_SELF_AND_END_SEARCH_SUCCESSOR," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                              + ChordUtil.gen_debug_str_of_node(cur_node_info))
                             break
-                        # if cur_backup_node_info_idx < len(self.existing_node.node_info.successor_info_list):
-                        #     ChordUtil.dprint("stabilize_successor_2,RETURNED_NODE_SAME_AS_SELF," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                        #                      + ChordUtil.gen_debug_str_of_node(cur_node_info))
-                        #     cur_node_info = self.existing_node.node_info.successor_info_list[cur_backup_node_info_idx].get_partial_deepcopy()
-                        #     cur_backup_node_info_idx += 1
-                        # else:
-                        #     ChordUtil.dprint("stabilize_successor_2_5,RETURNED_NODE_SAME_AS_SELF_AND_END_SEARCH_SUCCESSOR," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                        #                      + ChordUtil.gen_debug_str_of_node(cur_node_info))
-                        #     break
 
                     ChordUtil.dprint("stabilize_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(cur_node_info) + ","
@@ -588,7 +578,6 @@ class Stabilizer:
                         + str(exception_occured))
 
                     updated_list.append(cur_node_info)
-                    # cur_backup_node_info_idx += 1
                     exception_occured = False
                     last_node_info = cur_node_info
                 except (InternalControlFlowException, NodeIsDownedExceptiopn):
@@ -600,7 +589,6 @@ class Stabilizer:
                     ChordUtil.dprint("stabilize_successor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info)
                                      + ",TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
                     exception_occured = True
-                    #cur_backup_node_info_idx += 1
                     continue
                 finally:
                     # 正常に処理が終わる場合、例外処理が発生した場合のいずれも1だけインクリメントが必要なため

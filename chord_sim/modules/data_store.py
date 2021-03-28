@@ -64,6 +64,7 @@ class DataStore:
                                                      )
 
     # 自ノードが担当ノードとなる保持データを全て返す
+    # TODO: 他ノードに公開される get_all_tantou_data
     def get_all_tantou_data(self, node_id : Optional[int] = None) -> List[DataIdAndValue]:
         with self.existing_node.node_info.lock_of_datastore:
             ChordUtil.dprint(
@@ -97,6 +98,7 @@ class DataStore:
     # replace_allオプション引数をTrueとした場合は、指定したノードのデータを丸っと入れ替える
     # 返り値として、処理が完了した時点でmaster_nodeに紐づいているレプリカをいくつ保持して
     # いるかを返す
+    # TODO: 他ノードに公開される receive_replica
     def receive_replica(self, pass_datas : List[DataIdAndValue]):
         with self.existing_node.node_info.lock_of_datastore:
             ChordUtil.dprint("receive_replica_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -127,6 +129,7 @@ class DataStore:
     # 範囲のデータの委譲を行うために、新規ノードから呼び出される形で用いられる.
     # rest_copy引数によってコピーを渡すだけか、完全に委譲してしまい自身のデータストアからは渡したデータを削除
     # するかどうか選択できる
+    # TODO: 他のノードに公開される delegate_my_tantou_data
     def delegate_my_tantou_data(self, node_id : int) -> List[KeyValue]:
         with self.existing_node.node_info.lock_of_datastore:
             ChordUtil.dprint("delegate_my_tantou_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -158,6 +161,7 @@ class DataStore:
             return self.stored_data[str(data_id)]
 
     # 全ての保持しているデータを返す
+    # TODO: 他ノードに公開される get_all_data
     def get_all_data(self) -> List[DataIdAndValue]:
         ChordUtil.dprint("get_all_data_1," + ChordUtil.gen_debug_str_of_node(
             self.existing_node.node_info))

@@ -14,8 +14,10 @@ class NodeInfo:
         self.node_id: int = None
         self.address_str: str = None
 
-        # デバッグ用のID（実システムには存在しない）
+        # デバッグ用のID
         # 何ノード目として生成されたかの値
+        # TODO: 実システムでは開発中（というか、スクリプトで順にノード起動していくような形）でないと
+        #       利用できないことは念頭おいて置く必要あり NodeInfo#born_id
         self.born_id: int = None
 
         # 以下の2つはNodeInfoオブジェクトを保持.

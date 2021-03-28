@@ -17,6 +17,7 @@ class Router:
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
+    # TODO: 他ノードに公開される find_successor
     def find_successor(self, id : int) -> 'ChordNode':
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             # 失敗させる
@@ -117,6 +118,7 @@ class Router:
         return n_dash
 
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
+    # TODO: 他ノードに公開される closest_preceding_finger
     def closest_preceding_finger(self, id : int) -> 'ChordNode':
         # 範囲の広いエントリから探索していく
         # finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく

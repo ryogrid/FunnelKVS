@@ -76,6 +76,7 @@ class ChordNode:
         else:
             self.stabilizer.join(node_address)
 
+    # TODO: KVS利用者に対して公開される global_put
     def global_put(self, data_id : int, value_str : str) -> bool:
 
         # TODO: リトライ用の情報はlistで保持する形に変更するため、関連処理はそれに合わせて修正必要
@@ -108,6 +109,7 @@ class ChordNode:
 
         return True
 
+    # TODO: 他ノードに公開される put
     def put(self, data_id : int, value_str : str) -> bool:
         ChordUtil.dprint("put_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -155,6 +157,7 @@ class ChordNode:
     # ものなのかは区別がつかない.
     # 実システムでは一定回数リトライを行い、それでもダメな場合は ChordNode.QUERIED_DATA_NOT_FOUND_STR を返すという
     # 形にしなければならないであろう
+    # TODO: KVS利用者に公開される global_get
     def global_get(self, data_id : int) -> str:
         ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -290,6 +293,7 @@ class ChordNode:
         return got_value_str
 
     # 得られた value の文字列を返す
+    # TODO: 他ノードに公開される get
     def get(self, data_id : int, for_recovery = False) -> str:
         if self.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
@@ -342,6 +346,8 @@ class ChordNode:
     # 返すようにする必要がある
     # TODO: putを行う対象のノードに data_id に対応するデータが存在したか否かのチェックと
     #       それに応じて返り値なり、リターンコードを変えるようなことが必要だろう at global_delete
+    #       あと global_putは KVSの利用者に公開されるメソッドなので直接呼び出さない形にリファクタリング
+    #       が必要
     def global_delete(self, data_id : int) -> bool:
         return self.global_put(data_id, DataStore.DELETED_ENTRY_MARKING_STR)
 

@@ -554,6 +554,7 @@ def do_kill_a_random_node():
     # # ロックの解放
     # gval.lock_of_all_data.release()
 
+# TODO: 対応する処理を行うスクリプトの類が必要 node_join_th
 def node_join_th():
     while gval.already_born_node_num < gval.NODE_NUM_MAX:
         if gval.already_born_node_num == 100:
@@ -576,6 +577,7 @@ def stabilize_th():
         # 呼び出し時点でのノードリストを対象に stabilize 処理を行う
         do_stabilize_once_at_all_node()
 
+# TODO: RESTでエンドポイントを叩くテストプログラムが必要 data_put_th
 def data_put_th():
     # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
     #       on data_puth_th
@@ -586,6 +588,7 @@ def data_put_th():
         do_put_on_random_node()
         time.sleep(gval.PUT_INTERVAL_SEC)
 
+# TODO: RESTでエンドポイントを叩くテストプログラムが必要 data_get_th
 def data_get_th():
     # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
     #       on data_get_th
@@ -600,6 +603,7 @@ def data_get_th():
         # sleepを挟む
         time.sleep(gval.GET_INTERVAL_SEC)
 
+# TODO: 適当に選んだプロセスをkillするスクリプトなりが必要 node_kill_th
 def node_kill_th():
     # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
     #       on data_get_th

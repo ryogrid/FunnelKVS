@@ -18,6 +18,7 @@ class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
     # アルゴリズムはSHA1, 160bitで表現される正の整数となる
     # メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
+    # TODO: 本来のハッシュ関数に戻す必要あり hash_str_to_int
     @classmethod
     def hash_str_to_int(cls, input_str : str) -> int:
         # hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
@@ -124,6 +125,7 @@ class ChordUtil:
         else:
             return False
 
+    # TODO: マルチプロセス安全ないしそれに近いものにする必要あり dprint
     @classmethod
     def dprint(cls, print_str : str, flush=False):
         print(str(datetime.datetime.now()) + "," + print_str, flush=flush)
@@ -165,6 +167,7 @@ class ChordUtil:
         return ret_val
 
     # Attention: InternalControlFlowException を raiseする場合がある
+    # TODO: 他ノードに公開される is_node_alive （というかこれに相当するメソッドをどこかに定義しておく必要がある）
     @classmethod
     def is_node_alive(cls, address : str) -> bool:
         try:

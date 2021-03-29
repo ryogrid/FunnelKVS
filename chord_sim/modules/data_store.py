@@ -199,7 +199,7 @@ class DataStore:
             # TODO: putやstabilize_successorが呼び出される担当データ全てのレプリカを渡すのはあまりに非効率なので、担当データのIDリストを渡して
             #       持っていないデータのIDのリストを返してもらい、それらのデータのみ渡すようにいずれ修正する
 
-            # TODO: need fix at distribute_replica
+            # TODO: receive_replica call at distribute_replica
             succ_node.data_store.receive_replica(tantou_data_list)
 
             ChordUtil.dprint("distribute_replica_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

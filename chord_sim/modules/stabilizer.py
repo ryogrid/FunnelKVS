@@ -70,11 +70,13 @@ class Stabilizer:
             # 実装上例外は発生しない.
             # また実システムでもダウンしているノードの情報が与えられることは想定しない
             tyukai_node = ChordUtil.get_node_by_address(node_address)
+            # TODO: direct access to node_info of tyukai_node at join
             ChordUtil.dprint("join_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
 
             try:
                 # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
+                # TODO: need fix at join
                 successor = tyukai_node.router.find_successor(self.existing_node.node_info.node_id)
                 # リトライは不要なので、本メソッドの呼び出し元がリトライ処理を行うかの判断に用いる
                 # フィールドをリセットしておく
@@ -85,37 +87,46 @@ class Stabilizer:
                 Stabilizer.need_join_retry_tyukai_node = tyukai_node
 
                 # 自ノードの情報、仲介ノードの情報
+                # TODO: direct access to node_info of tyukai_node at join
                 ChordUtil.dprint("join_2,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
                 return
 
             try:
+                # TODO: direct access to node_info of successor at join
                 self.existing_node.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
 
                 # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
                 self.existing_node.node_info.finger_table[0] = self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
 
+                # TODO: direct access to node_info of tyukai_node at join
                 if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
                     # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
 
                     predecessor = tyukai_node
 
                     # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
+                    # TODO: direct access to node_info of predecessor at join
                     self.existing_node.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
+                    # TODO: direct access to prececessor_info of tyukai_node at join (write access)
                     tyukai_node.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
+                    # TODO: direct access to successor_info_list of tyukai_node at join (write access)
                     tyukai_node.node_info.successor_info_list[0] = self.existing_node.node_info.get_partial_deepcopy()
                     # fingerテーブルの0番エントリも強制的に設定する
+                    # TODO: direct access to finger_table of tyukai_node at join (write access)
                     tyukai_node.node_info.finger_table[0] = self.existing_node.node_info.get_partial_deepcopy()
 
-
+                    # TODO: direct access to node_info of tyukai_node at join
                     ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
                 else:
                     # successorと、successorノードの情報だけ適切なものとする
+                    # TODO: need fix at join
                     successor.stabilizer.check_predecessor(self.existing_node.node_info)
 
                     # successor_info_listを埋めておく
+                    # TODO: need fix at jon
                     succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
                     list_len = len(succ_list_of_succ)
                     for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
@@ -124,6 +135,8 @@ class Stabilizer:
                                 succ_list_of_succ[idx].get_partial_deepcopy())
 
                 # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
+
+                # TODO: need fix at join
                 tantou_data_list: List[KeyValue] = successor.data_store.delegate_my_tantou_data(
                     self.existing_node.node_info.node_id)
 
@@ -147,6 +160,7 @@ class Stabilizer:
                 self.existing_node.node_info.successor_info_list = []
 
                 # 自ノードの情報、仲介ノードの情報
+                # TODO: direct access to node_info of tyukai_node at join
                 ChordUtil.dprint("join_3,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
                 ChordUtil.dprint(traceback.format_exc())
@@ -186,6 +200,8 @@ class Stabilizer:
                     succ = ChordUtil.get_node_by_address(node_info.address_str)
                     ChordUtil.dprint("partial_join_op_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(node_info) + "," + str(len(self.existing_node.node_info.successor_info_list)))
+
+                    # TODO: need fix at partial_join_op
                     succ.data_store.receive_replica(
                         [DataIdAndValue(data_id = cast('int', data.data_id), value_data=data.value_data) for data in tantou_data_list]
                     )
@@ -205,17 +221,21 @@ class Stabilizer:
                 self_predecessor_info : NodeInfo = cast('NodeInfo', self.existing_node.node_info.predecessor_info)
                 try:
                     self_predeessor_node = ChordUtil.get_node_by_address(self_predecessor_info.address_str)
+
+                    # TODO: need fix at partial_join_op
                     pred_tantou_datas : List[DataIdAndValue] = self_predeessor_node.data_store.get_all_tantou_data()
                     for iv_entry in pred_tantou_datas:
                         self.existing_node.data_store.store_new_data(iv_entry.data_id,
                                                                      iv_entry.value_data,
                                                                      )
+
                     ChordUtil.dprint("partial_join_op_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(self_predeessor_node.node_info) + "," + str(len(pred_tantou_datas)))
 
                     # predecessor が非Noneであれば、当該predecessorのsuccessor_info_listの長さが標準を越えてしまって
                     # いる場合があるため、そのチェックを行う
                     # (この呼び出しの中で successor_info_listからの余剰ノードのエントリ削除も行われる）
+                    # TODO: need fix at partial_join_op
                     self_predeessor_node.stabilizer.check_successor_list_length()
                 except (NodeIsDownedExceptiopn, InternalControlFlowException):
                     ChordUtil.dprint("partial_join_op_6,NODE_IS_DOWNED or InternalControlFlowException" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -233,6 +253,7 @@ class Stabilizer:
             #  ため、問題ないと判断する)
             try:
                 successor : ChordNode = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0].address_str)
+                # TODO: need fix at partial_join_op
                 passed_all_replica: List[DataIdAndValue] = successor.data_store.get_all_data()
                 self.existing_node.data_store.store_replica_of_multi_masters(passed_all_replica)
             except (NodeIsDownedExceptiopn, InternalControlFlowException):
@@ -345,6 +366,7 @@ class Stabilizer:
 
     # ロックは呼び出し元のstabilize_successor_innerでとってある前提
     def stabilize_successor_inner_fix_chain(self, successor : 'ChordNode'):
+        # TODO: direct access to predecessor_info of successor at stabilize_successor_inner_fix_chain
         pred_id_of_successor = cast('NodeInfo', successor.node_info.predecessor_info).node_id
 
         ChordUtil.dprint(
@@ -380,6 +402,7 @@ class Stabilizer:
                 # 注: successorが認識していた predecessorがダウンしていた場合、下の呼び出しにより後続でcheck_predecessorを
                 #     を呼び出すまでもなく、successorのpredecessorは自身になっている. 従って後続でノードダウン検出した場合の
                 #     check_predecessorの呼び出しは不要であるが呼び出しは行うようにしておく
+                # TODO: need fix at stabilize_successor_inner_fix_chain
                 successor.stabilizer.check_predecessor(self.existing_node.node_info)
             except (InternalControlFlowException, NodeIsDownedExceptiopn):
                 # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
@@ -390,8 +413,10 @@ class Stabilizer:
                         self.existing_node.node_info) + ","
                     + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
+            # TODO: direct access to node_info of successor at stabilize_successor_inner_fix_chain
             distance_unknown = ChordUtil.calc_distance_between_nodes_left_mawari(successor.node_info.node_id,
                                                                                  pred_id_of_successor)
+            # TODO: direct access to node_info of successor at stabilize_successor_inner_fix_chain
             distance_me = ChordUtil.calc_distance_between_nodes_left_mawari(successor.node_info.node_id,
                                                                             self.existing_node.node_info.node_id)
             if distance_unknown < distance_me:
@@ -400,14 +425,17 @@ class Stabilizer:
                 # 自身の認識するsuccessorの情報を更新する
 
                 try:
+                    # TODO: direct access to predecessor_info of successor at stabilize_successor_inner_fix_chain
                     new_successor = ChordUtil.get_node_by_address(
                         cast('NodeInfo', successor.node_info.predecessor_info).address_str)
+                    # TODO: direct access to node_info of new_successor at stabilize_successor_inner_fix_chain
                     self.existing_node.node_info.successor_info_list.insert(0,
                                                                             new_successor.node_info.get_partial_deepcopy())
 
                     # 新たなsuccesorに対して担当データのレプリカを渡す
                     tantou_data_list: List[DataIdAndValue] = \
                         self.existing_node.data_store.get_all_tantou_data()
+                    # TODO: need fix at stabilize_successor_inner_fix_chain
                     new_successor.data_store.receive_replica(tantou_data_list)
 
                     # successorListから溢れたノードがいた場合、自ノードの担当データのレプリカを削除させ、successorListから取り除く
@@ -416,8 +444,10 @@ class Stabilizer:
 
                     # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                     # ば情報を更新してもらう
+                    # TODO: need fix at stabilize_successor_inner_fix_chain
                     new_successor.stabilizer.check_predecessor(self.existing_node.node_info)
 
+                    # TODO: direct access to node_info of new_successor at stabilize_successor_inner_fix_chain
                     ChordUtil.dprint("stabilize_successor_inner_fix_chain_3," + ChordUtil.gen_debug_str_of_node(
                         self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(
@@ -429,6 +459,7 @@ class Stabilizer:
                     #   - この時点でのsuccessor[0]が認識するpredecessorを自身とする(successr[0]のcheck_predecessorを呼び出す)
 
                     # successor[0]の変更は行わず、ダウンしていたノードではなく自身をpredecessorとするよう(間接的に)要請する
+                    # TODO: need fix at stabilize_successor_inner_fix_chain
                     successor.stabilizer.check_predecessor(self.existing_node.node_info)
                     ChordUtil.dprint("stabilize_successor_inner_fix_chain_4," + ChordUtil.gen_debug_str_of_node(
                         self.existing_node.node_info) + ","
@@ -537,6 +568,7 @@ class Stabilizer:
             while len(updated_list) < gval.SUCCESSOR_LIST_NORMAL_LEN and tried_getting_succ_cnt < gval.TRYING_GET_SUCC_TIMES_LIMIT:
                 try:
                     if exception_occured == False:
+                        # TODO: need fix at stabilize_successor
                         cur_node_info : 'NodeInfo' = cur_node.stabilizer.stabilize_successor_inner()
                     else:
                         cur_node_info : 'NodeInfo' = last_node_info
@@ -565,6 +597,7 @@ class Stabilizer:
                     # チェーンを辿っている中で、生存しているノードが得られた場合は、辿っていく中で
                     # 例外が発生した際などに、チェーンを辿らずにノード情報を得るために用いる successorのリスト
                     # をそちらに置き換える
+                    # TODO: need fix at stabilize_successor
                     cur_backup_succ_list = cur_node.stabilizer.pass_successor_list()
                     # 利用するリストが置き換わったので、それに合わせてインデックスをリセットする
                     # finally節で +1 するので筋悪ではあるが、-1にしておく
@@ -652,8 +685,10 @@ class Stabilizer:
                 ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
                 return
 
+            # TODO: direct access to node_info of found_node at stabilize_finger_table
             self.existing_node.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
 
+            # TODO: direct access to node_info of found_node at stabilize_finger_table
             ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(found_node.node_info))
         finally:

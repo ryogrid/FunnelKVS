@@ -185,9 +185,11 @@ class ChordNode:
             tried_node_num = 0
             # 最初は処理の都合上、最初にgetをかけたノードを設定する
             cur_predecessor = target_node
+            # TODO: このループ内の処理をメソッドとして切り出して他ノードから呼び出す形にする必要がありそう at global_get
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
                 prev_cur_predecessor = cur_predecessor
-                # TODO: direct access to lock_of_pred_info of prev_cur_predecessor at global_get
+                # pred_of_prev_cur_predecessor_info = prev_cur_predecessor.node_info.get_partial_deepcopy()
+                # TODO: !!! direct access to lock_of_pred_info of prev_cur_predecessor at global_get
                 if prev_cur_predecessor.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
                     ChordUtil.dprint("global_get_0_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                      + "LOCK_ACQUIRE_TIMEOUT")
@@ -232,7 +234,7 @@ class ChordNode:
                                          + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                          + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
                 finally:
-                    # TODO: direct access to lock_of_pred_info of prev_cur_predecessor at global_get
+                    # TODO: !!! direct access to lock_of_pred_info of prev_cur_predecessor at global_get
                     prev_cur_predecessor.node_info.lock_of_pred_info.release()
 
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
@@ -241,6 +243,7 @@ class ChordNode:
             tried_node_num = 0
             # 最初は処理の都合上、最初にgetをかけたノードを設定する
             cur_successor = target_node
+            # TODO: このループ内の処理をメソッドとして切り出して他ノードから呼び出す形にする必要がありそう at global_get
             while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
                 try:
                     # TODO: direct access to successor_info_list of cur_successor at global_get

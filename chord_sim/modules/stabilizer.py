@@ -108,12 +108,12 @@ class Stabilizer:
                     # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
                     # TODO: direct access to node_info of predecessor at join
                     self.existing_node.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
-                    # TODO: direct access to prececessor_info of tyukai_node at join (write access)
+                    # TODO: ! direct access to prececessor_info of tyukai_node at join (write access)
                     tyukai_node.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
-                    # TODO: direct access to successor_info_list of tyukai_node at join (write access)
+                    # TODO: ! direct access to successor_info_list of tyukai_node at join (write access)
                     tyukai_node.node_info.successor_info_list[0] = self.existing_node.node_info.get_partial_deepcopy()
                     # fingerテーブルの0番エントリも強制的に設定する
-                    # TODO: direct access to finger_table of tyukai_node at join (write access)
+                    # TODO: ! direct access to finger_table of tyukai_node at join (write access)
                     tyukai_node.node_info.finger_table[0] = self.existing_node.node_info.get_partial_deepcopy()
 
                     # TODO: direct access to node_info of tyukai_node at join

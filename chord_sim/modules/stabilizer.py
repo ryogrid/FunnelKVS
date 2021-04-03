@@ -65,7 +65,6 @@ class Stabilizer:
 
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     def join(self, node_address : str):
-        # TODO: joinする時点でロックが他のスレッドにとられていることは無いはず？
         with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
             # 実装上例外は発生しない.
             # また実システムでもダウンしているノードの情報が与えられることは想定しない
@@ -126,7 +125,7 @@ class Stabilizer:
                     successor.stabilizer.check_predecessor(self.existing_node.node_info)
 
                     # successor_info_listを埋めておく
-                    # TODO: pass_successor_list call at jon
+                    # TODO: pass_successor_list call at join
                     succ_list_of_succ: List[NodeInfo] = successor.stabilizer.pass_successor_list()
                     list_len = len(succ_list_of_succ)
                     for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
@@ -150,8 +149,6 @@ class Stabilizer:
 
                 ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
             except (InternalControlFlowException, NodeIsDownedExceptiopn):
-                #TODO: 雑に例外処理の対応をしたので問題ないかあとで確認する at join
-
                 # リトライに必要な情報を記録しておく
                 Stabilizer.need_join_retry_node = self.existing_node
                 Stabilizer.need_join_retry_tyukai_node = tyukai_node

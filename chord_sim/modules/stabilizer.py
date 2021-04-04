@@ -66,7 +66,7 @@ class Stabilizer:
     # 経路表の情報を他ノードから強制的に設定する.
     # joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
     # TODO: 他ノードに公開される set_routing_infos_force
-    def set_routing_infos_force(self, predecessor_info : NodeInfo, successor_info_0 : NodeInfo, ftable_enry_0 : NodeInfo):
+    def set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor_info_0 : 'NodeInfo', ftable_enry_0 : 'NodeInfo'):
         with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
             self.existing_node.node_info.predecessor_info = predecessor_info
             self.existing_node.node_info.successor_info_list[0] = successor_info_0

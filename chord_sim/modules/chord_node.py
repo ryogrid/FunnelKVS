@@ -145,11 +145,10 @@ class ChordNode:
     # predecessorを辿ってリカバリを試みる処理をくくり出したもの
     # TODO: 他ノードに公開される global_get_recover_prev
     def global_get_recover_prev(self, data_id : int) -> Tuple[str, Optional['ChordNode']]:
-        got_value_str : str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
         if self.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("global_get_recover_prev_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            return got_value_str, None
+            return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
         try:
             if self.node_info.predecessor_info == None:
                 ChordUtil.dprint("global_get_recover_prev_1,predecessor is None")

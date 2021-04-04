@@ -552,8 +552,8 @@ def main():
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     data_get_th_handle.start()
 
-    # node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
-    # node_kill_th_handle.start()
+    node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
+    node_kill_th_handle.start()
 
     while True:
         time.sleep(1)

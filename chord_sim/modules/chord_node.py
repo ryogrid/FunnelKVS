@@ -93,7 +93,7 @@ class ChordNode:
                              + ChordUtil.gen_debug_str_of_data(data_id))
             return False
 
-        # TODO: direct access to node_info of target_node at global_put
+        # TODO: x direct access to node_info of target_node at global_put
         ChordUtil.dprint("global_put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -171,7 +171,7 @@ class ChordNode:
             if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
                 # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
                 # 前方に位置するpredecessorを辿ることでデータを取得することができた
-                # TODO: direct access to node_info of cur_predecessor at global_get
+                # TODO: x direct access to node_info of cur_predecessor at global_get
                 ChordUtil.dprint("global_get_recover_prev_5,"
                                  + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + "data found at predecessor,"
@@ -179,7 +179,7 @@ class ChordNode:
                 return got_value_str, cur_predecessor
             else:
                 # できなかった
-                # TODO: direct access to node_info of cur_predecessor at global_get
+                # TODO: x direct access to node_info of cur_predecessor at global_get
                 ChordUtil.dprint("global_get_recover_prev_6,"
                                  + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + "data not found at predecessor,"
@@ -214,7 +214,7 @@ class ChordNode:
         if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
             # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
             # 前方に位置するsuccessorを辿ることでデータを取得することができた
-            # TODO: direct access to node_info of cur_successor at global_get
+            # TODO: x direct access to node_info of cur_successor at global_get
             ChordUtil.dprint("global_get_recover_succ_5,"
                              + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + "data found at successor,"
@@ -222,7 +222,7 @@ class ChordNode:
             return got_value_str, cur_successor
         else:
             # できなかった
-            # TODO: direct access to node_info of cur_successor at global_get
+            # TODO: x direct access to node_info of cur_successor at global_get
             ChordUtil.dprint("global_get_recover_succ_6,"
                              + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + "data not found at successor,"
@@ -324,7 +324,7 @@ class ChordNode:
             # リカバリ処理でデータを取得した場合は自身のデータストアにもその値を保持しておく
             self.data_store.store_new_data(data_id, got_value_str)
 
-        # TODO: direct access to node_info of target_node at global_get
+        # TODO: x direct access to node_info of target_node at global_get
         ChordUtil.dprint("global_get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
               + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
               + ChordUtil.gen_debug_str_of_data(data_id) + "," + got_value_str)

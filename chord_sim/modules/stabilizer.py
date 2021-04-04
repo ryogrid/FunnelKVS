@@ -78,7 +78,7 @@ class Stabilizer:
             # 実装上例外は発生しない.
             # また実システムでもダウンしているノードの情報が与えられることは想定しない
             tyukai_node = ChordUtil.get_node_by_address(node_address)
-            # TODO: direct access to node_info of tyukai_node at join
+            # TODO: x direct access to node_info of tyukai_node at join
             ChordUtil.dprint("join_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
 
@@ -95,26 +95,26 @@ class Stabilizer:
                 Stabilizer.need_join_retry_tyukai_node = tyukai_node
 
                 # 自ノードの情報、仲介ノードの情報
-                # TODO: direct access to node_info of tyukai_node at join
+                # TODO: x direct access to node_info of tyukai_node at join
                 ChordUtil.dprint("join_2,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
                 return
 
             try:
-                # TODO: direct access to node_info of successor at join
+                # TODO: x direct access to node_info of successor at join
                 self.existing_node.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
 
                 # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
                 self.existing_node.node_info.finger_table[0] = self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
 
-                # TODO: direct access to node_info of tyukai_node at join
+                # TODO: x direct access to node_info of tyukai_node at join
                 if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
                     # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
 
                     predecessor = tyukai_node
 
                     # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
-                    # TODO: direct access to node_info of predecessor at join
+                    # TODO: x direct access to node_info of predecessor at join
                     self.existing_node.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
 
                     tyukai_node.stabilizer.set_routing_infos_force(
@@ -128,7 +128,7 @@ class Stabilizer:
                     # # fingerテーブルの0番エントリも強制的に設定する
                     # tyukai_node.node_info.finger_table[0] = self.existing_node.node_info.get_partial_deepcopy()
 
-                    # TODO: direct access to node_info of tyukai_node at join
+                    # TODO: x direct access to node_info of tyukai_node at join
                     ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
@@ -170,7 +170,7 @@ class Stabilizer:
                 self.existing_node.node_info.successor_info_list = []
 
                 # 自ノードの情報、仲介ノードの情報
-                # TODO: direct access to node_info of tyukai_node at join
+                # TODO: x direct access to node_info of tyukai_node at join
                 ChordUtil.dprint("join_3,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
                 ChordUtil.dprint(traceback.format_exc())
@@ -423,10 +423,10 @@ class Stabilizer:
                         self.existing_node.node_info) + ","
                     + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
-            # TODO: direct access to node_info of successor at stabilize_successor_inner_fix_chain
+            # TODO: x direct access to node_info of successor at stabilize_successor_inner_fix_chain
             distance_unknown = ChordUtil.calc_distance_between_nodes_left_mawari(successor.node_info.node_id,
                                                                                  pred_id_of_successor)
-            # TODO: direct access to node_info of successor at stabilize_successor_inner_fix_chain
+            # TODO: x direct access to node_info of successor at stabilize_successor_inner_fix_chain
             distance_me = ChordUtil.calc_distance_between_nodes_left_mawari(successor.node_info.node_id,
                                                                             self.existing_node.node_info.node_id)
             if distance_unknown < distance_me:
@@ -435,10 +435,10 @@ class Stabilizer:
                 # 自身の認識するsuccessorの情報を更新する
 
                 try:
-                    # TODO: direct access to predecessor_info of successor at stabilize_successor_inner_fix_chain
+                    # TODO: x direct access to predecessor_info of successor at stabilize_successor_inner_fix_chain
                     new_successor = ChordUtil.get_node_by_address(
                         cast('NodeInfo', successor.node_info.predecessor_info).address_str)
-                    # TODO: direct access to node_info of new_successor at stabilize_successor_inner_fix_chain
+                    # TODO: x direct access to node_info of new_successor at stabilize_successor_inner_fix_chain
                     self.existing_node.node_info.successor_info_list.insert(0,
                                                                             new_successor.node_info.get_partial_deepcopy())
 
@@ -457,7 +457,7 @@ class Stabilizer:
                     # TODO: check_predecessor call at stabilize_successor_inner_fix_chain
                     new_successor.stabilizer.check_predecessor(self.existing_node.node_info)
 
-                    # TODO: direct access to node_info of new_successor at stabilize_successor_inner_fix_chain
+                    # TODO: x direct access to node_info of new_successor at stabilize_successor_inner_fix_chain
                     ChordUtil.dprint("stabilize_successor_inner_fix_chain_3," + ChordUtil.gen_debug_str_of_node(
                         self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(
@@ -695,10 +695,10 @@ class Stabilizer:
                 ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
                 return
 
-            # TODO: direct access to node_info of found_node at stabilize_finger_table
+            # TODO: x direct access to node_info of found_node at stabilize_finger_table
             self.existing_node.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
 
-            # TODO: direct access to node_info of found_node at stabilize_finger_table
+            # TODO: x direct access to node_info of found_node at stabilize_finger_table
             ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(found_node.node_info))
         finally:

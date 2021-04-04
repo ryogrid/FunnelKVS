@@ -43,7 +43,7 @@ class Router:
                                  + ChordUtil.gen_debug_str_of_data(id))
                 raise AppropriateNodeNotFoundException()
 
-            # TODO: direct access to node_info of n_dash at find_successor
+            # TODO: x direct access to node_info of n_dash at find_successor
             ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
@@ -76,27 +76,27 @@ class Router:
             # n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
             # TODO: direct access to node_id and successor_info_list of n_dash at find_predecessor
             while not ChordUtil.exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info_list[0].node_id, id):
-                # TODO: direct access to node_info of n_dash at find_predecessor
+                # TODO: x direct access to node_info of n_dash at find_predecessor
                 ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
                 # TODO: closest_preceding_finger call at find_predecessor
                 n_dash_found = n_dash.router.closest_preceding_finger(id)
 
-                # TODO: direct access to node_info of n_dash_found and n_dash at find_predecessor
+                # TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
                 if n_dash_found.node_info.node_id == n_dash.node_info.node_id:
                     # 見つかったノードが、n_dash と同じで、変わらなかった場合
                     # 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
                     # なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
-                    # TODO: direct access to node_info of n_dash at find_predecessor
+                    # TODO: x direct access to node_info of n_dash at find_predecessor
                     ChordUtil.dprint("find_predecessor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
                     return n_dash_found
 
                 # closelst_preceding_finger は id を通り越してしまったノードは返さない
                 # という前提の元で以下のチェックを行う
-                # TODO: direct access to node_info of n_dash at find_predecessor
+                # TODO: x direct access to node_info of n_dash at find_predecessor
                 distance_old = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash.node_info.node_id)
-                # TODO: direct access to node_info of n_dash_found at find_predecessor
+                # TODO: x direct access to node_info of n_dash_found at find_predecessor
                 distance_found = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash_found.node_info.node_id)
                 distance_data_id = ChordUtil.calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, id)
                 if distance_found < distance_old and not (distance_old >= distance_data_id):
@@ -108,13 +108,13 @@ class Router:
                     # ため、上記の条件が常に成り立ってしまう. 従って、その場合は例外とする（n_dashが更新される場合は、更新されたn_dashのnode_idが
                     # 探索対象のデータのid を通り越すことは無い）
 
-                    # TODO: direct access to node_info of n_dash at find_predecessor
+                    # TODO: x direct access to node_info of n_dash at find_predecessor
                     ChordUtil.dprint("find_predecessor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
 
                     return n_dash
 
-                # TODO: direct access to node_info of n_dash and n_dash_found at find_predecessor
+                # TODO: x direct access to node_info of n_dash and n_dash_found at find_predecessor
                 ChordUtil.dprint("find_predecessor_5_n_dash_updated," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(n_dash.node_info) + "->"
                                  + ChordUtil.gen_debug_str_of_node(n_dash_found.node_info))

@@ -63,6 +63,15 @@ class Stabilizer:
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
 
+    # 経路表の情報を他ノードから強制的に設定する.
+    # joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
+    # TODO: 他ノードに公開される set_routing_infos_force
+    def set_routing_infos_force(self, predecessor_info : NodeInfo, successor_info_0 : NodeInfo, ftable_enry_0 : NodeInfo):
+        with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
+            self.existing_node.node_info.predecessor_info = predecessor_info
+            self.existing_node.node_info.successor_info_list[0] = successor_info_0
+            self.existing_node.node_info.finger_table[0] = ftable_enry_0
+
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     def join(self, node_address : str):
         with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
@@ -107,13 +116,17 @@ class Stabilizer:
                     # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
                     # TODO: direct access to node_info of predecessor at join
                     self.existing_node.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
-                    # TODO: ! direct access to prececessor_info of tyukai_node at join (write access)
-                    tyukai_node.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
-                    # TODO: ! direct access to successor_info_list of tyukai_node at join (write access)
-                    tyukai_node.node_info.successor_info_list[0] = self.existing_node.node_info.get_partial_deepcopy()
-                    # fingerテーブルの0番エントリも強制的に設定する
-                    # TODO: ! direct access to finger_table of tyukai_node at join (write access)
-                    tyukai_node.node_info.finger_table[0] = self.existing_node.node_info.get_partial_deepcopy()
+
+                    tyukai_node.stabilizer.set_routing_infos_force(
+                        self.existing_node.node_info.get_partial_deepcopy(),
+                        self.existing_node.node_info.get_partial_deepcopy(),
+                        self.existing_node.node_info.get_partial_deepcopy()
+                    )
+
+                    # tyukai_node.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
+                    # tyukai_node.node_info.successor_info_list[0] = self.existing_node.node_info.get_partial_deepcopy()
+                    # # fingerテーブルの0番エントリも強制的に設定する
+                    # tyukai_node.node_info.finger_table[0] = self.existing_node.node_info.get_partial_deepcopy()
 
                     # TODO: direct access to node_info of tyukai_node at join
                     ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

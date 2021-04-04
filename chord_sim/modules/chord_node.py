@@ -180,7 +180,7 @@ class ChordNode:
             else:
                 # できなかった
                 # TODO: direct access to node_info of cur_predecessor at global_get
-                ChordUtil.dprint("global_get_recover_prev_6"
+                ChordUtil.dprint("global_get_recover_prev_6,"
                                  + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                                  + "data not found at predecessor,"
                                  + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
@@ -223,7 +223,7 @@ class ChordNode:
         else:
             # できなかった
             # TODO: direct access to node_info of cur_successor at global_get
-            ChordUtil.dprint("global_get_recover_succ_6"
+            ChordUtil.dprint("global_get_recover_succ_6,"
                              + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + "data not found at successor,"
                              + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))

@@ -24,11 +24,9 @@ class Stabilizer:
         self.existing_node : 'ChordNode' = existing_node
 
     # 自ノードの持っている successor_info_listの deep copy を返す
-    # TODO: 他ノードに公開される pass_successor_list
     def pass_successor_list(self) -> List['NodeInfo']:
         return [ node_info.get_partial_deepcopy() for node_info in self.existing_node.node_info.successor_info_list]
 
-    # TODO: 他ノードに公開される pass_predecessor_info
     def pass_predecessor_info(self) -> Optional['NodeInfo']:
         if self.existing_node.node_info.predecessor_info != None:
             return cast('NodeInfo', self.existing_node.node_info.predecessor_info).get_partial_deepcopy()
@@ -72,7 +70,6 @@ class Stabilizer:
 
     # 経路表の情報を他ノードから強制的に設定する.
     # joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
-    # TODO: 他ノードに公開される set_routing_infos_force
     def set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor_info_0 : 'NodeInfo', ftable_enry_0 : 'NodeInfo'):
         with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
             self.existing_node.node_info.predecessor_info = predecessor_info
@@ -298,7 +295,6 @@ class Stabilizer:
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
     # Attention: InternalControlFlowException を raiseする場合がある
-    # TODO: 他ノードに公開される check_predecesor
     def check_predecessor(self, node_info : 'NodeInfo'):
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

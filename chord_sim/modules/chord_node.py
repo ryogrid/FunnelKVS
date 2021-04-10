@@ -71,7 +71,6 @@ class ChordNode:
         else:
             self.stabilizer.join(node_address)
 
-    # TODO: KVS利用者に対して公開される global_put
     def global_put(self, data_id : int, value_str : str) -> bool:
         try:
             target_node = self.router.find_successor(data_id)
@@ -102,7 +101,6 @@ class ChordNode:
 
         return True
 
-    # TODO: 他ノードに公開される put
     def put(self, data_id : int, value_str : str) -> bool:
         ChordUtil.dprint("put_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -145,7 +143,6 @@ class ChordNode:
 
     # global_getで取得しようとしたKeyが探索したノードに存在なかった場合に、当該ノードから
     # predecessorを辿ってリカバリを試みる処理をくくり出したもの
-    # TODO: 他ノードに公開される global_get_recover_prev
     def global_get_recover_prev(self, data_id : int) -> Tuple[str, Optional['ChordNode']]:
         if self.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("global_get_recover_prev_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -195,7 +192,6 @@ class ChordNode:
 
     # global_getで取得しようとしたKeyが探索したノードに存在なかった場合に、当該ノードから
     # successorを辿ってリカバリを試みる処理をくくり出したもの
-    # TODO: 他ノードに公開される global_get_recover_succ
     def global_get_recover_succ(self, data_id : int) -> Tuple[str, Optional['ChordNode']]:
         try:
             cur_successor : ChordNode = ChordUtil.get_node_by_address(
@@ -241,7 +237,6 @@ class ChordNode:
     #       ものなのかは区別がつかない.
     #       実システムでは一定回数リトライを行い、それでもダメな場合は ChordNode.QUERIED_DATA_NOT_FOUND_STR を返すという
     #       形にしなければならない at global_get
-    # TODO: KVS利用者に公開される global_get
     def global_get(self, data_id : int) -> str:
         ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -333,7 +328,6 @@ class ChordNode:
         return got_value_str
 
     # 得られた value の文字列を返す
-    # TODO: 他ノードに公開される get
     def get(self, data_id : int, for_recovery = False) -> str:
         if self.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
@@ -387,6 +381,5 @@ class ChordNode:
         return not (cur_val == ChordNode.QUERIED_DATA_NOT_FOUND_STR
                     or cur_val == DataStore.DELETED_ENTRY_MARKING_STR)
 
-    # TODO: 他ノードに公開される pass_node_info
     def pass_node_info(self) -> 'NodeInfo':
         return self.node_info.get_partial_deepcopy()

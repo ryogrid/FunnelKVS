@@ -49,20 +49,20 @@ class Endpoints:
     def grpc__get_all_data(self) -> List[DataIdAndValue]:
         return self.existing_node.data_store.get_all_data()
 
-    def grpc__find_successor(self):
-        raise Exception("not implemented yet")
+    def grpc__find_successor(self, id : int) -> 'ChordNode':
+        return self.existing_node.router.find_successor(id)
 
-    def grpc__closest_preceding_finger(self):
-        raise Exception("not implemented yet")
+    def grpc__closest_preceding_finger(self, id : int) -> 'ChordNode':
+        return self.existing_node.router.closest_preceding_finger(id)
 
-    def grpc__pass_successor_list(self):
-        raise Exception("not implemented yet")
+    def grpc__pass_successor_list(self) -> List['NodeInfo']:
+        return self.existing_node.stabilizer.pass_successor_list()
 
-    def grpc__pass_predecessor_info(self):
-        raise Exception("not implemented yet")
+    def grpc__pass_predecessor_info(self) -> Optional['NodeInfo']:
+        return self.existing_node.stabilizer.pass_predecessor_info()
 
-    def grpc__set_routing_infos_force(self):
-        raise Exception("not implemented yet")
+    def grpc__set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor_info_0 : 'NodeInfo', ftable_enry_0 : 'NodeInfo'):
+        return self.existing_node.stabilizer.set_routing_infos_force(predecessor_info, successor_info_0, ftable_enry_0)
 
-    def grpc__check_predecessor(self):
-        raise Exception("not implemented yet")
+    def grpc__check_predecessor(self, node_info : 'NodeInfo'):
+        return self.existing_node.stabilizer.check_predecessor(node_info)

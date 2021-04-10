@@ -235,10 +235,10 @@ class ChordNode:
     # 得られた value の文字列を返す
     # データの取得に失敗した場合は ChordNode.QUERIED_DATA_NOT_FOUND_STR を返す
     # 取得対象のデータが削除済みのデータであった場合は DataStore.DELETED_ENTRY_MARKING_STR を返す
-    # 現状の実装では、データの取得に失敗した場合、そのエントリが過去にputされていないためなのか、システム側の都合による
-    # ものなのかは区別がつかない.
-    # 実システムでは一定回数リトライを行い、それでもダメな場合は ChordNode.QUERIED_DATA_NOT_FOUND_STR を返すという
-    # 形にしなければならないであろう
+    # TODO: 現状の実装では、データの取得に失敗した場合、そのエントリが過去にputされていないためなのか、システム側の都合による
+    #       ものなのかは区別がつかない.
+    #       実システムでは一定回数リトライを行い、それでもダメな場合は ChordNode.QUERIED_DATA_NOT_FOUND_STR を返すという
+    #       形にしなければならない at global_get
     # TODO: KVS利用者に公開される global_get
     def global_get(self, data_id : int) -> str:
         ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -378,16 +378,12 @@ class ChordNode:
 
         return ret_value_str
 
-    # 成功した場合は true を返し、失敗した場合は false を返す
-    # 現状、falseの場合、それが元々データが存在しなかったのか、システム都合で失敗したのか
-    # の区別がつかないため、実システムではglobal_putの中で一定回数リトライを行い、その結果を
-    # 返すようにする必要がある
-    # TODO: putを行う対象のノードに data_id に対応するデータが存在したか否かのチェックと
-    #       それに応じて返り値なり、リターンコードを変えるようなことが必要だろう at global_delete
-    #       あと global_putは KVSの利用者に公開されるメソッドなので直接呼び出さない形にリファクタリング
-    #       が必要
+    # 指定されたデータが存在した場合は true を返し、そうでない場合は false を返す
     def global_delete(self, data_id : int) -> bool:
-        return self.global_put(data_id, DataStore.DELETED_ENTRY_MARKING_STR)
+        cur_val = self.global_get(data_id)
+        self.global_put(data_id, DataStore.DELETED_ENTRY_MARKING_STR)
+        return not (cur_val == ChordNode.QUERIED_DATA_NOT_FOUND_STR
+                    or cur_val == DataStore.DELETED_ENTRY_MARKING_STR)
 
     # TODO: 他ノードに公開される pass_node_info
     def pass_node_info(self) -> 'NodeInfo':

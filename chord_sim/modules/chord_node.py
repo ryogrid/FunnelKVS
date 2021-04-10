@@ -86,7 +86,7 @@ class ChordNode:
                              + ChordUtil.gen_debug_str_of_data(data_id))
             return False
 
-        success = target_node.put(data_id, value_str)
+        success = target_node.endpoints.grpc__put(data_id, value_str)
         if not success:
             ChordNode.need_put_retry_data_id = data_id
             ChordNode.need_put_retry_node = self
@@ -155,7 +155,7 @@ class ChordNode:
             try:
                 cur_predecessor : ChordNode = ChordUtil.get_node_by_address(
                     cast(NodeInfo, self.node_info.predecessor_info).address_str)
-                got_value_str = cur_predecessor.get(data_id, for_recovery=True)
+                got_value_str = cur_predecessor.endpoints.grpc__get(data_id, for_recovery=True)
             except NodeIsDownedExceptiopn:
                 # ここでは何も対処はしない
                 ChordUtil.dprint("global_get_recover_prev_2,NODE_IS_DOWNED")
@@ -196,7 +196,7 @@ class ChordNode:
         try:
             cur_successor : ChordNode = ChordUtil.get_node_by_address(
                 cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
-            got_value_str = cur_successor.get(data_id, for_recovery=True)
+            got_value_str = cur_successor.endpoints.grpc__get(data_id, for_recovery=True)
         except NodeIsDownedExceptiopn:
             # ここでは何も対処はしない
             ChordUtil.dprint("global_get_recover_succ_2,NODE_IS_DOWNED")
@@ -243,7 +243,7 @@ class ChordNode:
 
         try:
             target_node = self.router.find_successor(data_id)
-            got_value_str = target_node.get(data_id)
+            got_value_str = target_node.endpoints.grpc__get(data_id)
         except (AppropriateNodeNotFoundException, InternalControlFlowException, NodeIsDownedExceptiopn):
             # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
 
@@ -268,7 +268,7 @@ class ChordNode:
                                  + ChordUtil.gen_debug_str_of_data(data_id) + ","
                                  + got_value_str + "," + str(tried_node_num))
 
-                got_value_str, tmp_cur_predecessor =  cur_predecessor.global_get_recover_prev(data_id)
+                got_value_str, tmp_cur_predecessor =  cur_predecessor.endpoints.grpc__global_get_recover_prev(data_id)
                 if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
                     is_data_got_on_recovery = True
                     break
@@ -289,7 +289,7 @@ class ChordNode:
                                  + ChordUtil.gen_debug_str_of_data(data_id) + ","
                                  + got_value_str + "," + str(tried_node_num))
 
-                got_value_str, tmp_cur_successor =  cur_successor.global_get_recover_succ(data_id)
+                got_value_str, tmp_cur_successor =  cur_successor.endpoints.grpc__global_get_recover_succ(data_id)
                 if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
                     is_data_got_on_recovery = True
                     break

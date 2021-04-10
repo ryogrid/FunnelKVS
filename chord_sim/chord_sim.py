@@ -287,7 +287,7 @@ def do_put_on_random_node():
         node = get_a_random_node()
 
     # 成功した場合はTrueが返るのでその場合だけ all_node_dictに追加する
-    if node.global_put(kv_data.data_id, kv_data.value_data):
+    if node.endpoints.rrpc__global_put(kv_data.data_id, kv_data.value_data):
         with gval.lock_of_all_data_list:
             gval.all_data_list.append(kv_data)
 
@@ -350,7 +350,7 @@ def do_get_on_random_node():
 
         node = get_a_random_node()
 
-    got_result : str = node.global_get(target_data_id)
+    got_result : str = node.endpoints.rrpc__global_get(target_data_id)
 
     # 関数内関数
     def print_data_consistency():

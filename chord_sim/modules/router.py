@@ -82,7 +82,7 @@ class Router:
                 ChordUtil.dprint("find_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(n_dash.node_info))
                 # TODO: closest_preceding_finger call at find_predecessor
-                n_dash_found = n_dash.router.closest_preceding_finger(id)
+                n_dash_found = n_dash.endpoints.grpc__closest_preceding_finger(id)
 
                 # TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
                 if n_dash_found.node_info.node_id == n_dash.node_info.node_id:

@@ -47,6 +47,9 @@ NODE_NUM_MAX = 10000
 
 LOCK_ACQUIRE_TIMEOUT = 10
 
+# TODO: Rustでマルチスレッド化した場合、gvalモジュール内のミュータブルな変数への
+#       アクセスをまとめてロックするロック変数を用意する必要がある
+
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
 all_node_dict : Dict[str, 'ChordNode'] = {}

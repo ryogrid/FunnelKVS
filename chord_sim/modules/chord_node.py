@@ -9,6 +9,7 @@ from .data_store import DataStore
 from .stabilizer import Stabilizer
 from .router import Router
 from .taskqueue import TaskQueue
+from .endpoints import Endpoints
 from .chord_util import ChordUtil, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
     InternalControlFlowException, DataIdAndValue
 
@@ -39,6 +40,7 @@ class ChordNode:
         self.stabilizer : Stabilizer = Stabilizer(self)
         self.router : Router = Router(self)
         self.tqueue : TaskQueue = TaskQueue(self)
+        self.endpoints : Endpoints = Endpoints(self)
 
         # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
         self.node_info.address_str = ChordUtil.gen_address_str()

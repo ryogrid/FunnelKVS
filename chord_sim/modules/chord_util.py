@@ -281,21 +281,14 @@ class KeyValue:
             return False
         return self.data_id == other.data_id
 
+# TODO: ディープコピーを取得するメソッドを定義しておきたい at DataIdAndValue
 @dataclasses.dataclass
 class DataIdAndValue:
     data_id : int
     value_data : str
 
-# TODO: DataIdAndValueと実質同じデータ構造が2つある状況になってしまっているので
-#       統一して、残った方には、ディープコピーを取得するメソッドも定義しておきたい at StoredValueEntry
-@dataclasses.dataclass
-class StoredValueEntry:
-    # master_info : NodeInfoPointer
-    data_id : int
-    value_data : str
-
     def __eq__(self, other):
-        if not isinstance(other, StoredValueEntry):
+        if not isinstance(other, DataIdAndValue):
             return False
         return self.data_id == other.data_id
 

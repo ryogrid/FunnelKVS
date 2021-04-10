@@ -3,7 +3,7 @@
 from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
-    InternalControlFlowException, StoredValueEntry, DataIdAndValue
+    InternalControlFlowException, DataIdAndValue
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
@@ -19,7 +19,7 @@ class DataStore:
         self.existing_node : 'ChordNode' = existing_node
 
         # Keyはハッシュを通されたものなので元データの値とは異なる
-        self.stored_data : Dict[str, StoredValueEntry] = {}
+        self.stored_data : Dict[str, DataIdAndValue] = {}
 
     # DataStoreクラスオブジェクトのデータ管理の枠組みに従った、各関連フィールドの一貫性を維持したまま
     # データ追加・更新処理を行うアクセサメソッド
@@ -30,7 +30,7 @@ class DataStore:
         #                  + ChordUtil.gen_debug_str_of_data(data_id))
 
         with self.existing_node.node_info.lock_of_datastore:
-            sv_entry = StoredValueEntry(data_id=data_id, value_data=value_str)
+            di_entry = DataIdAndValue(data_id=data_id, value_data=value_str)
 
             # デバッグプリント
             ChordUtil.dprint_data_storage_operations(self.existing_node.node_info,
@@ -38,7 +38,7 @@ class DataStore:
                                                      data_id
                                                      )
 
-            self.stored_data[str(data_id)] = sv_entry
+            self.stored_data[str(data_id)] = di_entry
             # デバッグのためにグローバル変数の形で管理されているデータのロケーション情報を更新する
             ChordUtil.add_data_placement_info(data_id, self.existing_node.node_info)
 
@@ -156,7 +156,7 @@ class DataStore:
         return ret_datas
 
     # 存在しないKeyが与えられた場合 KeyErrorがraiseされる
-    def get(self, data_id : int) -> StoredValueEntry:
+    def get(self, data_id : int) -> DataIdAndValue:
         with self.existing_node.node_info.lock_of_datastore:
             return self.stored_data[str(data_id)]
 

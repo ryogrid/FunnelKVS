@@ -10,7 +10,7 @@ from .stabilizer import Stabilizer
 from .router import Router
 from .taskqueue import TaskQueue
 from .chord_util import ChordUtil, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
-    InternalControlFlowException, StoredValueEntry, DataIdAndValue
+    InternalControlFlowException, DataIdAndValue
 
 class ChordNode:
     QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
@@ -347,7 +347,7 @@ class ChordNode:
             return ChordNode.QUERIED_DATA_NOT_FOUND_STR
 
         try:
-            sv_entry : StoredValueEntry = self.data_store.get(data_id)
+            di_entry : DataIdAndValue = self.data_store.get(data_id)
         except:
             err_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
             ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -362,7 +362,7 @@ class ChordNode:
                                                           data_id) or for_recovery == True:
             # 担当ノード（マスター）のデータであったか、担当ノードとしてgetを受け付けたがデータを持っていなかったために
             # 周囲のノードに当該データを持っていないか問い合わせる処理を行っていた場合
-            ret_value_str = sv_entry.value_data
+            ret_value_str = di_entry.value_data
             ChordUtil.dprint("get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
         else:
@@ -389,3 +389,6 @@ class ChordNode:
     def global_delete(self, data_id : int) -> bool:
         return self.global_put(data_id, DataStore.DELETED_ENTRY_MARKING_STR)
 
+    # TODO: 他ノードに公開される pass_node_info
+    def pass_node_info(self) -> 'NodeInfo':
+        return self.node_info.get_partial_deepcopy()

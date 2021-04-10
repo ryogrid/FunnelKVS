@@ -6,7 +6,7 @@ import sys
 import modules.gval as gval
 import traceback
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
-    InternalControlFlowException, StoredValueEntry, DataIdAndValue
+    InternalControlFlowException, DataIdAndValue
 from .taskqueue import TaskQueue
 
 if TYPE_CHECKING:
@@ -27,6 +27,13 @@ class Stabilizer:
     # TODO: 他ノードに公開される pass_successor_list
     def pass_successor_list(self) -> List['NodeInfo']:
         return [ node_info.get_partial_deepcopy() for node_info in self.existing_node.node_info.successor_info_list]
+
+    # TODO: 他ノードに公開される pass_predecessor_info
+    def pass_predecessor_info(self) -> Optional['NodeInfo']:
+        if self.existing_node.node_info.predecessor_info != None:
+            return cast('NodeInfo', self.existing_node.node_info.predecessor_info).get_partial_deepcopy()
+        else:
+            return None
 
     # successor_info_listの長さをチェックし、規定長を越えていた場合余剰なノードにレプリカを
     # 削除させた上で、リストから取り除く
@@ -204,7 +211,7 @@ class Stabilizer:
 
         try:
             # successor[0] から委譲を受けたデータを successorList 内の全ノードにレプリカとして配る
-            tantou_data_list : List[StoredValueEntry] = self.existing_node.data_store.get_all_tantou_data()
+            tantou_data_list : List[DataIdAndValue] = self.existing_node.data_store.get_all_tantou_data()
             for node_info in self.existing_node.node_info.successor_info_list:
                 try:
                     succ = ChordUtil.get_node_by_address(node_info.address_str)

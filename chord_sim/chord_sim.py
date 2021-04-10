@@ -8,7 +8,7 @@ from typing import List, cast
 
 import modules.gval as gval
 from modules.node_info import NodeInfo
-from modules.chord_util import ChordUtil, KeyValue, StoredValueEntry
+from modules.chord_util import ChordUtil, KeyValue, DataIdAndValue
 from modules.chord_node import ChordNode, NodeIsDownedExceptiopn, InternalControlFlowException
 from modules.stabilizer import Stabilizer
 
@@ -436,7 +436,7 @@ def do_kill_a_random_node():
             with node.node_info.lock_of_datastore:
                 for key, value in node.data_store.stored_data.items():
                     data_id: str = key
-                    sv_entry : StoredValueEntry = value
+                    sv_entry : DataIdAndValue = value
                     ChordUtil.dprint("do_kill_a_random_node_2,"
                                      + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
                                      + hex(int(data_id)) + "," + hex(sv_entry.data_id))

@@ -51,6 +51,9 @@ LOCK_ACQUIRE_TIMEOUT = 3 #10
 # 実装していく過程で細粒度のロックに対応できていない場合や、デバッグ用途に用いる
 lock_of_all_data = threading.Lock()
 
+# TODO: all_node_dictとall_data_listのロックはRustの該当するコレクションがスレッドセーフか
+#       確認してから必要なところだけに絞る必要あり（例えば、readアクセスでも結果にセンシティブなところ以外は不要ではないかなど）
+
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
 all_node_dict : Dict[str, 'ChordNode'] = {}

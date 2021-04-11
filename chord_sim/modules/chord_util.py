@@ -40,8 +40,8 @@ class ChordUtil:
 
     @classmethod
     def get_random_data(cls) -> 'KeyValue':
-        with gval.lock_of_all_data_list:
-            return ChordUtil.get_random_elem(gval.all_data_list)
+        # with gval.lock_of_all_data_list:
+        return ChordUtil.get_random_elem(gval.all_data_list)
 
     # UNIXTIME（ミリ秒精度）にいくつか値を加算した値からアドレス文字列を生成する
     @classmethod
@@ -151,8 +151,8 @@ class ChordUtil:
     @classmethod
     def get_node_by_address(cls, address : str) -> 'ChordNode':
         try:
-            with gval.lock_of_all_node_dict:
-                ret_val = gval.all_node_dict[address]
+            # with gval.lock_of_all_node_dict:
+            ret_val = gval.all_node_dict[address]
         except KeyError:
             # join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
             # traceback.print_stack(file=sys.stdout)

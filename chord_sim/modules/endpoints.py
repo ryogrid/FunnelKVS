@@ -72,3 +72,20 @@ class Endpoints:
 
     def grpc__check_successor_list_length(self):
         return self.existing_node.stabilizer.check_successor_list_length()
+
+    # TODO: 実システムでは、ChordNodeオブジェクトが生成されたあとはこのrpcでチェック可能とする
+    #       ただし初回の呼び出しはget_node_by_addressの中で行われ、そこでのチェックを通った場合のみ
+    #       同メソッドは ChordNodeオブジェクトを返す設計とする（通信回数が増えてしまうがそこは許容する）
+    def grpc__is_alive(self) -> bool:
+        raise Exception("not implemented yet")
+
+    # TODO: 実システムでだけ用いる。ノード情報を取得するAPI
+    #       get_nobe_by_address内でgrpc__is_aliveでの生存チェックを通ったら
+    #       このメソッドで暫定的に生成したChordNodeオブジェクトを構築するための情報
+    #       を取得する. 内容としては NodeInfoオブジェクトのうち、successor_info_list
+    #       のみ空リストとなっているものになる見込み
+    def grpc__get_chord_node_info(self) -> 'NodeInfo':
+        ret_info : NodeInfo = self.existing_node.node_info.get_partial_deepcopy()
+        if self.existing_node.node_info.predecessor_info != None:
+            ret_info.predecessor_info = cast('NodeInfo', self.existing_node.node_info.predecessor_info).get_partial_deepcopy()
+        return ret_info

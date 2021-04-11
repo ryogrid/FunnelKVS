@@ -98,21 +98,13 @@ def check_nodes_connectivity():
             ChordUtil.dprint("check_nodes_connectivity__pred,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
             return
 
-        # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
-        # 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が
-        # あり得るため、余裕を持たせて5ノード目以降からチェックする
         if cur_node_info == None:
-            if all_node_num >= 5:
-                # TODO: 暫定的に predecesor_infoが設定されていない場合も存在するようにしたのでチェックを外す
-                #       その修正を元に戻す際はここのチェックも元に戻すこと
-                return
-                # print("", flush=True, end="")
-                # raise Exception("no predecessor having node was detected!")
-            else:
-                # 後続の処理は走らないようにする
-                return
+            # 先を追っていけないのでチェックを終了する
+            ChordUtil.dprint("check_nodes_connectivity__pred,PREDECESSOR_INFO_IS_NONE")
+            return
 
         counter += 1
+
     print("")
 
     # 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
@@ -131,6 +123,9 @@ def check_nodes_connectivity():
                          + str(all_node_num) + ","
                          + ChordUtil.gen_debug_str_of_node(start_node_info) + ","
                          + ChordUtil.gen_debug_str_of_node(cur_node_info))
+
+# TODO: 実システム化する際は、リトライ処理は各オペレーションに対応するRESTインタフェースの呼び出し
+#       の中で行う形に書き直す必要あり
 
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
 def add_new_node():
@@ -255,12 +250,6 @@ def do_put_on_random_node():
 
     if ChordNode.need_put_retry_data_id != -1:
         # 前回の呼び出し時に global_putが失敗しており、リトライが必要
-        # TODO: listの形で保持されるようになったリトライ情報に対応する.
-        #       リトライ処理する際は、設定されていた情報をローカルに移動させる
-        #       on do_put_on_random_node
-
-        # TODO: リスト化されたリトライ情報へのアクセスも排他制御をしないといけない
-        #       気がするが・・・・きっと大丈夫だろう
 
         is_retry = True
 
@@ -292,8 +281,6 @@ def do_put_on_random_node():
             gval.all_data_list.append(kv_data)
 
     if is_retry:
-        # TODO: リトライが成功したかはローカルに保持している情報がlist内に再設定されていないかで判定する
-        #       on do_put_on_random_node
         if ChordNode.need_put_retry_data_id == -1:
             # リトライ情報が再設定されていないためリトライに成功したと判断
             ChordUtil.dprint(
@@ -322,9 +309,6 @@ def do_get_on_random_node():
 
     if ChordNode.need_getting_retry_data_id != -1:
         # doing retry
-        # TODO: listの形で保持されるようになったリトライ情報に対応する.
-        #       リトライ処理する際は、設定されていた情報をローカルに移動させる
-        #       on do_get_on_random_node
 
         #リトライを行うためカウンタをインクリメントする
         gval.global_get_retry_cnt += 1
@@ -375,8 +359,6 @@ def do_get_on_random_node():
                 + ",WARN__GOT_VALUE_WAS_INCONSISTENT")
 
     if is_retry:
-        # TODO: リトライが成功したかはローカルに保持している情報がlist内に再設定されていないかで判定する
-        #       on do_get_on_random_node
         if ChordNode.need_getting_retry_data_id == -1:
             # リトライ情報が再設定されていないためリトライに成功したと判断
 
@@ -464,9 +446,6 @@ def node_join_th():
         time.sleep(gval.JOIN_INTERVAL_SEC)
 
 def stabilize_th():
-    # TODO: stabilize_th も複数スレッド化しないとダメだろうか？（一番しないといけないものな気もする）
-    # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
-    #       on stabilize_th
     while True:
         # 内部で適宜ロックを解放することで他のスレッドの処理も行えるようにしつつ
         # 呼び出し時点でのノードリストを対象に stabilize 処理を行う
@@ -474,8 +453,6 @@ def stabilize_th():
 
 # TODO: RESTでエンドポイントを叩くテストプログラムが必要 data_put_th
 def data_put_th():
-    # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
-    #       on data_puth_th
     while gval.is_network_constructed == False:
         time.sleep(1)
 
@@ -485,8 +462,6 @@ def data_put_th():
 
 # TODO: RESTでエンドポイントを叩くテストプログラムが必要 data_get_th
 def data_get_th():
-    # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
-    #       on data_get_th
     while gval.is_network_constructed == False:
         time.sleep(1)
 
@@ -500,8 +475,6 @@ def data_get_th():
 
 # TODO: 適当に選んだプロセスをkillするスクリプトなりが必要 node_kill_th
 def node_kill_th():
-    # TODO: スレッド番号を採番して、whileループの先頭でデバッグプリントする
-    #       on data_get_th
     while gval.is_network_constructed == False:
         time.sleep(1)
 
@@ -534,21 +507,12 @@ def main():
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()
 
-    # TODO: 同一処理を行う複数スレッドを立てる?
-    #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
-    #       stabilize
     stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
     stabilize_th_handle.start()
 
-    # TODO: 同一処理を行う複数スレッドを立てる
-    #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
-    #       put
     data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
     data_put_th_handle.start()
 
-    # TODO: 同一処理を行う複数スレッドを立てる
-    #       (立てる際はタイミングをズラすようループに一定ms程度のsleepを挟むこと)
-    #       get
     data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
     data_get_th_handle.start()
 

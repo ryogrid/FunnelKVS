@@ -146,6 +146,8 @@ class ChordUtil:
 
     # Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
     #            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
+    # TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
+    #       ChordNodeオブジェクトを返す get_node_by_address
     @classmethod
     def get_node_by_address(cls, address : str) -> 'ChordNode':
         try:
@@ -167,7 +169,8 @@ class ChordUtil:
         return ret_val
 
     # Attention: InternalControlFlowException を raiseする場合がある
-    # TODO: 他ノードに公開される is_node_alive （というかこれに相当するメソッドをどこかに定義しておく必要がある）
+    # TODO: 実システム化する際は アドレス指定で呼び出せる（ChordNodeオブジェクトのメソッドという形でない）
+    #       RPC化する必要がありそう。もしくはこのメソッドの呼び出し自体を無くすか。 is_node_alive
     @classmethod
     def is_node_alive(cls, address : str) -> bool:
         try:

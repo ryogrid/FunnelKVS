@@ -47,12 +47,14 @@ NODE_NUM_MAX = 10000
 
 LOCK_ACQUIRE_TIMEOUT = 10
 
-# TODO: Rustでマルチスレッド化した場合、gvalモジュール内のミュータブルな変数への
-#       アクセスをまとめてロックするロック変数を用意する必要がある
+# プロセス内の全てのデータへのアクセスに対するロック変数
+# 実装していく過程で細粒度のロックに対応できていない場合や、デバッグ用途に用いる
+lock_of_all_data = threading.Lock()
 
 # アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 # IPアドレスが分かれば、対応するノードと通信できることと対応している
 all_node_dict : Dict[str, 'ChordNode'] = {}
+lock_of_all_node_dict = threading.Lock()
 
 # DHT上で保持されている全てのデータが保持されているリスト
 # KeyValueオブジェクトを要素として持つ
@@ -61,13 +63,11 @@ all_node_dict : Dict[str, 'ChordNode'] = {}
 # に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
 # 照らし合わせられるようにする
 all_data_list : List['KeyValue'] = []
+lock_of_all_data_list = threading.Lock()
 
 # 検証を分かりやすくするために何ノード目として生成されたか
 # のデバッグ用IDを持たせるためのカウンタ
 already_born_node_num = 0
-
-lock_of_all_data = threading.Lock()
-lock_of_all_data_list = threading.Lock()
 
 is_network_constructed = False
 

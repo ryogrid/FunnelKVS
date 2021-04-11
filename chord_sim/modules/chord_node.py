@@ -375,6 +375,11 @@ class ChordNode:
         return ret_value_str
 
     # 指定されたデータが存在した場合は true を返し、そうでない場合は false を返す
+    # TODO: global_getとglobal_putを呼び出しているがそれぞれで発見したノードが異なった場合
+    #       を考慮すると、もう少し手のこんだ実装を行わなければならないかもしれない.
+    #       また、global_getを何度かリトライすることでデータが見つかる場合が存在することを考える
+    #       と、global_getもしくはglobal_putをある程度の回数呼び出す必要があるかもしれないが、
+    #       当然、このRPCのレスポンスタイムは大きく落ちるためどうすべきか悩ましい.
     def global_delete(self, data_id : int) -> bool:
         cur_val = self.global_get(data_id)
         self.global_put(data_id, DataStore.DELETED_ENTRY_MARKING_STR)

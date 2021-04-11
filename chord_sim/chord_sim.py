@@ -15,9 +15,10 @@ from modules.stabilizer import Stabilizer
 # ネットワークに存在するノードから1ノードをランダムに取得する
 # is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
 def get_a_random_node() -> ChordNode:
-    alive_nodes_list : List[ChordNode] = list(
-        filter(lambda node: node.is_alive == True and node.is_join_op_finished == True, list(gval.all_node_dict.values()))
-    )
+    with gval.lock_of_all_node_dict:
+        alive_nodes_list : List[ChordNode] = list(
+            filter(lambda node: node.is_alive == True and node.is_join_op_finished == True, list(gval.all_node_dict.values()))
+        )
     return ChordUtil.get_random_elem(alive_nodes_list)
 
 # stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
@@ -32,7 +33,8 @@ def check_nodes_connectivity():
     cur_node_info : NodeInfo = get_a_random_node().node_info
     start_node_info : NodeInfo = cur_node_info
     # ノードの総数（is_aliveフィールドがFalseのものは除外して算出）
-    all_node_num = len(list(filter(lambda node: node.is_alive == True ,list(gval.all_node_dict.values()))))
+    with gval.lock_of_all_node_dict:
+        all_node_num = len(list(filter(lambda node: node.is_alive == True ,list(gval.all_node_dict.values()))))
     ChordUtil.print_no_lf("check_nodes_connectivity__succ,all_node_num=" + str(all_node_num) + ",already_born_node_num=" + str(gval.already_born_node_num))
     print(",", flush=True, end="")
 
@@ -224,8 +226,9 @@ def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]) -> List[T
 
 # all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 def do_stabilize_once_at_all_node():
-    node_list = list(gval.all_node_dict.values())
-    shuffled_node_list : List[ChordNode] = random.sample(node_list, len(node_list))
+    with gval.lock_of_all_node_dict:
+        node_list = list(gval.all_node_dict.values())
+        shuffled_node_list : List[ChordNode] = random.sample(node_list, len(node_list))
     thread_list_succ : List[Thread] = do_stabilize_onace_at_all_node_successor(shuffled_node_list)
     thread_list_ftable : List[Thread] = do_stabilize_onace_at_all_node_ftable(shuffled_node_list)
 
@@ -275,7 +278,7 @@ def do_put_on_random_node():
 
         node = get_a_random_node()
 
-    # 成功した場合はTrueが返るのでその場合だけ all_node_dictに追加する
+    # 成功した場合はTrueが返るのでその場合だけ all_data_listに追加する
     if node.endpoints.rrpc__global_put(kv_data.data_id, kv_data.value_data):
         with gval.lock_of_all_data_list:
             gval.all_data_list.append(kv_data)
@@ -301,9 +304,10 @@ def do_get_on_random_node():
     # gval.lock_of_all_data.acquire()
 
     # まだ put が行われていなかったら何もせずに終了する
-    if len(gval.all_data_list) == 0:
-        # gval.lock_of_all_data.release()
-        return
+    with gval.lock_of_all_data_list:
+        if len(gval.all_data_list) == 0:
+            # gval.lock_of_all_data.release()
+            return
 
     is_retry = False
 
@@ -326,7 +330,8 @@ def do_get_on_random_node():
         #リトライではない (リトライが無事終了した場合を含む) ためカウンタをリセットする
         gval.global_get_retry_cnt = 0
 
-        target_data = ChordUtil.get_random_elem(gval.all_data_list)
+        with gval.lock_of_all_data_list:
+            target_data = ChordUtil.get_random_elem(gval.all_data_list)
         target_data_id = target_data.data_id
 
         # ログの量の増加が懸念されるが global_getを行うたびに、取得対象データの所在を出力する
@@ -407,21 +412,22 @@ def do_kill_a_random_node():
             + "LOCK_ACQUIRE_TIMEOUT")
         return
     try:
-        if len(gval.all_node_dict) > 10 \
-                and (ChordNode.need_getting_retry_data_id == -1
-                     and ChordNode.need_put_retry_data_id == -1
-                     and Stabilizer.need_join_retry_node == None):
-            node.is_alive = False
-            ChordUtil.dprint(
-                "do_kill_a_random_node_1,"
-                + ChordUtil.gen_debug_str_of_node(node.node_info))
-            with node.node_info.lock_of_datastore:
-                for key, value in node.data_store.stored_data.items():
-                    data_id: str = key
-                    sv_entry : DataIdAndValue = value
-                    ChordUtil.dprint("do_kill_a_random_node_2,"
-                                     + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                                     + hex(int(data_id)) + "," + hex(sv_entry.data_id))
+        with gval.lock_of_all_node_dict:
+            if len(gval.all_node_dict) > 10 \
+                    and (ChordNode.need_getting_retry_data_id == -1
+                         and ChordNode.need_put_retry_data_id == -1
+                         and Stabilizer.need_join_retry_node == None):
+                node.is_alive = False
+                ChordUtil.dprint(
+                    "do_kill_a_random_node_1,"
+                    + ChordUtil.gen_debug_str_of_node(node.node_info))
+                with node.node_info.lock_of_datastore:
+                    for key, value in node.data_store.stored_data.items():
+                        data_id: str = key
+                        sv_entry : DataIdAndValue = value
+                        ChordUtil.dprint("do_kill_a_random_node_2,"
+                                         + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
+                                         + hex(int(data_id)) + "," + hex(sv_entry.data_id))
     finally:
         node.node_info.lock_of_datastore.release()
         node.node_info.lock_of_succ_infos.release()

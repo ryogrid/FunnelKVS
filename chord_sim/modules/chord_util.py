@@ -144,6 +144,8 @@ class ChordUtil:
     def gen_debug_str_of_data(cls, data_id : int) -> str:
         return hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)
 
+    # TODO: InteernalExp, DownedeExp at get_node_by_address
+
     # Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
     #            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
     # TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
@@ -168,6 +170,8 @@ class ChordUtil:
             raise NodeIsDownedExceptiopn()
 
         return ret_val
+
+    # TODO: InternalExp at is_node_alive
 
     # Attention: InternalControlFlowException を raiseする場合がある
     # TODO: 実システム化する際は アドレス指定で呼び出せる（ChordNodeオブジェクトのメソッドという形でない）

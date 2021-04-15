@@ -64,9 +64,11 @@ class Endpoints:
     def grpc__set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor_info_0 : 'NodeInfo', ftable_enry_0 : 'NodeInfo'):
         return self.existing_node.stabilizer.set_routing_infos_force(predecessor_info, successor_info_0, ftable_enry_0)
 
+    # TODO: InternalExp at grpc__stabilize_succesor_inner
     def grpc__stabilize_successor_inner(self):
         return self.existing_node.stabilizer.stabilize_successor_inner()
 
+    # TODO: InternalExp at grpc__check_predecessor
     def grpc__check_predecessor(self, node_info : 'NodeInfo'):
         return self.existing_node.stabilizer.check_predecessor(node_info)
 

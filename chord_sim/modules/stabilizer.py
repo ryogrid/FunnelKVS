@@ -295,6 +295,7 @@ class Stabilizer:
     # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
     # 本メソッドはstabilize処理の中で用いられる
     # Attention: InternalControlFlowException を raiseする場合がある
+    # TODO: InternalExp at check_predecessor
     def check_predecessor(self, node_info : 'NodeInfo'):
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -377,6 +378,7 @@ class Stabilizer:
         else:
             self.existing_node.node_info.successor_info_list = successor_list_tmp
 
+    # TODO: InternalExp at stabilize_successor_inner_fix_chain
     # ロックは呼び出し元のstabilize_successor_innerでとってある前提
     def stabilize_successor_inner_fix_chain(self, successor : 'ChordNode'):
         # TODO: direct access to predecessor_info of successor at stabilize_successor_inner_fix_chain
@@ -485,6 +487,7 @@ class Stabilizer:
     #  なノードで、諸々の処理の結果、self の successor[0] となるべきノードであると確認されたノードを返す.
     #　注: この呼び出しにより、self.existing_node.node_info.successor_info_list[0] は更新される
     #  規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
+    # TODO: InternalExp at stabilize_successor_inner
     def stabilize_successor_inner(self) -> 'NodeInfo':
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("stabilize_successor_inner_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

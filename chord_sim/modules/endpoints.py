@@ -49,6 +49,7 @@ class Endpoints:
     def grpc__get_all_data(self) -> List[DataIdAndValue]:
         return self.existing_node.data_store.get_all_data()
 
+    # TODO: DownedExp, InternalExp at grpc__find_successor
     def grpc__find_successor(self, id : int) -> 'ChordNode':
         return self.existing_node.router.find_successor(id)
 

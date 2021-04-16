@@ -336,6 +336,7 @@ class Stabilizer:
             self.existing_node.node_info.lock_of_pred_info.release()
 
     # ロックは呼び出し元のstabilize_successor_innerでとってある前提
+    # TODO: DownedExp at stabilize_successor_inner_fill_succ_list
     def stabilize_successor_inner_fill_succ_list(self):
         # 本メソッド呼び出しでsuccessorとして扱うノードはsuccessorListからダウンしているノードを取り除いた上で
         # successor_info_list[0]となったノードとする

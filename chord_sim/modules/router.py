@@ -17,7 +17,7 @@ class Router:
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
-    # TODO: Appropriate
+    # TODO: AppropriateExp at find_successor
     def find_successor(self, id : int) -> 'ChordNode':
         # TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
         #       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に
@@ -55,7 +55,8 @@ class Router:
             try:
                 # 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
                 # TODO: direct access to successor_info_list of n_dash at find_successor
-                return ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
+                n_dash_successor : 'ChordNode' = ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
+                return n_dash_successor
             except (InternalControlFlowException, NodeIsDownedExceptiopn):
                 # ここでは何も対処しない
                 ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -158,7 +159,8 @@ class Router:
                 ChordUtil.dprint("closest_preceding_finger_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(casted_node_info))
                 try:
-                    return ChordUtil.get_node_by_address(casted_node_info.address_str)
+                    casted_node : 'ChordNode' = ChordUtil.get_node_by_address(casted_node_info.address_str)
+                    return casted_node
                 except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # ここでは何も対処しない
                     continue

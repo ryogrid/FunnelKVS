@@ -179,6 +179,7 @@ class ChordUtil:
     @classmethod
     def is_node_alive(cls, address : str) -> bool:
         try:
+            # TODO: handle get_node_by_address at is_node_alive
             node_obj = ChordUtil.get_node_by_address(address)
         except NodeIsDownedExceptiopn:
             return False

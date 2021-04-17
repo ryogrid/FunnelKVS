@@ -25,6 +25,7 @@ class TaskQueue:
             task_code : str = self.tqueue.pop()
             if task_code == TaskQueue.JOIN_PARTIAL:
                 try:
+                    # TODO: handle partial_join_op at exec_first
                     self.existing_node.stabilizer.partial_join_op()
                 except (InternalControlFlowException, NodeIsDownedExceptiopn):
                     # 実行に失敗したため再実行すべく先頭に戻す

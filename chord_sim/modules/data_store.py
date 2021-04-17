@@ -183,6 +183,7 @@ class DataStore:
         # レプリカを successorList内のノードに渡す（手抜きでputされたもの含めた全てを渡してしまう）
         for succ_info in self.existing_node.node_info.successor_info_list:
             try:
+                # TODO: handle get_node_by_address at distribute_replica
                 succ_node: ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
             except (NodeIsDownedExceptiopn, InternalControlFlowException):
                 # stabilize処理 と put処理 を経ていずれ正常な状態に

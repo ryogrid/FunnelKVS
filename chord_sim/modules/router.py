@@ -53,6 +53,8 @@ class Router:
                              + ChordUtil.gen_debug_str_of_data(id))
 
             try:
+                # TODO: handle get_node_by_address at find_successor
+
                 # 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
                 # TODO: direct access to successor_info_list of n_dash at find_successor
                 n_dash_successor : 'ChordNode' = ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
@@ -159,6 +161,7 @@ class Router:
                 ChordUtil.dprint("closest_preceding_finger_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(casted_node_info))
                 try:
+                    # TODO: handle get_node_by_address at closest_preceding_finger
                     casted_node : 'ChordNode' = ChordUtil.get_node_by_address(casted_node_info.address_str)
                     return casted_node
                 except (InternalControlFlowException, NodeIsDownedExceptiopn):

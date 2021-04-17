@@ -73,6 +73,7 @@ class ChordNode:
 
     def global_put(self, data_id : int, value_str : str) -> bool:
         try:
+            # TODO: handle find_successor at global_put
             target_node = self.router.find_successor(data_id)
             # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
             # 初期化しておく
@@ -153,6 +154,7 @@ class ChordNode:
                 ChordUtil.dprint("global_get_recover_prev_1,predecessor is None")
                 return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
             try:
+                # TODO: handle get_node_by_address at global_get_recover_prev
                 cur_predecessor : ChordNode = ChordUtil.get_node_by_address(
                     cast(NodeInfo, self.node_info.predecessor_info).address_str)
                 got_value_str = cur_predecessor.endpoints.grpc__get(data_id, for_recovery=True)
@@ -194,6 +196,7 @@ class ChordNode:
     # successorを辿ってリカバリを試みる処理をくくり出したもの
     def global_get_recover_succ(self, data_id : int) -> Tuple[str, Optional['ChordNode']]:
         try:
+            # TODO: handle get_node_by_address at global_get_recover_succ
             cur_successor : ChordNode = ChordUtil.get_node_by_address(
                 cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
             got_value_str = cur_successor.endpoints.grpc__get(data_id, for_recovery=True)
@@ -242,6 +245,7 @@ class ChordNode:
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
         try:
+            # TODO: handle find_successor at global_get
             target_node = self.router.find_successor(data_id)
             got_value_str = target_node.endpoints.grpc__get(data_id)
         except (AppropriateNodeNotFoundException, InternalControlFlowException, NodeIsDownedExceptiopn):

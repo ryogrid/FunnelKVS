@@ -17,7 +17,7 @@ class Router:
 
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
-    # TODO: AppropriateExp, DownedExp at find_successor
+    # TODO: AppropriateExp, DownedExp, InternalExp at find_successor
     def find_successor(self, id : int) -> 'ChordNode':
         # TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
         #       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に

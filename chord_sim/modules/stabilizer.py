@@ -35,6 +35,7 @@ class Stabilizer:
 
     # successor_info_listの長さをチェックし、規定長を越えていた場合余剰なノードにレプリカを
     # 削除させた上で、リストから取り除く
+    # TODO: InternalExp at check_successor_list_length
     def check_successor_list_length(self):
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("check_successor_list_length_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -182,6 +183,7 @@ class Stabilizer:
 
     # join処理のうちレプリカに関する処理を分割したもの
     # stabilize処理を行うスレッドによって一度だけ(失敗した場合はカウントしないとして)実行される
+    # TODO: InternalExp at partial_join_op
     def partial_join_op(self):
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint(
@@ -532,6 +534,7 @@ class Stabilizer:
     # successorListに関するstabilize処理を行う
     # コメントにおいては、successorListの構造を意識した記述の場合、一番近いsuccessorを successor[0] と
     # 記述し、以降に位置するノードは近い順に successor[idx] と記述する
+    # TODO: InternalExp at stabilize_successor
     def stabilize_successor(self):
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("stabilize_successor_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -662,6 +665,7 @@ class Stabilizer:
     # FingerTableに関するstabilize処理を行う
     # 一回の呼び出しで1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
+    # TODO: InternalExp at stabilize_finger_table
     def stabilize_finger_table(self, idx):
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("stabilize_finger_table_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

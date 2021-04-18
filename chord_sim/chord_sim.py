@@ -230,6 +230,7 @@ def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]) -> List[T
 
 # all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 def do_stabilize_once_at_all_node():
+    ChordUtil.dprint("do_stabilize_once_at_all_node_0,START")
     with gval.lock_of_all_node_dict:
         node_list = list(gval.all_node_dict.values())
         shuffled_node_list : List[ChordNode] = random.sample(node_list, len(node_list))

@@ -4,7 +4,7 @@ import threading
 from threading import Thread
 import time
 import random
-from typing import List, cast
+from typing import List, Union, cast
 
 import modules.gval as gval
 from modules.node_info import NodeInfo
@@ -504,8 +504,10 @@ def node_kill_th():
         time.sleep(gval.NODE_KILL_INTERVAL_SEC)
 
 def main():
-    # result : PResult[NodeInfo] = ChordUtil.generic_test(NodeInfo())
-    # print(result)
+    # result1 : PResult[Union[NodeInfo, None]] = ChordUtil.generic_test_ok(NodeInfo())
+    # print(result1)
+    # result2 : PResult[Union[NodeInfo, None]] = ChordUtil.generic_test_err(NodeInfo())
+    # print(result2)
 
     # 再現性のため乱数シードを固定
     # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで

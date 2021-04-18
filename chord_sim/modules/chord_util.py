@@ -6,13 +6,18 @@ import random
 import datetime
 import dataclasses
 import traceback
-from typing import List, Any, Optional, TypeVar, Generic, cast, TYPE_CHECKING
+from typing import List, Any, Optional, TypeVar, Generic, Union, cast, TYPE_CHECKING
 
 from . import gval
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
     from .node_info import NodeInfo
+
+class ErrorCode:
+    NodeIsDownedException_CODE = 1
+    AppropriateNodeNotFoundException_CODE = 2
+    InternalControlFlowException_CODE = 3
 
 T = TypeVar('T')
 
@@ -23,11 +28,12 @@ class PResult(Generic[T]):
         return PResult[T](result, True)
 
     @classmethod
-    def Err(cls, result: T):
-        return PResult[T](result, False)
+    def Err(cls, result: T,  err_code : int):
+        return PResult[T](result, False, err_code = err_code)
 
-    def __init__(self, result: T, is_ok: bool):
+    def __init__(self, result: T, is_ok: bool, err_code = None):
         self.result : T = result
+        self.err_code : Optional[int] = err_code
         self.is_ok : bool = is_ok
 
 class ChordUtil:
@@ -283,8 +289,12 @@ class ChordUtil:
                          + " ,| ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))
 
     # @classmethod
-    # def generic_test(cls, node_info : 'NodeInfo') -> PResult['NodeInfo']:
+    # def generic_test_ok(cls, node_info : 'NodeInfo') -> PResult[Union['NodeInfo', None]]:
     #     return PResult.Ok(node_info)
+    #
+    # @classmethod
+    # def generic_test_err(cls, node_info : 'NodeInfo') -> PResult[Union['NodeInfo', None]]:
+    #     return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
 
 # # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
 # # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）

@@ -8,7 +8,7 @@ from typing import List, cast
 
 import modules.gval as gval
 from modules.node_info import NodeInfo
-from modules.chord_util import ChordUtil, KeyValue, DataIdAndValue
+from modules.chord_util import ChordUtil, KeyValue, DataIdAndValue, PResult
 from modules.chord_node import ChordNode, NodeIsDownedExceptiopn, InternalControlFlowException
 from modules.stabilizer import Stabilizer
 
@@ -504,6 +504,9 @@ def node_kill_th():
         time.sleep(gval.NODE_KILL_INTERVAL_SEC)
 
 def main():
+    # result : PResult[NodeInfo] = ChordUtil.generic_test(NodeInfo())
+    # print(result)
+
     # 再現性のため乱数シードを固定
     # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで
     # スイッチするかは実行毎に異なる可能性があるため、あまり意味はないかもしれない

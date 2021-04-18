@@ -6,13 +6,29 @@ import random
 import datetime
 import dataclasses
 import traceback
-from typing import List, Any, Optional, cast, TYPE_CHECKING
+from typing import List, Any, Optional, TypeVar, Generic, cast, TYPE_CHECKING
 
 from . import gval
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
     from .node_info import NodeInfo
+
+T = TypeVar('T')
+
+class PResult(Generic[T]):
+
+    @classmethod
+    def Ok(cls, result: T):
+        return PResult[T](result, True)
+
+    @classmethod
+    def Err(cls, result: T):
+        return PResult[T](result, False)
+
+    def __init__(self, result: T, is_ok: bool):
+        self.result : T = result
+        self.is_ok : bool = is_ok
 
 class ChordUtil:
     # 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
@@ -265,6 +281,10 @@ class ChordUtil:
         ChordUtil.dprint("dprint_routing_info__SUCC," +ChordUtil.gen_debug_str_of_node(callee_node.node_info) + "," + calee_method + ","
                          + "SUCCESSOR_INFO_LIST," + str(len(callee_node.node_info.successor_info_list)) + ","
                          + " ,| ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))
+
+    # @classmethod
+    # def generic_test(cls, node_info : 'NodeInfo') -> PResult['NodeInfo']:
+    #     return PResult.Ok(node_info)
 
 # # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
 # # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）

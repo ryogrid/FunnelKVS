@@ -4,11 +4,11 @@ import threading
 from threading import Thread
 import time
 import random
-from typing import List, Union, cast
+from typing import List, Optional, Union, cast
 
 import modules.gval as gval
 from modules.node_info import NodeInfo
-from modules.chord_util import ChordUtil, KeyValue, DataIdAndValue, PResult
+from modules.chord_util import ChordUtil, KeyValue, DataIdAndValue, ErrorCode, PResult
 from modules.chord_node import ChordNode, NodeIsDownedExceptiopn, InternalControlFlowException
 from modules.stabilizer import Stabilizer
 
@@ -504,10 +504,26 @@ def node_kill_th():
         time.sleep(gval.NODE_KILL_INTERVAL_SEC)
 
 def main():
-    # result1 : PResult[Union[NodeInfo, None]] = ChordUtil.generic_test_ok(NodeInfo())
+    # result1 : PResult[Optional[NodeInfo]] = ChordUtil.generic_test_ok(NodeInfo())
     # print(result1)
-    # result2 : PResult[Union[NodeInfo, None]] = ChordUtil.generic_test_err(NodeInfo())
+    # result2 : PResult[Optional[NodeInfo]] = ChordUtil.generic_test_err(ErrorCode.NodeIsDownedException_CODE)
     # print(result2)
+    #
+    # ret = ChordUtil.generic_test_ok(NodeInfo())
+    # if ret.is_ok:
+    #     casted_ret : 'NodeInfo' = cast('NodeInfo', ret.result)
+    #     print("Ok")
+    # else:
+    #     casted_ret: int = cast(int, ret.err_code)
+    #     print(casted_ret)
+    #
+    # ret = ChordUtil.generic_test_err(ErrorCode.NodeIsDownedException_CODE)
+    # if ret.is_ok:
+    #     casted_ret : 'NodeInfo' = print(cast('NodeInfo', ret.result))
+    #     print("Ok")
+    # else:
+    #     casted_ret : int = cast(int, ret.err_code)
+    #     print(casted_ret)
 
     # 再現性のため乱数シードを固定
     # ただし、複数スレッドが存在し、個々の処理の終了するタイミングや、どのタイミングで

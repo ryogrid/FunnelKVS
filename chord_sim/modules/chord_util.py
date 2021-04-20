@@ -24,11 +24,11 @@ T = TypeVar('T')
 class PResult(Generic[T]):
 
     @classmethod
-    def Ok(cls, result: T):
+    def Ok(cls, result: T) -> 'PResult[T]':
         return PResult[T](result, True)
 
     @classmethod
-    def Err(cls, result: T,  err_code : int):
+    def Err(cls, result: T,  err_code : int) -> 'PResult[T]':
         return PResult[T](result, False, err_code = err_code)
 
     def __init__(self, result: T, is_ok: bool, err_code = None):
@@ -289,12 +289,12 @@ class ChordUtil:
                          + " ,| ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))
 
     # @classmethod
-    # def generic_test_ok(cls, node_info : 'NodeInfo') -> PResult[Union['NodeInfo', None]]:
+    # def generic_test_ok(cls, node_info : 'NodeInfo') -> PResult[Optional['NodeInfo']]:
     #     return PResult.Ok(node_info)
     #
     # @classmethod
-    # def generic_test_err(cls, node_info : 'NodeInfo') -> PResult[Union['NodeInfo', None]]:
-    #     return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
+    # def generic_test_err(cls, err_code : int) -> PResult[Optional['NodeInfo']]:
+    #     return PResult.Err(None, err_code)
 
 # # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
 # # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）

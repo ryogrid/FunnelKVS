@@ -204,14 +204,26 @@ class ChordUtil:
     # TODO: 実システム化する際は アドレス指定で呼び出せる（ChordNodeオブジェクトのメソッドという形でない）
     #       RPC化する必要がありそう。もしくはこのメソッドの呼び出し自体を無くすか。 is_node_alive
     @classmethod
-    def is_node_alive(cls, address : str) -> bool:
-        try:
-            # TODO: handle get_node_by_address at is_node_alive
-            node_obj = ChordUtil.get_node_by_address(address)
-        except NodeIsDownedExceptiopn:
-            return False
+    def is_node_alive(cls, address : str) -> PResult[Optional[bool]]:
+        # try:
+        #     # TODO: handle get_node_by_address at is_node_alive
+        #     node_obj = ChordUtil.get_node_by_address(address)
+        # except NodeIsDownedExceptiopn:
+        #     return False
+        # except InternalControlFlowException:
+        #     return False
 
-        return True
+        ret = ChordUtil.get_node_by_address(address)
+        if(ret.is_ok):
+            return PResult.Ok(True)
+        else:
+            if ret.err_code == ErrorCode.NodeIsDownedException_CODE:
+                return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
+            else: #ret.err_code == ErrorCode.InternalControlFlowException_CODE:
+                return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
+
+        #return True
+
 
     # デバッグ用のメソッド
     # グローバル変数にあるデータIDに対応するデータがどのノードに存在するかを記録する

@@ -173,7 +173,7 @@ class ChordUtil:
     # TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
     #       ChordNodeオブジェクトを返す get_node_by_address
     @classmethod
-    def get_node_by_address(cls, address : str) -> 'ChordNode':
+    def get_node_by_address(cls, address : str) -> PResult[Optional['ChordNode']]:
         try:
             # with gval.lock_of_all_node_dict:
             ret_val = gval.all_node_dict[address]
@@ -181,7 +181,10 @@ class ChordUtil:
             # join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
             # traceback.print_stack(file=sys.stdout)
             # print("KeyError occured", flush=True)
-            raise InternalControlFlowException("accessed to join operation progressing node.")
+
+            #raise InternalControlFlowException("accessed to join operation progressing node.")
+            return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
+
         # except KeyError:
         #     traceback.print_stack(file=sys.stdout)
         #     print("KeyError occured", flush=True)
@@ -189,9 +192,11 @@ class ChordUtil:
 
         if ret_val.is_alive == False:
             ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
-            raise NodeIsDownedExceptiopn()
+            #raise NodeIsDownedExceptiopn()
+            return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
 
-        return ret_val
+        #return ret_val
+        return PResult.Ok(ret_val)
 
     # TODO: InternalExp at is_node_alive
 

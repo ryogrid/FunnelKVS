@@ -3,8 +3,8 @@
 from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
 import modules.gval as gval
-from .chord_util import ChordUtil, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, InternalControlFlowException
-
+from .chord_util import ChordUtil, NodeIsDownedExceptiopn, \
+    AppropriateNodeNotFoundException, InternalControlFlowException, PResult, ErrorCode
 
 if TYPE_CHECKING:
     from .node_info import NodeInfo
@@ -18,7 +18,7 @@ class Router:
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
     # TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-    def find_successor(self, id : int) -> 'ChordNode':
+    def find_successor(self, id : int) -> PResult[Optional['ChordNode']]:
         # TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
         #       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に
         #       動作せず、パフォーマンスが出ないはず
@@ -26,7 +26,8 @@ class Router:
             # 失敗させる
             ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of successor_linfo_list is timedout.")
+            #raise InternalControlFlowException("gettting lock of successor_linfo_list is timedout.")
+            return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
 
         if self.existing_node.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
@@ -34,7 +35,8 @@ class Router:
             self.existing_node.node_info.lock_of_pred_info.release()
             ChordUtil.dprint("find_successor_0_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
-            raise NodeIsDownedExceptiopn()
+            #raise NodeIsDownedExceptiopn()
+            return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
 
         try:
             ChordUtil.dprint("find_successor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -44,7 +46,8 @@ class Router:
             if n_dash == None:
                 ChordUtil.dprint("find_successor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(id))
-                raise AppropriateNodeNotFoundException()
+                #raise AppropriateNodeNotFoundException()
+                return PResult.Err(None, err_code=ErrorCode.AppropriateNodeNotFoundException_CODE)
 
             # TODO: x direct access to node_info of n_dash at find_successor
             ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -52,18 +55,22 @@ class Router:
                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
                              + ChordUtil.gen_debug_str_of_data(id))
 
-            try:
-                # TODO: handle get_node_by_address at find_successor
 
-                # 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
-                # TODO: direct access to successor_info_list of n_dash at find_successor
-                n_dash_successor : 'ChordNode' = ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
-                return n_dash_successor
-            except (InternalControlFlowException, NodeIsDownedExceptiopn):
+            # TODO: handle get_node_by_address at find_successor
+
+            # 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
+            # TODO: direct access to successor_info_list of n_dash at find_successor
+            #n_dash_successor : 'ChordNode' = ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
+            ret = ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)
+            if(ret.is_ok):
+                n_dash_successor : 'ChordNode' = cast('ChordNode', ret.result)
+                return PResult.Ok(n_dash_successor)
+            else: # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
                 # ここでは何も対処しない
-                ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(
+                    self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(id))
-                raise AppropriateNodeNotFoundException()
+                return PResult.Err(None, cast(int,ret.err_code))
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
 
@@ -160,13 +167,20 @@ class Router:
             if ChordUtil.exist_between_two_nodes_right_mawari(self.existing_node.node_info.node_id, id, casted_node_info.node_id):
                 ChordUtil.dprint("closest_preceding_finger_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_node(casted_node_info))
-                try:
-                    # TODO: handle get_node_by_address at closest_preceding_finger
-                    casted_node : 'ChordNode' = ChordUtil.get_node_by_address(casted_node_info.address_str)
+                # try:
+                    # casted_node : 'ChordNode' = ChordUtil.get_node_by_address(casted_node_info.address_str)
+                    # return casted_node
+
+                ret = ChordUtil.get_node_by_address(casted_node_info.address_str)
+                if (ret.is_ok):
+                    casted_node : 'ChordNode' = cast('ChordNode', ret.result)
                     return casted_node
-                except (InternalControlFlowException, NodeIsDownedExceptiopn):
+                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
                     # ここでは何も対処しない
                     continue
+                # except (InternalControlFlowException, NodeIsDownedExceptiopn):
+                #     # ここでは何も対処しない
+                #     continue
 
         ChordUtil.dprint("closest_preceding_finger_3")
 

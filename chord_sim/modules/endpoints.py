@@ -2,7 +2,8 @@
 
 from typing import Dict, List, Tuple, Optional, cast, TYPE_CHECKING
 
-from .chord_util import ChordUtil, InternalControlFlowException, NodeIsDownedExceptiopn, DataIdAndValue, KeyValue
+from .chord_util import ChordUtil, InternalControlFlowException,\
+    NodeIsDownedExceptiopn, DataIdAndValue, KeyValue, PResult
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
@@ -52,7 +53,7 @@ class Endpoints:
     # TODO: handle find_successor at grpc__find_successor
 
     # TODO: AppropriateExp, DownedExp, InternalExp at grpc__find_successor
-    def grpc__find_successor(self, id : int) -> 'ChordNode':
+    def grpc__find_successor(self, id : int) -> PResult[Optional['ChordNode']]:
         return self.existing_node.router.find_successor(id)
 
     def grpc__closest_preceding_finger(self, id : int) -> 'ChordNode':

@@ -47,7 +47,7 @@ def check_nodes_connectivity():
 
         try:
             # TODO: handle get_node_by_address at check_nodes_connectivity
-            cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
+            cur_node_info =  ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
         except NodeIsDownedExceptiopn:
             print("")
             ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")

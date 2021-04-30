@@ -11,14 +11,14 @@ import threading
 class NodeInfo:
 
     def __init__(self):
-        self.node_id: int = None
-        self.address_str: str = None
+        self.node_id: int = -1
+        self.address_str: str = ""
 
         # デバッグ用のID
         # 何ノード目として生成されたかの値
         # TODO: 実システムでは開発中（というか、スクリプトで順にノード起動していくような形）でないと
         #       利用できないことは念頭おいて置く必要あり NodeInfo#born_id
-        self.born_id: int = None
+        self.born_id: int = -1
 
         # 以下の2つはNodeInfoオブジェクトを保持.
         # ある時点で取得したものが保持されており、変化する場合のあるフィールド

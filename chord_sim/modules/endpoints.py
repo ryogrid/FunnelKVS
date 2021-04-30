@@ -82,7 +82,7 @@ class Endpoints:
     # TODO: handle check_successor_list_length at grpc__check_successor_list_length
 
     # TODO: InternalExp at grpc__check_successor_list_length
-    def grpc__check_successor_list_length(self):
+    def grpc__check_successor_list_length(self) -> PResult[bool]:
         return self.existing_node.stabilizer.check_successor_list_length()
 
     # TODO: 実システムでは、ChordNodeオブジェクトが生成されたあとはこのrpcでチェック可能とする

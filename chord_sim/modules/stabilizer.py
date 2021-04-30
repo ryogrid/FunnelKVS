@@ -709,8 +709,6 @@ class Stabilizer:
             while len(updated_list) < gval.SUCCESSOR_LIST_NORMAL_LEN and tried_getting_succ_cnt < gval.TRYING_GET_SUCC_TIMES_LIMIT:
                 try:
                     if exception_occured == False:
-                        # TODO: handle grpc__stabilize_successor_inner at join
-
                         # TODO: stabilize_successor_inner call at stabilize_successor
                         #cur_node_info : 'NodeInfo' = cur_node.endpoints.grpc__stabilize_successor_inner()
                         ret = cur_node.endpoints.grpc__stabilize_successor_inner()

@@ -55,9 +55,6 @@ class Router:
                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
                              + ChordUtil.gen_debug_str_of_data(id))
 
-
-            # TODO: handle get_node_by_address at find_successor
-
             # 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
             # TODO: direct access to successor_info_list of n_dash at find_successor
             #n_dash_successor : 'ChordNode' = ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str)

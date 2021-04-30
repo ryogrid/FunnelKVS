@@ -50,8 +50,6 @@ class Endpoints:
     def grpc__get_all_data(self) -> List[DataIdAndValue]:
         return self.existing_node.data_store.get_all_data()
 
-    # TODO: handle find_successor at grpc__find_successor
-
     # TODO: AppropriateExp, DownedExp, InternalExp at grpc__find_successor
     def grpc__find_successor(self, id : int) -> PResult[Optional['ChordNode']]:
         return self.existing_node.router.find_successor(id)
@@ -77,8 +75,6 @@ class Endpoints:
     # TODO: InternalExp at grpc__check_predecessor
     def grpc__check_predecessor(self, node_info : 'NodeInfo'):
         return self.existing_node.stabilizer.check_predecessor(node_info)
-
-    # TODO: handle check_successor_list_length at grpc__check_successor_list_length
 
     # TODO: InternalExp at grpc__check_successor_list_length
     def grpc__check_successor_list_length(self) -> PResult[bool]:

@@ -749,7 +749,7 @@ class Stabilizer:
                                      + str(exception_occured))
 
                     #cur_node : 'ChordNode' = ChordUtil.get_node_by_address(cur_node_info.address_str)
-                    ret : PResult[Optional['ChordNode']] = ChordUtil.get_node_by_address(cur_node_info.address_str)
+                    ret = ChordUtil.get_node_by_address(cur_node_info.address_str)
                     if (ret.is_ok):
                         cur_node: 'ChordNode' = cast('ChordNode', ret.result)
                     else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE

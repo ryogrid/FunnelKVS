@@ -8,8 +8,8 @@ from typing import List, Optional, Union, cast
 
 import modules.gval as gval
 from modules.node_info import NodeInfo
-from modules.chord_util import ChordUtil, KeyValue, DataIdAndValue, ErrorCode, PResult
-from modules.chord_node import ChordNode, NodeIsDownedExceptiopn, InternalControlFlowException
+from modules.chord_util import ChordUtil, KeyValue, DataIdAndValue, ErrorCode, PResult, NodeIsDownedExceptiopn, InternalControlFlowException
+from modules.chord_node import ChordNode
 from modules.stabilizer import Stabilizer
 
 # ネットワークに存在するノードから1ノードをランダムに取得する
@@ -45,19 +45,33 @@ def check_nodes_connectivity():
         # いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         # 得ることに対応する形とする
 
-        try:
-            # TODO: handle get_node_by_address at check_nodes_connectivity
-            cur_node_info =  ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
-        except NodeIsDownedExceptiopn:
-            print("")
-            ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")
-            return
-        except InternalControlFlowException:
-            # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-            # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
-            print("")
-            ChordUtil.dprint("check_nodes_connectivity__succ,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-            return
+        # try:
+            #cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
+        ret = ChordUtil.get_node_by_address(cur_node_info.address_str)
+        if (ret.is_ok):
+            cur_node_info : 'NodeInfo' = cast('ChordNode', ret.result).node_info.successor_info_list[0]
+        else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+            if cast(int, ret.err_code) == ErrorCode.NodeIsDownedException_CODE:
+                print("")
+                ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")
+                return
+            else: #cast(int, ret.err_code) == ErrorCode.InternalControlFlowException_CODE
+                # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
+                print("")
+                ChordUtil.dprint("check_nodes_connectivity__succ,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                return
+
+        # except NodeIsDownedExceptiopn:
+        #     print("")
+        #     ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")
+        #     return
+        # except InternalControlFlowException:
+        #     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+        #     # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
+        #     print("")
+        #     ChordUtil.dprint("check_nodes_connectivity__succ,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+        #     return
 
         if cur_node_info == None:
             print("", flush=True, end="")
@@ -88,19 +102,33 @@ def check_nodes_connectivity():
     print(",", flush=True, end="")
     while counter < all_node_num:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
-        try:
-            # TODO: handle get_node_by_address at check_nodes_connectivity
-            cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
-        except NodeIsDownedExceptiopn:
-            print("")
-            ChordUtil.dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
-            return
-        except InternalControlFlowException:
-            # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-            # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
-            print("")
-            ChordUtil.dprint("check_nodes_connectivity__pred,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-            return
+        # try:
+            #cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
+        ret = ChordUtil.get_node_by_address(cur_node_info.address_str)
+        if (ret.is_ok):
+            cur_node_info: 'ChordNode' = cast('ChordNode', ret.result).node_info.predecessor_info
+        else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+            if cast(int, ret.err_code) == ErrorCode.NodeIsDownedException_CODE:
+                print("")
+                ChordUtil.dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
+                return
+            else: #cast(int, ret.err_code) == ErrorCode.InternalControlFlowException_CODE
+                # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
+                print("")
+                ChordUtil.dprint("check_nodes_connectivity__pred,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                return
+
+        # except NodeIsDownedExceptiopn:
+        #     print("")
+        #     ChordUtil.dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
+        #     return
+        # except InternalControlFlowException:
+        #     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+        #     # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
+        #     print("")
+        #     ChordUtil.dprint("check_nodes_connectivity__pred,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+        #     return
 
         if cur_node_info == None:
             # 先を追っていけないのでチェックを終了する
@@ -138,8 +166,8 @@ def add_new_node():
 
     if Stabilizer.need_join_retry_node != None:
         # 前回の呼び出しが失敗していた場合はリトライを行う
-        tyukai_node = Stabilizer.need_join_retry_tyukai_node
-        new_node = Stabilizer.need_join_retry_node
+        tyukai_node = cast('ChordNode', Stabilizer.need_join_retry_tyukai_node)
+        new_node = cast('ChordNode', Stabilizer.need_join_retry_node)
         new_node.stabilizer.join(tyukai_node.node_info.address_str)
         if Stabilizer.need_join_retry_node == None:
             # リトライ情報が再設定されていないためリトライに成功したと判断
@@ -265,7 +293,7 @@ def do_put_on_random_node():
         kv_data = KeyValue(ChordNode.need_put_retry_data_value, ChordNode.need_put_retry_data_value)
         # data_id は乱数で求めるというインチキをしているため、記録してあったもので上書きする
         kv_data.data_id = ChordNode.need_put_retry_data_id
-        node = ChordNode.need_put_retry_node
+        node = cast('ChordNode', ChordNode.need_put_retry_node)
     else:
         # ミリ秒精度で取得したUNIXTIMEを文字列化してkeyに用いる
         unixtime_str = str(time.time())
@@ -284,7 +312,7 @@ def do_put_on_random_node():
         node = get_a_random_node()
 
     # 成功した場合はTrueが返るのでその場合だけ all_data_listに追加する
-    if node.endpoints.rrpc__global_put(kv_data.data_id, kv_data.value_data):
+    if node.endpoints.rrpc__global_put(cast(int, kv_data.data_id), kv_data.value_data):
         with gval.lock_of_all_data_list:
             gval.all_data_list.append(kv_data)
 
@@ -293,11 +321,11 @@ def do_put_on_random_node():
             # リトライ情報が再設定されていないためリトライに成功したと判断
             ChordUtil.dprint(
                 "do_put_on_random_node_1,retry of global_put is succeeded," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                + ChordUtil.gen_debug_str_of_data(kv_data.data_id))
+                + ChordUtil.gen_debug_str_of_data(cast(int, kv_data.data_id)))
         else:
             ChordUtil.dprint(
                 "do_put_on_random_node_2,retry of global_put is failed," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-                + ChordUtil.gen_debug_str_of_data(kv_data.data_id))
+                + ChordUtil.gen_debug_str_of_data(cast(int, kv_data.data_id)))
 
     # # ロックの解放
     # gval.lock_of_all_data.release()

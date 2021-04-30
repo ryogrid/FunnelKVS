@@ -247,7 +247,7 @@ class Stabilizer:
 
                     # TODO: receive_replica call at partial_join_op
                     succ.endpoints.grpc__receive_replica(
-                        [DataIdAndValue(data_id = cast('int', data.data_id), value_data=data.value_data) for data in tantou_data_list]
+                        [DataIdAndValue(data_id = data.data_id, value_data=data.value_data) for data in tantou_data_list]
                     )
                 else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
                     # ノードがダウンしていた場合等は無視して次のノードに進む.
@@ -308,10 +308,10 @@ class Stabilizer:
                 # (この呼び出しの中で successor_info_listからの余剰ノードのエントリ削除も行われる）
                 # TODO: check_successor_list_length call at partial_join_op
                 #self_predeessor_node.endpoints.grpc__check_successor_list_length()
-                ret : PResult[bool] = self_predeessor_node.endpoints.grpc__check_successor_list_length()
-                if (ret.is_ok):
+                ret2 = self_predeessor_node.endpoints.grpc__check_successor_list_length()
+                if (ret2.is_ok):
                     pass
-                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+                else:  # ret2.err_code == ErrorCode.InternalControlFlowException_CODE || ret2.err_code == ErrorCode.NodeIsDownedException_CODE
                     handle_err()
                     return PResult.Ok(True)
 
@@ -329,13 +329,16 @@ class Stabilizer:
             # (前方に位置するノードが join や put によるレプリカの配布を行っているタイミングとバッティングするとsuccessorが持っている古い
             #  データで更新してしまうということが起こる可能性はあるが、タイミングとしては稀であり、また後続の put で再度最新のデータを受け取る
             #  ため、問題ないと判断する)
-            try:
-                # TODO: handle get_node_by_address at partial_join_op
-                successor : 'ChordNode' = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0].address_str)
+            # try:
+
+            # successor : 'ChordNode' = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0].address_str)
+            ret = ChordUtil.get_node_by_address(self.existing_node.node_info.successor_info_list[0].address_str)
+            if (ret.is_ok):
+                successor : 'ChordNode' = cast('ChordNode', ret.result)
                 # TODO: get_all_data call at partial_join_op
                 passed_all_replica: List[DataIdAndValue] = successor.endpoints.grpc__get_all_data()
                 self.existing_node.data_store.store_replica_of_multi_masters(passed_all_replica)
-            except (NodeIsDownedExceptiopn, InternalControlFlowException):
+            else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
                 # ノードがダウンしていた場合等は無視して先に進む.
                 # ノードダウンに関する対処とそれに関連したレプリカの適切な配置はそれぞれ stabilize処理 と
                 # put処理 の中で後ほど行われるためここでは対処しない
@@ -345,6 +348,16 @@ class Stabilizer:
                         self.existing_node.node_info) + ","
                     + ChordUtil.gen_debug_str_of_node(node_info))
 
+            # except (NodeIsDownedExceptiopn, InternalControlFlowException):
+            #     # ノードがダウンしていた場合等は無視して先に進む.
+            #     # ノードダウンに関する対処とそれに関連したレプリカの適切な配置はそれぞれ stabilize処理 と
+            #     # put処理 の中で後ほど行われるためここでは対処しない
+            #     # (ただし、レプリカが本ノードに存在しない状態が短くない時間発生する可能性はある)
+            #     ChordUtil.dprint(
+            #         "partial_join_op_7,NODE_IS_DOWNED or InternalControlFlowException" + ChordUtil.gen_debug_str_of_node(
+            #             self.existing_node.node_info) + ","
+            #         + ChordUtil.gen_debug_str_of_node(node_info))
+
             # join処理が全て終わった
             self.existing_node.is_join_op_finished = True
             # partial_join_opが終わるまで止めていたkillスレッドを解放する
@@ -353,6 +366,8 @@ class Stabilizer:
             # 自ノードの情報、仲介ノードの情報、successorとして設定したノードの情報
             ChordUtil.dprint("partial_join_op_8," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+
+            return PResult.Ok(True)
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
             self.existing_node.node_info.lock_of_pred_info.release()
@@ -588,16 +603,18 @@ class Stabilizer:
     #　注: この呼び出しにより、self.existing_node.node_info.successor_info_list[0] は更新される
     #  規約: 呼び出し元は、selfが生きていることを確認した上で本メソッドを呼び出さなければならない
     # TODO: InternalExp, DownedExp at stabilize_successor_inner
-    def stabilize_successor_inner(self) -> 'NodeInfo':
+    def stabilize_successor_inner(self) -> PResult[Optional['NodeInfo']]:
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("stabilize_successor_inner_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            #raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             self.existing_node.node_info.lock_of_pred_info.release()
             ChordUtil.dprint("find_successor_inner_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+            #raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+            return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
 
         if self.existing_node.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
@@ -607,7 +624,8 @@ class Stabilizer:
             ChordUtil.dprint(
                 "stabilize_successor_innner_0_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                 + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
-            raise InternalControlFlowException("request received but I am already dead.")
+            #raise InternalControlFlowException("request received but I am already dead.")
+            return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
 
         ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 
@@ -620,7 +638,8 @@ class Stabilizer:
 
             # TODO: handle is_node_alive at stabilize_successor_inner
             if not ChordUtil.is_node_alive(succ_addr):
-                raise InternalControlFlowException("successor[0] is downed.")
+                #raise InternalControlFlowException("successor[0] is downed.")
+                return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
 
             # TODO: ひとまずここでの get_node_by_address の呼び出しはエラーを変えさない前提とする at stabilize_successor_inner
             successor = cast('ChordNode', ChordUtil.get_node_by_address(succ_addr).result)
@@ -628,7 +647,7 @@ class Stabilizer:
             # TODO: handle stabilize_successor_inner_fix_chain at stabilize_successor_inner
             self.stabilize_successor_inner_fix_chain(successor)
 
-            return self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
+            return PResult.Ok(self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy())
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
             self.existing_node.node_info.lock_of_pred_info.release()
@@ -693,7 +712,20 @@ class Stabilizer:
                         # TODO: handle grpc__stabilize_successor_inner at join
 
                         # TODO: stabilize_successor_inner call at stabilize_successor
-                        cur_node_info : 'NodeInfo' = cur_node.endpoints.grpc__stabilize_successor_inner()
+                        #cur_node_info : 'NodeInfo' = cur_node.endpoints.grpc__stabilize_successor_inner()
+                        ret = cur_node.endpoints.grpc__stabilize_successor_inner()
+                        if (ret.is_ok):
+                            cur_node_info : 'NodeInfo' = cast('NodeInfo', ret.result)
+                        else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+                            # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
+                            # ロックの取得でタイムアウトが発生した
+                            # あるいは、cur_node(selfの場合もあれば他ノードの場合もある)が、生存している状態が通常期待される
+                            # ところで、node_kill_th の処理がノードをダウン状態にしてしまった
+                            ChordUtil.dprint(
+                                "stabilize_successor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info)
+                                + ",TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                            exception_occured = True
+                            continue
                     else:
                         cur_node_info : 'NodeInfo' = last_node_info
 
@@ -716,8 +748,21 @@ class Stabilizer:
                                      + ChordUtil.gen_debug_str_of_node(cur_node_info) + ","
                                      + str(exception_occured))
 
-                    # TODO: handle get_node_by_address at stabilize_successor
-                    cur_node = ChordUtil.get_node_by_address(cur_node_info.address_str)
+                    #cur_node : 'ChordNode' = ChordUtil.get_node_by_address(cur_node_info.address_str)
+                    ret : PResult[Optional['ChordNode']] = ChordUtil.get_node_by_address(cur_node_info.address_str)
+                    if (ret.is_ok):
+                        cur_node: 'ChordNode' = cast('ChordNode', ret.result)
+                    else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+                        # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
+                        # ロックの取得でタイムアウトが発生した
+                        # あるいは、cur_node(selfの場合もあれば他ノードの場合もある)が、生存している状態が通常期待される
+                        # ところで、node_kill_th の処理がノードをダウン状態にしてしまった
+                        ChordUtil.dprint(
+                            "stabilize_successor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info)
+                            + ",TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                        exception_occured = True
+                        continue
+
                     # cur_nodeが取得できたということは、cur_nodeはダウンしていない
                     # チェーンを辿っている中で、生存しているノードが得られた場合は、辿っていく中で
                     # 例外が発生した際などに、チェーンを辿らずにノード情報を得るために用いる successorのリスト
@@ -738,16 +783,16 @@ class Stabilizer:
                     updated_list.append(cur_node_info)
                     exception_occured = False
                     last_node_info = cur_node_info
-                except (InternalControlFlowException, NodeIsDownedExceptiopn):
-                    # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
-                    # ロックの取得でタイムアウトが発生した
-                    # あるいは、cur_node(selfの場合もあれば他ノードの場合もある)が、生存している状態が通常期待される
-                    # ところで、node_kill_th の処理がノードをダウン状態にしてしまった
-
-                    ChordUtil.dprint("stabilize_successor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info)
-                                     + ",TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-                    exception_occured = True
-                    continue
+                # except (InternalControlFlowException, NodeIsDownedExceptiopn):
+                #     # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
+                #     # ロックの取得でタイムアウトが発生した
+                #     # あるいは、cur_node(selfの場合もあれば他ノードの場合もある)が、生存している状態が通常期待される
+                #     # ところで、node_kill_th の処理がノードをダウン状態にしてしまった
+                #
+                #     ChordUtil.dprint("stabilize_successor_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info)
+                #                      + ",TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
+                #     exception_occured = True
+                #     continue
                 finally:
                     # 正常に処理が終わる場合、例外処理が発生した場合のいずれも1だけインクリメントが必要なため
                     # ここでそれを行う
@@ -771,16 +816,18 @@ class Stabilizer:
     # 一回の呼び出しで1エントリを更新する
     # FingerTableのエントリはこの呼び出しによって埋まっていく
     # TODO: InternalExp at stabilize_finger_table
-    def stabilize_finger_table(self, idx):
+    def stabilize_finger_table(self, idx) -> PResult[bool]:
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("stabilize_finger_table_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            #raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             self.existing_node.node_info.lock_of_pred_info.release()
             ChordUtil.dprint("stabilize_finger_table_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+            #raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+            return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
 
         if self.existing_node.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
@@ -791,7 +838,7 @@ class Stabilizer:
                 ChordUtil.dprint(
                     "stabilize_finger_table_0_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                     + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
-                return
+                return PResult.Ok(True)
 
         try:
             ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
@@ -801,16 +848,30 @@ class Stabilizer:
             # FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
             # 担当するノードに最も近いノードが格納される
             update_id = ChordUtil.overflow_check_and_conv(self.existing_node.node_info.node_id + 2**idx)
-            try:
-                # TODO: handle find_successor at stabilize_finger_table
-                found_node = self.existing_node.router.find_successor(update_id)
-            except (AppropriateNodeNotFoundException, NodeIsDownedExceptiopn, InternalControlFlowException):
+            # try:
+                #found_node = self.existing_node.router.find_successor(update_id)
+            ret = self.existing_node.router.find_successor(update_id)
+            if (ret.is_ok):
+                found_node : 'ChordNode' = cast('ChordNode', ret.result)
+            else:
+                # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_Code || ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                #  || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+
                 # 適切な担当ノードを得ることができなかった
                 # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
                 # ことであるので、更新対象のエントリには None を設定しておく
                 self.existing_node.node_info.finger_table[idx] = None
-                ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
-                return
+                ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(
+                    self.existing_node.node_info))
+                return PResult.Ok(True)
+
+            # except (AppropriateNodeNotFoundException, NodeIsDownedExceptiopn, InternalControlFlowException):
+            #     # 適切な担当ノードを得ることができなかった
+            #     # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
+            #     # ことであるので、更新対象のエントリには None を設定しておく
+            #     self.existing_node.node_info.finger_table[idx] = None
+            #     ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
+            #     return
 
             # TODO: x direct access to node_info of found_node at stabilize_finger_table
             self.existing_node.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
@@ -818,6 +879,8 @@ class Stabilizer:
             # TODO: x direct access to node_info of found_node at stabilize_finger_table
             ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(found_node.node_info))
+
+            return PResult.Ok(True)
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
             self.existing_node.node_info.lock_of_pred_info.release()

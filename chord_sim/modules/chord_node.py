@@ -457,7 +457,7 @@ class ChordNode:
     #       行って取得したデータで埋める
     def fill_succ_info_list(self):
         if self.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-            ChordUtil.dprint("fill_succ_info_list_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+            ChordUtil.dprint("fill_succ_info_list_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
         try:
             self.node_info.successor_info_list = self.endpoints.grpc__pass_successor_list()

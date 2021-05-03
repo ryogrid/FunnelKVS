@@ -768,9 +768,9 @@ class Stabilizer:
                                      + str(exception_occured))
 
                     #cur_node : 'ChordNode' = ChordUtil.get_node_by_address(cur_node_info.address_str)
-                    ret = ChordUtil.get_node_by_address(cur_node_info.address_str)
-                    if (ret.is_ok):
-                        cur_node: 'ChordNode' = cast('ChordNode', ret.result)
+                    ret2 = ChordUtil.get_node_by_address(cur_node_info.address_str)
+                    if (ret2.is_ok):
+                        cur_node: 'ChordNode' = cast('ChordNode', ret2.result)
                     else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
                         # cur_nodeがjoin中のノードでget_node_by_addressで例外が発生してしまったか、
                         # ロックの取得でタイムアウトが発生した

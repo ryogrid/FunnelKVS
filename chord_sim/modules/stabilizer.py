@@ -658,7 +658,7 @@ class Stabilizer:
                 #                      + ChordUtil.gen_debug_str_of_node(
                 #         self.existing_node.node_info.successor_info_list[0]))
 
-            return PResult.Ok(True)
+        return PResult.Ok(True)
 
 
 
@@ -695,26 +695,35 @@ class Stabilizer:
 
         try:
             # self.existing_node.node_info.successor_info_listを生きているノードだけにする
-            # TODO: handle stabilize_successor_inner_fill_succ_list at stabilize_successor_inner
-            self.stabilize_successor_inner_fill_succ_list()
+
+            #self.stabilize_successor_inner_fill_succ_list()
+            ret = self.stabilize_successor_inner_fill_succ_list()
+            if (ret.is_ok):
+                pass
+            else:  # ret.err_code == ErrorCode.NodeIsDownedException_CODE
+                return PResult.Err(None, cast(int, ret.err_code))
 
             succ_addr = self.existing_node.node_info.successor_info_list[0].address_str
 
             #if not ChordUtil.is_node_alive(succ_addr):
-            ret = ChordUtil.is_node_alive(succ_addr)
-            if (ret.is_ok):
-                if cast(bool, ret.result) == False:
+            ret2 = ChordUtil.is_node_alive(succ_addr)
+            if (ret2.is_ok):
+                if cast(bool, ret2.result) == False:
                     # raise InternalControlFlowException("successor[0] is downed.")
                     return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
             else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
-                return PResult.Err(None, cast(int, ret.err_code))
+                return PResult.Err(None, cast(int, ret2.err_code))
 
 
             # TODO: ひとまずここでの get_node_by_address の呼び出しはエラーを変えさない前提とする at stabilize_successor_inner
             successor = cast('ChordNode', ChordUtil.get_node_by_address(succ_addr).result)
 
-            # TODO: handle stabilize_successor_inner_fix_chain at stabilize_successor_inner
-            self.stabilize_successor_inner_fix_chain(successor)
+            #self.stabilize_successor_inner_fix_chain(successor)
+            ret3 = self.stabilize_successor_inner_fix_chain(successor)
+            if (ret3.is_ok):
+                pass
+            else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+                return PResult.Err(None, cast(int, ret3.err_code))
 
             return PResult.Ok(self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy())
         finally:

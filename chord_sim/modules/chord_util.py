@@ -218,7 +218,7 @@ class ChordUtil:
             return PResult.Ok(True)
         else:
             if ret.err_code == ErrorCode.NodeIsDownedException_CODE:
-                return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
+                return PResult.Ok(False)
             else: #ret.err_code == ErrorCode.InternalControlFlowException_CODE:
                 return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
 

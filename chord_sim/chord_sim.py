@@ -203,19 +203,28 @@ def do_stabilize_successor_th(node_list : List[ChordNode]):
                     "do_stabilize_successor_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
                     + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
 
-# TODO: handle stabilize_finger_table at do_stabilize_ftable_th
 def do_stabilize_ftable_th(node_list : List[ChordNode]):
     for times in range(0, gval.STABILIZE_FTABLE_BATCH_TIMES):
         for table_idx in range(0, gval.ID_SPACE_BITS):
             for node in node_list:
-                try:
-                    node.stabilizer.stabilize_finger_table(table_idx)
-                except (InternalControlFlowException, NodeIsDownedExceptiopn):
+                # try:
+                    #node.stabilizer.stabilize_finger_table(table_idx)
+                ret = node.stabilizer.stabilize_finger_table(table_idx)
+                if (ret.is_ok):
+                    pass
+                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
                     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
                     # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
                     ChordUtil.dprint(
                         "do_stabilize_ftable_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
                         + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
+
+                # except (InternalControlFlowException, NodeIsDownedExceptiopn):
+                #     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                #     # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+                #     ChordUtil.dprint(
+                #         "do_stabilize_ftable_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
+                #         + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
 
 def do_stabilize_onace_at_all_node_successor(node_list : List[ChordNode]) -> List[Thread]:
     list_len = len(node_list)

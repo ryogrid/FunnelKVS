@@ -206,13 +206,7 @@ class ChordUtil:
     @classmethod
     def is_node_alive(cls, address : str) -> PResult[Optional[bool]]:
         # try:
-        #     # TODO: handle get_node_by_address at is_node_alive
-        #     node_obj = ChordUtil.get_node_by_address(address)
-        # except NodeIsDownedExceptiopn:
-        #     return False
-        # except InternalControlFlowException:
-        #     return False
-
+            # node_obj = ChordUtil.get_node_by_address(address)
         ret = ChordUtil.get_node_by_address(address)
         if(ret.is_ok):
             return PResult.Ok(True)
@@ -221,6 +215,11 @@ class ChordUtil:
                 return PResult.Ok(False)
             else: #ret.err_code == ErrorCode.InternalControlFlowException_CODE:
                 return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+
+            # except NodeIsDownedExceptiopn:
+            #     return False
+            # except InternalControlFlowException:
+            #     return False
 
         #return True
 

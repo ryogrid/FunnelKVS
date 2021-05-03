@@ -70,10 +70,8 @@ class Endpoints:
     def grpc__stabilize_successor_inner(self) -> PResult[Optional['NodeInfo']]:
         return self.existing_node.stabilizer.stabilize_successor_inner()
 
-    # TODO: handle check_predecessor at grpc__check_predecessor
-
     # TODO: InternalExp at grpc__check_predecessor
-    def grpc__check_predecessor(self, node_info : 'NodeInfo'):
+    def grpc__check_predecessor(self, node_info : 'NodeInfo') -> PResult[bool]:
         return self.existing_node.stabilizer.check_predecessor(node_info)
 
     # TODO: InternalExp at grpc__check_successor_list_length

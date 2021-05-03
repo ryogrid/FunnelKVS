@@ -126,83 +126,101 @@ class Stabilizer:
             #                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
             #     return
 
-            try:
-                # TODO: x direct access to node_info of successor at join
-                self.existing_node.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
+            # try:
 
-                # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-                self.existing_node.node_info.finger_table[0] = self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
+            # TODO: x direct access to node_info of successor at join
+            self.existing_node.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
+
+            # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
+            self.existing_node.node_info.finger_table[0] = self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
+
+            # TODO: x direct access to node_info of tyukai_node at join
+            if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
+                # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+
+                predecessor = tyukai_node
+
+                # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
+                # TODO: x direct access to node_info of predecessor at join
+                self.existing_node.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
+
+                tyukai_node.endpoints.grpc__set_routing_infos_force(
+                    self.existing_node.node_info.get_partial_deepcopy(),
+                    self.existing_node.node_info.get_partial_deepcopy(),
+                    self.existing_node.node_info.get_partial_deepcopy()
+                )
+
+                # tyukai_node.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
+                # tyukai_node.node_info.successor_info_list[0] = self.existing_node.node_info.get_partial_deepcopy()
+                # # fingerテーブルの0番エントリも強制的に設定する
+                # tyukai_node.node_info.finger_table[0] = self.existing_node.node_info.get_partial_deepcopy()
 
                 # TODO: x direct access to node_info of tyukai_node at join
-                if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
-                    # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+                ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+            else:
+                # successorと、successorノードの情報だけ適切なものとする
+                # TODO: check_predecessor call at join
+                    #successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                ret2 = successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                if (ret2.is_ok):
+                    pass
+                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                    # リトライに必要な情報を記録しておく
+                    Stabilizer.need_join_retry_node = self.existing_node
+                    Stabilizer.need_join_retry_tyukai_node = tyukai_node
 
-                    predecessor = tyukai_node
+                    # 既に値を設定してしまっている場合を考慮し、内容をリセットしておく
+                    self.existing_node.node_info.successor_info_list = []
 
-                    # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
-                    # TODO: x direct access to node_info of predecessor at join
-                    self.existing_node.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
-
-                    tyukai_node.endpoints.grpc__set_routing_infos_force(
-                        self.existing_node.node_info.get_partial_deepcopy(),
-                        self.existing_node.node_info.get_partial_deepcopy(),
-                        self.existing_node.node_info.get_partial_deepcopy()
-                    )
-
-                    # tyukai_node.node_info.predecessor_info = self.existing_node.node_info.get_partial_deepcopy()
-                    # tyukai_node.node_info.successor_info_list[0] = self.existing_node.node_info.get_partial_deepcopy()
-                    # # fingerテーブルの0番エントリも強制的に設定する
-                    # tyukai_node.node_info.finger_table[0] = self.existing_node.node_info.get_partial_deepcopy()
-
+                    # 自ノードの情報、仲介ノードの情報
                     # TODO: x direct access to node_info of tyukai_node at join
-                    ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
-                                     + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
-                else:
-                    # TODO: handle grpc__check_predecessor at join
+                    ChordUtil.dprint("join_3,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(
+                        self.existing_node.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
+                    ChordUtil.dprint(traceback.format_exc())
+                    return PResult.Err(False, cast(int, ret2.err_code))
 
-                    # successorと、successorノードの情報だけ適切なものとする
-                    # TODO: check_predecessor call at join
-                    successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                # successor_info_listを埋めておく
+                # TODO: pass_successor_list call at join
+                succ_list_of_succ: List[NodeInfo] = successor.endpoints.grpc__pass_successor_list()
+                list_len = len(succ_list_of_succ)
+                for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
+                    if idx < list_len:
+                        self.existing_node.node_info.successor_info_list.append(
+                            succ_list_of_succ[idx].get_partial_deepcopy())
 
-                    # successor_info_listを埋めておく
-                    # TODO: pass_successor_list call at join
-                    succ_list_of_succ: List[NodeInfo] = successor.endpoints.grpc__pass_successor_list()
-                    list_len = len(succ_list_of_succ)
-                    for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
-                        if idx < list_len:
-                            self.existing_node.node_info.successor_info_list.append(
-                                succ_list_of_succ[idx].get_partial_deepcopy())
+            # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
 
-                # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
+            # TODO: delegate_my_tantou_data call at join
+            tantou_data_list: List[KeyValue] = successor.endpoints.grpc__delegate_my_tantou_data(
+                self.existing_node.node_info.node_id)
 
-                # TODO: delegate_my_tantou_data call at join
-                tantou_data_list: List[KeyValue] = successor.endpoints.grpc__delegate_my_tantou_data(
-                    self.existing_node.node_info.node_id)
+            with self.existing_node.node_info.lock_of_datastore:
+                for key_value in tantou_data_list:
+                    self.existing_node.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)
 
-                with self.existing_node.node_info.lock_of_datastore:
-                    for key_value in tantou_data_list:
-                        self.existing_node.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)
+            # 残りのレプリカに関する処理は stabilize処理のためのスレッドに別途実行させる
+            self.existing_node.tqueue.append_task(TaskQueue.JOIN_PARTIAL)
+            gval.is_waiting_partial_join_op_exists = True
 
-                # 残りのレプリカに関する処理は stabilize処理のためのスレッドに別途実行させる
-                self.existing_node.tqueue.append_task(TaskQueue.JOIN_PARTIAL)
-                gval.is_waiting_partial_join_op_exists = True
+            ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 
-                ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
-            except (InternalControlFlowException, NodeIsDownedExceptiopn):
-                # リトライに必要な情報を記録しておく
-                Stabilizer.need_join_retry_node = self.existing_node
-                Stabilizer.need_join_retry_tyukai_node = tyukai_node
-
-                # 既に値を設定してしまっている場合を考慮し、内容をリセットしておく
-                self.existing_node.node_info.successor_info_list = []
-
-                # 自ノードの情報、仲介ノードの情報
-                # TODO: x direct access to node_info of tyukai_node at join
-                ChordUtil.dprint("join_3,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
-                ChordUtil.dprint(traceback.format_exc())
-                return
+            # except (InternalControlFlowException, NodeIsDownedExceptiopn):
+            #     # リトライに必要な情報を記録しておく
+            #     Stabilizer.need_join_retry_node = self.existing_node
+            #     Stabilizer.need_join_retry_tyukai_node = tyukai_node
+            #
+            #     # 既に値を設定してしまっている場合を考慮し、内容をリセットしておく
+            #     self.existing_node.node_info.successor_info_list = []
+            #
+            #     # 自ノードの情報、仲介ノードの情報
+            #     # TODO: x direct access to node_info of tyukai_node at join
+            #     ChordUtil.dprint("join_3,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+            #                      + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
+            #     ChordUtil.dprint(traceback.format_exc())
+            #     return
 
     # join処理のうちレプリカに関する処理を分割したもの
     # stabilize処理を行うスレッドによって一度だけ(失敗した場合はカウントしないとして)実行される
@@ -376,11 +394,12 @@ class Stabilizer:
     # 本メソッドはstabilize処理の中で用いられる
     # Attention: InternalControlFlowException を raiseする場合がある
     # TODO: InternalExp at check_predecessor
-    def check_predecessor(self, node_info : 'NodeInfo'):
+    def check_predecessor(self, node_info : 'NodeInfo') -> PResult[bool]:
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            #raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
 
         ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 
@@ -417,6 +436,8 @@ class Stabilizer:
                           + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.predecessor_info))
             else: # predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
                 self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy()
+
+            return PResult.Ok(True)
         finally:
             self.existing_node.node_info.lock_of_pred_info.release()
 
@@ -477,9 +498,9 @@ class Stabilizer:
 
         return PResult.Ok(True)
 
-    # TODO: InternalExp at stabilize_successor_inner_fix_chain
+    # TODO: InternalExp, NodeIsDownedExp at stabilize_successor_inner_fix_chain
     # ロックは呼び出し元のstabilize_successor_innerでとってある前提
-    def stabilize_successor_inner_fix_chain(self, successor : 'ChordNode'):
+    def stabilize_successor_inner_fix_chain(self, successor : 'ChordNode') -> PResult[bool]:
         # TODO: direct access to predecessor_info of successor at stabilize_successor_inner_fix_chain
         pred_id_of_successor = cast('NodeInfo', successor.node_info.predecessor_info).node_id
 
@@ -494,7 +515,8 @@ class Stabilizer:
             ChordUtil.dprint(
                 "stabilize_successor_innner_fix_chain_1_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                 + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
-            raise NodeIsDownedExceptiopn()
+            #raise NodeIsDownedExceptiopn()
+            return PResult.Err(False, ErrorCode.NodeIsDownedException_CODE)
 
         # successorが認識している predecessor の情報をチェックさせて、適切なものに変更させたり、把握していない
         # 自身のsuccessor[0]になるべきノードの存在が判明した場合は 自身の successor[0] をそちらに張り替える.
@@ -510,24 +532,35 @@ class Stabilizer:
         else:
             # 以下、パターン2およびパターン3に対応する処理
 
-            try:
-                # TODO: handle grpc__check_predecessor at stabilize_successor_inner_fix_chain
+            # try:
 
-                # 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
-                # 情報を更新してもらう
-                # 注: successorが認識していた predecessorがダウンしていた場合、下の呼び出しにより後続でcheck_predecessorを
-                #     を呼び出すまでもなく、successorのpredecessorは自身になっている. 従って後続でノードダウン検出した場合の
-                #     check_predecessorの呼び出しは不要であるが呼び出しは行うようにしておく
-                # TODO: check_predecessor call at stabilize_successor_inner_fix_chain
-                successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
-            except (InternalControlFlowException, NodeIsDownedExceptiopn):
+            # 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
+            # 情報を更新してもらう
+            # 注: successorが認識していた predecessorがダウンしていた場合、下の呼び出しにより後続でcheck_predecessorを
+            #     を呼び出すまでもなく、successorのpredecessorは自身になっている. 従って後続でノードダウン検出した場合の
+            #     check_predecessorの呼び出しは不要であるが呼び出しは行うようにしておく
+
+                #successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+            ret = successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+            if (ret.is_ok):
+                pass
+            else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
                 # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
                 # した際にcheck_predecessorで発生する場合があるので、ここで対処する
                 # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなの特に処理は不要
                 ChordUtil.dprint(
-                    "stabilize_successor_inner_fix_chain_5," + ChordUtil.gen_debug_str_of_node(
+                    "stabilize_successor_inner_fix_chain_3," + ChordUtil.gen_debug_str_of_node(
                         self.existing_node.node_info) + ","
                     + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+
+            # except (InternalControlFlowException, NodeIsDownedExceptiopn):
+            #     # joinの中から呼び出された際に、successorを辿って行った結果、一周してjoin処理中のノードを get_node_by_addressしようと
+            #     # した際にcheck_predecessorで発生する場合があるので、ここで対処する
+            #     # join処理中のノードのpredecessor, sucessorはjoin処理の中で適切に設定されているはずなの特に処理は不要
+            #     ChordUtil.dprint(
+            #         "stabilize_successor_inner_fix_chain_3," + ChordUtil.gen_debug_str_of_node(
+            #             self.existing_node.node_info) + ","
+            #         + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
 
             # TODO: x direct access to node_info of successor at stabilize_successor_inner_fix_chain
             distance_unknown = ChordUtil.calc_distance_between_nodes_left_mawari(successor.node_info.node_id,
@@ -540,33 +573,39 @@ class Stabilizer:
                 # successorから自身に対して前方向にたどった場合の経路中に存在する場合
                 # 自身の認識するsuccessorの情報を更新する
 
-                # try:
-
-                def handle_err():
+                def handle_err() -> PResult[bool]:
                     # 例外発生時は張り替えを中止する
                     #   - successorは変更しない
                     #   - この時点でのsuccessor[0]が認識するpredecessorを自身とする(successr[0]のcheck_predecessorを呼び出す)
 
-                    # TODO: handle grpc__check_predecessor at stabilize_successor_inner_fix_chain
-
                     # successor[0]の変更は行わず、ダウンしていたノードではなく自身をpredecessorとするよう(間接的に)要請する
                     # TODO: check_predecessor call at stabilize_successor_inner_fix_chain
-                    successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
-                    ChordUtil.dprint("stabilize_successor_inner_fix_chain_4," + ChordUtil.gen_debug_str_of_node(
+                    #successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                    ret2 = successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                    if (ret2.is_ok):
+                        pass
+                    else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                        ChordUtil.dprint("stabilize_successor_inner_fix_chain_4," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                            + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+                        return PResult.Err(False, cast(int, ret2.err_code))
+
+                    ChordUtil.dprint("stabilize_successor_inner_fix_chain_5," + ChordUtil.gen_debug_str_of_node(
                         self.existing_node.node_info) + ","
                                      + ChordUtil.gen_debug_str_of_node(
                         self.existing_node.node_info.successor_info_list[0]))
-                # ---------------------------------------------------------------
+
+                    return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+
+                # try:
 
                 # TODO: x direct access to predecessor_info of successor at stabilize_successor_inner_fix_chain
                 # new_successor = ChordUtil.get_node_by_address(
                 #     cast('NodeInfo', successor.node_info.predecessor_info).address_str)
-                ret = ChordUtil.get_node_by_address(cast('NodeInfo', successor.node_info.predecessor_info).address_str)
-                if (ret.is_ok):
-                    new_successor: 'ChordNode' = cast('ChordNode', ret.result)
-                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-                    handle_err()
-                    return
+                ret3 = ChordUtil.get_node_by_address(cast('NodeInfo', successor.node_info.predecessor_info).address_str)
+                if (ret3.is_ok):
+                    new_successor: 'ChordNode' = cast('ChordNode', ret3.result)
+                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                    return handle_err()
 
                 # TODO: x direct access to node_info of new_successor at stabilize_successor_inner_fix_chain
                 self.existing_node.node_info.successor_info_list.insert(0,
@@ -580,15 +619,23 @@ class Stabilizer:
 
                 # successorListから溢れたノードがいた場合、自ノードの担当データのレプリカを削除させ、successorListから取り除く
                 # (この呼び出しの中でsuccessorListからのノード情報の削除も行われる)
-                # TODO: handle check_successor_list_length at stabilize_successor_inner_fix_chain
-                self.check_successor_list_length()
 
-                # TODO: handle grpc__check_predecessor at stabilize_successor_inner_fix_chain
+                #self.check_successor_list_length()
+                ret4 = self.check_successor_list_length()
+                if (ret.is_ok):
+                    pass
+                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                    return handle_err()
 
                 # 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
                 # ば情報を更新してもらう
                 # TODO: check_predecessor call at stabilize_successor_inner_fix_chain
-                new_successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                #new_successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                ret5 = new_successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                if (ret5.is_ok):
+                    pass
+                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                    return handle_err()
 
                 # TODO: x direct access to node_info of new_successor at stabilize_successor_inner_fix_chain
                 ChordUtil.dprint("stabilize_successor_inner_fix_chain_3," + ChordUtil.gen_debug_str_of_node(
@@ -602,7 +649,6 @@ class Stabilizer:
                 #     #   - successorは変更しない
                 #     #   - この時点でのsuccessor[0]が認識するpredecessorを自身とする(successr[0]のcheck_predecessorを呼び出す)
                 #
-                #     # TODO: handle grpc__check_predecessor at stabilize_successor_inner_fix_chain
                 #
                 #     # successor[0]の変更は行わず、ダウンしていたノードではなく自身をpredecessorとするよう(間接的に)要請する
                 #     # TODO: check_predecessor call at stabilize_successor_inner_fix_chain
@@ -611,6 +657,8 @@ class Stabilizer:
                 #         self.existing_node.node_info) + ","
                 #                      + ChordUtil.gen_debug_str_of_node(
                 #         self.existing_node.node_info.successor_info_list[0]))
+
+            return PResult.Ok(True)
 
 
 

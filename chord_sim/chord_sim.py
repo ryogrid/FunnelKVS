@@ -490,7 +490,7 @@ def do_kill_a_random_node():
 # TODO: 対応する処理を行うスクリプトの類が必要 node_join_th
 def node_join_th():
     while gval.already_born_node_num < gval.NODE_NUM_MAX:
-        if gval.already_born_node_num == 100:
+        if gval.already_born_node_num == gval.KEEP_NODE_NUM:
             time.sleep(60.0)
             gval.is_network_constructed = True
             gval.JOIN_INTERVAL_SEC = 120.0 #20.0

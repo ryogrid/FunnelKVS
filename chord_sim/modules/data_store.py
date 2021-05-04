@@ -2,8 +2,7 @@
 
 from typing import Dict, List, Optional, cast, TYPE_CHECKING
 
-from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
-    InternalControlFlowException, DataIdAndValue
+from .chord_util import ChordUtil, KeyValue, DataIdAndValue, PResult, ErrorCode
 
 if TYPE_CHECKING:
     from .chord_node import ChordNode
@@ -153,9 +152,13 @@ class DataStore:
         return ret_datas
 
     # 存在しないKeyが与えられた場合 KeyErrorがraiseされる
-    def get(self, data_id : int) -> DataIdAndValue:
+    def get(self, data_id : int) -> PResult[Optional[DataIdAndValue]]:
         with self.existing_node.node_info.lock_of_datastore:
-            return self.stored_data[str(data_id)]
+            try:
+                return PResult.Ok(self.stored_data[str(data_id)])
+            except KeyError:
+                return PResult.Err(None, ErrorCode.KeyError_CODE)
+
 
     # 全ての保持しているデータを返す
     def get_all_data(self) -> List[DataIdAndValue]:

@@ -15,9 +15,10 @@ if TYPE_CHECKING:
     from .node_info import NodeInfo
 
 class ErrorCode:
-    NodeIsDownedException_CODE = 1
-    AppropriateNodeNotFoundException_CODE = 2
-    InternalControlFlowException_CODE = 3
+    KeyError_CODE = 1
+    NodeIsDownedException_CODE = 2
+    AppropriateNodeNotFoundException_CODE = 3
+    InternalControlFlowException_CODE = 4
 
 T = TypeVar('T')
 

@@ -405,13 +405,21 @@ class ChordNode:
                              + "REQUEST_RECEIVED_BUT_I_CAN_NOT_KNOW_TANTOU_RANGE")
             return ChordNode.QUERIED_DATA_NOT_FOUND_STR
 
-        try:
-            di_entry : DataIdAndValue = self.data_store.get(data_id)
-        except:
+        # try:
+            #di_entry : DataIdAndValue = self.data_store.get(data_id)
+        ret = self.data_store.get(data_id)
+        if (ret.is_ok):
+            di_entry: DataIdAndValue = cast(DataIdAndValue, ret.result)
+        else:  # ret.err_code == ErrorCode.KeyError_CODE
             err_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
             ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
+                             + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
             return err_str
+        # except KeyError:
+        #     err_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
+        #     ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+        #                  + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
+        #     return err_str
 
         # Chordネットワークを右回りにたどった時に、データの id (data_id) がpredecessorの node_id から
         # 自身の node_id の間に位置した.

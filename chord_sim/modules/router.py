@@ -47,7 +47,7 @@ class Router:
                 ChordUtil.dprint("find_successor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(id))
                 #raise AppropriateNodeNotFoundException()
-                return PResult.Err(None, err_code=ErrorCode.AppropriateNodeNotFoundException_CODE)
+                return PResult.Err(None, ErrorCode.AppropriateNodeNotFoundException_CODE)
 
             # TODO: x direct access to node_info of n_dash at find_successor
             ChordUtil.dprint("find_successor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -67,7 +67,7 @@ class Router:
                 ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(
                     self.existing_node.node_info) + ","
                                  + ChordUtil.gen_debug_str_of_data(id))
-                return PResult.Err(None, cast(int,ret.err_code))
+                return PResult.Err(None, ErrorCode.AppropriateNodeNotFoundException_CODE)
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
 

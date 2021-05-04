@@ -502,12 +502,24 @@ class Stabilizer:
     # ロックは呼び出し元のstabilize_successor_innerでとってある前提
     def stabilize_successor_inner_fix_chain(self, successor : 'ChordNode') -> PResult[bool]:
         # TODO: direct access to predecessor_info of successor at stabilize_successor_inner_fix_chain
-        pred_id_of_successor = cast('NodeInfo', successor.node_info.predecessor_info).node_id
+
+        # predecessor_infoが未設定の場合の考慮
+        if successor.node_info.predecessor_info == None:
+            pred_id_of_successor = -1
+            # 以下の呼び出しにより、successorの predecessor_info には自ノードが設定される
+            successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+        else:
+            pred_id_of_successor = cast('NodeInfo', successor.node_info.predecessor_info).node_id
 
         ChordUtil.dprint(
             "stabilize_successor_inner_fix_chain_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
             + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
             + str(pred_id_of_successor))
+
+        # predecessor_infoが未設定であったが、grpc_check_predecessorによって設定された場合のため再度
+        # pred_id_of_successorを取得する
+        # なお、後続の処理を進める意味は無いが、ひとまずそのまま進める
+        pred_id_of_successor = cast('NodeInfo', successor.node_info.predecessor_info).node_id
 
         if self.existing_node.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮

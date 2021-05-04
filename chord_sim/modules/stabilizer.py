@@ -734,16 +734,18 @@ class Stabilizer:
     # コメントにおいては、successorListの構造を意識した記述の場合、一番近いsuccessorを successor[0] と
     # 記述し、以降に位置するノードは近い順に successor[idx] と記述する
     # TODO: InternalExp at stabilize_successor
-    def stabilize_successor(self):
+    def stabilize_successor(self) -> PResult[bool]:
         if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             ChordUtil.dprint("stabilize_successor_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            #raise InternalControlFlowException("gettting lock of predecessor_info is timedout.")
+            return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
         if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
             self.existing_node.node_info.lock_of_pred_info.release()
             ChordUtil.dprint("stabilize_successor_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "LOCK_ACQUIRE_TIMEOUT")
-            raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+            #raise InternalControlFlowException("gettting lock of succcessor_info_list is timedout.")
+            return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
 
         if self.existing_node.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
@@ -752,7 +754,7 @@ class Stabilizer:
             self.existing_node.node_info.lock_of_pred_info.release()
             ChordUtil.dprint("stabilize_successor_0_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
-            return
+            return PResult.Ok(True)
 
         # with self.existing_node.node_info.lock_of_datastore:
         #     # stabilizeの度に、担当データとして保持しているデータ全てのレプリカを successor_info_list 内のノードに
@@ -884,6 +886,8 @@ class Stabilizer:
 
             ChordUtil.dprint("stabilize_successor_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + str(self.existing_node.node_info.successor_info_list))
+
+            return PResult.Ok(True)
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
             self.existing_node.node_info.lock_of_pred_info.release()

@@ -226,7 +226,7 @@ class ChordNode:
             #     cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
             # got_value_str = cur_successor.endpoints.grpc__get(data_id, for_recovery=True)
 
-        ret = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
+        ret = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
         if (ret.is_ok):
             cur_successor : 'ChordNode' = cast('ChordNode', ret.result)
             got_value_str = cur_successor.endpoints.grpc__get(data_id, for_recovery=True)

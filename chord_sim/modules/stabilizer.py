@@ -309,7 +309,7 @@ class Stabilizer:
                     self_predeessor_node: 'ChordNode' = cast('ChordNode', ret.result)
                 else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
                     handle_err()
-                    return PResult.Ok(True)
+                    #return PResult.Ok(True)
 
                 # TODO: get_all_tantou_data call at partial_join_op
                 pred_tantou_datas : List[DataIdAndValue] = self_predeessor_node.endpoints.grpc__get_all_tantou_data()
@@ -331,7 +331,7 @@ class Stabilizer:
                     pass
                 else:  # ret2.err_code == ErrorCode.InternalControlFlowException_CODE || ret2.err_code == ErrorCode.NodeIsDownedException_CODE
                     handle_err()
-                    return PResult.Ok(True)
+                    #return PResult.Ok(True)
 
                 # except (NodeIsDownedExceptiopn, InternalControlFlowException):
                 #     ChordUtil.dprint("partial_join_op_6,NODE_IS_DOWNED or InternalControlFlowException" + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","

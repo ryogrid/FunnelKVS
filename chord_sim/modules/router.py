@@ -32,7 +32,7 @@ class Router:
         if self.existing_node.is_alive == False:
             # 処理の合間でkillされてしまっていた場合の考慮
             # 何もしないで終了する
-            self.existing_node.node_info.lock_of_pred_info.release()
+            self.existing_node.node_info.lock_of_succ_infos.release()
             ChordUtil.dprint("find_successor_0_5," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
             #raise NodeIsDownedExceptiopn()

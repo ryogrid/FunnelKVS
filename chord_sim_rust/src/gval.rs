@@ -1,3 +1,4 @@
+/*
 # coding:utf-8
 
 import threading
@@ -103,3 +104,6 @@ ENABLE_ROUTING_INFO_DPRINT = False
 # partial_join_opが実行されることを待っているノードが存在するか否か
 # join と partial_join_op の間で、該当ノードがkillされることを避けるために用いる
 is_waiting_partial_join_op_exists = False
+*/
+
+pub fn add_to_waitlist() {}

@@ -73,10 +73,6 @@ class ChordNode:
             self.stabilizer.join(node_address)
 
     def global_put(self, data_id : int, value_str : str) -> bool:
-        # try:
-
-        #target_node = self.router.find_successor(data_id)
-
         ret = self.router.find_successor(data_id)
         if (ret.is_ok):
             target_node: 'ChordNode' = cast('ChordNode', ret.result)
@@ -91,15 +87,6 @@ class ChordNode:
             ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id))
             return False
-
-        # except (AppropriateNodeNotFoundException, InternalControlFlowException, NodeIsDownedExceptiopn):
-        #     # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
-        #     # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
-        #     ChordNode.need_put_retry_data_id = data_id
-        #     ChordNode.need_put_retry_node = self
-        #     ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                      + ChordUtil.gen_debug_str_of_data(data_id))
-        #     return False
 
         success = target_node.endpoints.grpc__put(data_id, value_str)
         if not success:
@@ -167,10 +154,6 @@ class ChordNode:
             if self.node_info.predecessor_info == None:
                 ChordUtil.dprint("global_get_recover_prev_1,predecessor is None")
                 return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-            # try:
-
-                # cur_predecessor : ChordNode = ChordUtil.get_node_by_address(
-                #     cast(NodeInfo, self.node_info.predecessor_info).address_str)
             ret = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
             if (ret.is_ok):
                 cur_predecessor : 'ChordNode' = cast('ChordNode', ret.result)
@@ -184,15 +167,6 @@ class ChordNode:
                     # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
                     ChordUtil.dprint("global_get_recover_prev_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-
-            # except NodeIsDownedExceptiopn:
-            #     # ここでは何も対処はしない
-            #     ChordUtil.dprint("global_get_recover_prev_2,NODE_IS_DOWNED")
-            #     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-            # except InternalControlFlowException:
-            #     # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
-            #     ChordUtil.dprint("global_get_recover_prev_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
-            #     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
 
             ChordUtil.dprint("global_get_recover_prev_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id))
@@ -222,11 +196,6 @@ class ChordNode:
     # global_getで取得しようとしたKeyが探索したノードに存在なかった場合に、当該ノードから
     # successorを辿ってリカバリを試みる処理をくくり出したもの
     def global_get_recover_succ(self, data_id : int) -> Tuple[str, Optional['ChordNode']]:
-        # try:
-            # cur_successor : ChordNode = ChordUtil.get_node_by_address(
-            #     cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
-            # got_value_str = cur_successor.endpoints.grpc__get(data_id, for_recovery=True)
-
         ret = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
         if (ret.is_ok):
             cur_successor : 'ChordNode' = cast('ChordNode', ret.result)
@@ -240,15 +209,6 @@ class ChordNode:
                 # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
                 ChordUtil.dprint("global_get_recover_succ_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                 return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-
-        # except NodeIsDownedExceptiopn:
-        #     # ここでは何も対処はしない
-        #     ChordUtil.dprint("global_get_recover_succ_2,NODE_IS_DOWNED")
-        #     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-        # except InternalControlFlowException:
-        #     # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
-        #     ChordUtil.dprint("global_get_recover_succ_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
-        #     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
 
         ChordUtil.dprint("global_get_recover_succ_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -285,11 +245,7 @@ class ChordNode:
         ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
-        # try:
-            # target_node = self.router.find_successor(data_id)
-            # got_value_str = target_node.endpoints.grpc__get(data_id)
-
-        ret = self.router.find_successor(data_id)
+                         ret = self.router.find_successor(data_id)
         if (ret.is_ok):
             target_node: 'ChordNode' = cast('ChordNode', ret.result)
             got_value_str = target_node.endpoints.grpc__get(data_id)
@@ -307,18 +263,6 @@ class ChordNode:
                              + ChordUtil.gen_debug_str_of_data(data_id))
             # 処理を終える
             return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
-
-        # except (AppropriateNodeNotFoundException, InternalControlFlowException, NodeIsDownedExceptiopn):
-        #     # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
-        #
-        #     # リトライに必要な情報をクラス変数に設定しておく
-        #     ChordNode.need_getting_retry_data_id = data_id
-        #     ChordNode.need_getting_retry_node = self
-        #
-        #     ChordUtil.dprint("global_get_0_1,FIND_NODE_FAILED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                      + ChordUtil.gen_debug_str_of_data(data_id))
-        #     # 処理を終える
-        #     return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
 
         is_data_got_on_recovery = False
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
@@ -406,8 +350,6 @@ class ChordNode:
                              + "REQUEST_RECEIVED_BUT_I_CAN_NOT_KNOW_TANTOU_RANGE")
             return ChordNode.QUERIED_DATA_NOT_FOUND_STR
 
-        # try:
-            #di_entry : DataIdAndValue = self.data_store.get(data_id)
         ret = self.data_store.get(data_id)
         if (ret.is_ok):
             di_entry: DataIdAndValue = cast(DataIdAndValue, ret.result)
@@ -416,11 +358,6 @@ class ChordNode:
             ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
             return err_str
-        # except KeyError:
-        #     err_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
-        #     ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                  + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
-        #     return err_str
 
         # Chordネットワークを右回りにたどった時に、データの id (data_id) がpredecessorの node_id から
         # 自身の node_id の間に位置した.

@@ -186,8 +186,6 @@ class DataStore:
 
         # レプリカを successorList内のノードに渡す（手抜きでputされたもの含めた全てを渡してしまう）
         for succ_info in self.existing_node.node_info.successor_info_list:
-            # try:
-                # succ_node: ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
             ret = ChordUtil.get_node_by_address(succ_info.address_str)
             if (ret.is_ok):
                 succ_node : 'ChordNode' = cast('ChordNode', ret.result)
@@ -198,12 +196,6 @@ class DataStore:
                     "distribute_replica_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                     + ChordUtil.gen_debug_str_of_node(succ_info))
                 continue
-            # except (NodeIsDownedExceptiopn, InternalControlFlowException):
-            #     # stabilize処理 と put処理 を経ていずれ正常な状態に
-            #     # なるため、ここでは何もせずに次のノードに移る
-            #     ChordUtil.dprint("distribute_replica_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-            #                      + ChordUtil.gen_debug_str_of_node(succ_info))
-            #     continue
 
             # 非効率だが、putやstabilize_successorなどの度に担当データを全て渡してしまう
             # TODO: putやstabilize_successorが呼び出される担当データ全てのレプリカを渡すのはあまりに非効率なので、担当データのIDリストを渡して

@@ -184,20 +184,12 @@ class ChordUtil:
             # traceback.print_stack(file=sys.stdout)
             # print("KeyError occured", flush=True)
 
-            #raise InternalControlFlowException("accessed to join operation progressing node.")
             return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
-
-        # except KeyError:
-        #     traceback.print_stack(file=sys.stdout)
-        #     print("KeyError occured", flush=True)
-        #     sys.exit(1)
 
         if ret_val.is_alive == False:
             ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
-            #raise NodeIsDownedExceptiopn()
             return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
 
-        #return ret_val
         return PResult.Ok(ret_val)
 
     # TODO: InternalExp at is_node_alive
@@ -207,8 +199,6 @@ class ChordUtil:
     #       RPC化する必要がありそう。もしくはこのメソッドの呼び出し自体を無くすか。 is_node_alive
     @classmethod
     def is_node_alive(cls, address : str) -> PResult[Optional[bool]]:
-        # try:
-            # node_obj = ChordUtil.get_node_by_address(address)
         ret = ChordUtil.get_node_by_address(address)
         if(ret.is_ok):
             return PResult.Ok(True)
@@ -217,11 +207,6 @@ class ChordUtil:
                 return PResult.Ok(False)
             else: #ret.err_code == ErrorCode.InternalControlFlowException_CODE:
                 return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
-
-            # except NodeIsDownedExceptiopn:
-            #     return False
-            # except InternalControlFlowException:
-            #     return False
 
         #return True
 
@@ -305,21 +290,6 @@ class ChordUtil:
         ChordUtil.dprint("dprint_routing_info__SUCC," +ChordUtil.gen_debug_str_of_node(callee_node.node_info) + "," + calee_method + ","
                          + "SUCCESSOR_INFO_LIST," + str(len(callee_node.node_info.successor_info_list)) + ","
                          + " ,| ".join([str(ninfo)  for ninfo in callee_node.node_info.successor_info_list]))
-
-    # @classmethod
-    # def generic_test_ok(cls, node_info : 'NodeInfo') -> PResult[Optional['NodeInfo']]:
-    #     return PResult.Ok(node_info)
-    #
-    # @classmethod
-    # def generic_test_err(cls, err_code : int) -> PResult[Optional['NodeInfo']]:
-    #     return PResult.Err(None, err_code)
-
-# # 大量のオブジェクトが紐づくNodeInfoを一気に切り替えられるようにするため、間接的にNodeInfoを
-# # 保持するクラスとして用いる （Listなどを間に挟むことでも同じことは可能だが、可読性が低いので避ける）
-# class NodeInfoPointer:
-#
-#     def __init__(self, node_info : 'NodeInfo'):
-#         self.node_info : NodeInfo = node_info
 
 # all_data_listグローバル変数に格納される形式としてのみ用いる
 class KeyValue:

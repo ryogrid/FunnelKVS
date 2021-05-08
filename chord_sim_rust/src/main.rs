@@ -46,8 +46,6 @@ def check_nodes_connectivity():
         # いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         # 得ることに対応する形とする
 
-        # try:
-            #cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.successor_info_list[0]
         ret = ChordUtil.get_node_by_address(cur_node_info.address_str)
         if (ret.is_ok):
             cur_node_info : 'NodeInfo' = cast('ChordNode', ret.result).node_info.successor_info_list[0]
@@ -62,17 +60,6 @@ def check_nodes_connectivity():
                 print("")
                 ChordUtil.dprint("check_nodes_connectivity__succ,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
                 return
-
-        # except NodeIsDownedExceptiopn:
-        #     print("")
-        #     ChordUtil.dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED")
-        #     return
-        # except InternalControlFlowException:
-        #     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-        #     # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
-        #     print("")
-        #     ChordUtil.dprint("check_nodes_connectivity__succ,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-        #     return
 
         if cur_node_info == None:
             print("", flush=True, end="")
@@ -103,8 +90,6 @@ def check_nodes_connectivity():
     print(",", flush=True, end="")
     while counter < all_node_num:
         ChordUtil.print_no_lf(str(cur_node_info.born_id) + "," + ChordUtil.conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
-        # try:
-            #cur_node_info = ChordUtil.get_node_by_address(cur_node_info.address_str).node_info.predecessor_info
         ret = ChordUtil.get_node_by_address(cur_node_info.address_str)
         if (ret.is_ok):
             cur_node_info: 'ChordNode' = cast('ChordNode', ret.result).node_info.predecessor_info
@@ -119,17 +104,6 @@ def check_nodes_connectivity():
                 print("")
                 ChordUtil.dprint("check_nodes_connectivity__pred,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
                 return
-
-        # except NodeIsDownedExceptiopn:
-        #     print("")
-        #     ChordUtil.dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
-        #     return
-        # except InternalControlFlowException:
-        #     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-        #     # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
-        #     print("")
-        #     ChordUtil.dprint("check_nodes_connectivity__pred,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-        #     return
 
         if cur_node_info == None:
             # 先を追っていけないのでチェックを終了する
@@ -205,19 +179,11 @@ def do_stabilize_successor_th(node_list : List[ChordNode]):
                 ChordUtil.dprint(
                     "do_stabilize_successor_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
                     + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
-            # except (InternalControlFlowException, NodeIsDownedExceptiopn):
-            #     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-            #     # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
-            #     ChordUtil.dprint(
-            #         "do_stabilize_successor_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
-            #         + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
 
 def do_stabilize_ftable_th(node_list : List[ChordNode]):
     for times in range(0, gval.STABILIZE_FTABLE_BATCH_TIMES):
         for table_idx in range(0, gval.ID_SPACE_BITS):
             for node in node_list:
-                # try:
-                    #node.stabilizer.stabilize_finger_table(table_idx)
                 ret = node.stabilizer.stabilize_finger_table(table_idx)
                 if (ret.is_ok):
                     pass
@@ -227,13 +193,6 @@ def do_stabilize_ftable_th(node_list : List[ChordNode]):
                     ChordUtil.dprint(
                         "do_stabilize_ftable_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
                         + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
-
-                # except (InternalControlFlowException, NodeIsDownedExceptiopn):
-                #     # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-                #     # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
-                #     ChordUtil.dprint(
-                #         "do_stabilize_ftable_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
-                #         + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
 
 def do_stabilize_onace_at_all_node_successor(node_list : List[ChordNode]) -> List[Thread]:
     list_len = len(node_list)
@@ -444,24 +403,6 @@ def do_kill_a_random_node():
     # gval.lock_of_all_data.acquire()
 
     node = get_a_random_node()
-    # if node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-    #     ChordUtil.dprint(
-    #         "do_kill_a_random_node_0_1," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-    #         + "LOCK_ACQUIRE_TIMEOUT")
-    #     return
-    # if node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-    #     node.node_info.lock_of_pred_info.release()
-    #     ChordUtil.dprint(
-    #         "do_kill_a_random_node_0_2," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-    #         + "LOCK_ACQUIRE_TIMEOUT")
-    #     return
-    # if node.node_info.lock_of_datastore.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-    #     node.node_info.lock_of_pred_info.release()
-    #     node.node_info.lock_of_succ_infos.release()
-    #     ChordUtil.dprint(
-    #         "do_kill_a_random_node_0_3," + ChordUtil.gen_debug_str_of_node(node.node_info) + ","
-    #         + "LOCK_ACQUIRE_TIMEOUT")
-    #     return
     try:
         with gval.lock_of_all_node_dict:
             if len(gval.all_node_dict) > 10 \

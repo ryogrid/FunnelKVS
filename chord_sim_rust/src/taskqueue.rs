@@ -25,8 +25,6 @@ class TaskQueue:
             ChordUtil.dprint("exec_first_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + "," + str(self.tqueue))
             task_code : str = self.tqueue.pop()
             if task_code == TaskQueue.JOIN_PARTIAL:
-                # try:
-                    #self.existing_node.stabilizer.partial_join_op()
                 ret = self.existing_node.stabilizer.partial_join_op()
                 if (ret.is_ok):
                     pass
@@ -36,10 +34,4 @@ class TaskQueue:
                     ChordUtil.dprint(
                         "exec_first_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                         + "INTERNAL_CONTROL_FLOW_EXCEPTION_OCCURED")
-
-                # except (InternalControlFlowException, NodeIsDownedExceptiopn):
-                #     # 実行に失敗したため再実行すべく先頭に戻す
-                #     self.tqueue.insert(0, task_code)
-                #     ChordUtil.dprint("exec_first_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                #                      + "INTERNAL_CONTROL_FLOW_EXCEPTION_OCCURED")
 */

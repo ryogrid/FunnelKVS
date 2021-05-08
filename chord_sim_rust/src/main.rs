@@ -549,8 +549,10 @@ if __name__ == '__main__':
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]
 
+/*
 #[macro_use]
 extern crate rocket;
+*/
 
 pub mod gval;
 //pub use crate::gval::*;
@@ -572,6 +574,7 @@ pub use crate::taskqueue::*;
 pub mod endpoints;
 pub use crate::endpoints::*;
 
+/*
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
@@ -581,4 +584,9 @@ fn main() {
     rocket::ignite()
         .mount("/", routes![index]) 
         .launch();
+}
+*/
+
+fn main() {
+    println!("Hello, world!");
 }

@@ -336,3 +336,40 @@ class InternalControlFlowException(Exception):
     def __init__(self, msg_str):
         super(InternalControlFlowException, self).__init__(msg_str)
 */
+
+// all_data_listグローバル変数に格納される形式としてのみ用いる
+struct KeyValue {
+    key : Option<String>,
+    value_data : String,
+    data_id : Option<i32>
+}
+//TODO: (Rust) KeyValue構造体にコンストラクタを定義する at chord_utilモジュール
+
+/*
+    def __init__(self, key : Optional[str], value : str):
+        self.key : Optional[str] = key
+        self.value_data : str = value
+        self.data_id : Optional[int] = None
+        # keyのハッシュ値
+        if key == None:
+            self.data_id = None
+        else:
+            self.data_id = ChordUtil.hash_str_to_int(cast(str, key))
+
+    def __eq__(self, other):
+        if not isinstance(other, KeyValue):
+            return False
+        return self.data_id == other.data_id
+*/
+
+// TODO: ディープコピーを取得するメソッドを定義しておきたい at DataIdAndValue
+struct DataIdAndValue {
+    data_id : i32,
+    value_data : String
+}
+/*
+    def __eq__(self, other):
+        if not isinstance(other, DataIdAndValue):
+            return False
+        return self.data_id == other.data_id
+*/

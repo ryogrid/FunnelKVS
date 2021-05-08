@@ -156,6 +156,8 @@ pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10
 // アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 // IPアドレスが分かれば、対応するノードと通信できることと対応している
 
+// TODO: (Rust) 値が変化するグローバル変数の宣言も対応必要 at gvalモジュール
+
 /*
 all_node_dict : Dict[str, 'ChordNode'] = {}
 lock_of_all_node_dict = threading.Lock()

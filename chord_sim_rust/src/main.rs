@@ -557,6 +557,8 @@ extern crate rocket;
 */
 
 pub mod gval;
+use std::sync::{Mutex, Arc, MutexGuard};
+
 pub use crate::gval::*;
 //pub use crate::gval::add_to_waitlist;
 pub mod chord_node;
@@ -601,9 +603,25 @@ fn get_a_random_node(gd : &mut GlobalDatas) {
 }
 
 fn main() {
-    let mut gd = gval::global_datas.lock().unwrap();
-    get_a_random_node(&mut gd);
-    gd.all_node_dict.insert("kanbayashi".to_string(), 777);
-    println!("{}", gd.all_node_dict.get("kanbayashi").unwrap());
+    //let mut gd = gval::global_datas.lock().unwrap();
+
+    let tmp = &*gval::global_datas.lock();
+    {        
+        let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
+    }
+    //let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
+
+
+    let tmp2 = &*gval::global_datas.lock();
+    let gd2 : &mut GlobalDatas = &mut tmp2.borrow_mut();
+
+
+    get_a_random_node(gd2);
+
+    gd2.all_node_dict.insert("kanbayashi".to_string(), 777);
+    println!("{}", gd2.all_node_dict.get("kanbayashi").unwrap());
+    //drop(gd);
+    //println!("{}", gd.all_node_dict.get("kanbayashi").unwrap());
+
     println!("Hello, world!");
 }

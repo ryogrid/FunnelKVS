@@ -107,8 +107,10 @@ is_waiting_partial_join_op_exists = False
 */
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicIsize, ATOMIC_ISIZE_INIT, AtomicBool, ATOMIC_BOOL_INIT, Ordering};
-use std::sync::{Mutex, Arc};
+use std::sync::atomic::{AtomicIsize, ATOMIC_ISIZE_INIT, AtomicBool, ATOMIC_BOOL_INIT, Ordering, AtomicPtr};
+use std::sync::{Mutex, Arc, MutexGuard};
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 pub fn add_to_waitlist() {}
 
@@ -178,7 +180,19 @@ impl GlobalDatas {
 }
 
 lazy_static! {
-    pub static ref global_datas : Arc<Mutex<GlobalDatas>> = Arc::new(Mutex::new(GlobalDatas::new()));
+    //pub static ref global_datas : Arc<Mutex<GlobalDatas>> = Arc::new(Mutex::new(GlobalDatas::new()));
+    pub static ref global_datas : Arc<ReentrantMutex<RefCell<GlobalDatas>>> = Arc::new(const_reentrant_mutex(RefCell::new(GlobalDatas::new())));
+}
+
+/*
+// スレッドが取得したロック獲得済みのデータを保持しておくためのグローバル変数
+lazy_static! {
+    pub static ref locked_all_node_dict : HashMap<String, i32> = HashMap::new();    
+}
+*/
+
+lazy_static! {
+    pub static ref locked_all_data_list : Vec<i32> = Vec::new();
 }
 
 // lazy_static! {

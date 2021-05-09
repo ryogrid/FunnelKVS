@@ -350,13 +350,14 @@ pub fn hash_str_to_int(input_str : &String) -> i32 {
     //       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
     //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
 
+    // TODO: (Rust) ちゃんとハッシュ代わりの乱数を返すようにする at hash_str_to_int
     //hash_id_num = random.randint(0, gval.ID_SPACE_RANGE - 1)
     //return hash_id_num
     return 1000i32
 }
 
 // all_data_listグローバル変数に格納される形式としてのみ用いる
-struct KeyValue {
+pub struct KeyValue {
     key : Option<String>,
     value_data : String,
     data_id : Option<i32>
@@ -390,7 +391,7 @@ impl KeyValue {
 */
 
 // TODO: ディープコピーを取得するメソッドを定義しておきたい at DataIdAndValue
-struct DataIdAndValue {
+pub struct DataIdAndValue {
     data_id : i32,
     value_data : String
 }

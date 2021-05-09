@@ -106,6 +106,10 @@ ENABLE_ROUTING_INFO_DPRINT = False
 is_waiting_partial_join_op_exists = False
 */
 
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicIsize, ATOMIC_ISIZE_INIT, AtomicBool, ATOMIC_BOOL_INIT, Ordering};
+use std::sync::{Mutex, Arc};
+
 pub fn add_to_waitlist() {}
 
 pub const ID_SPACE_BITS : u32 = 30; // 160 <- sha1での本来の値
@@ -158,6 +162,21 @@ pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10
 
 // TODO: (Rust) 値が変化するグローバル変数の宣言も対応必要 at gvalモジュール
 
+pub struct GlobalDatas {
+    all_node_dict : HashMap<String, i32>,
+    all_data_list : Vec<i32>
+}
+
+impl GlobalDatas {
+    pub fn new() -> GlobalDatas {
+        GlobalDatas {all_node_dict : HashMap::new(), all_data_list : Vec::new()}
+    }
+}
+
+
+// lazy_static! {
+//     pub static ref all_node_dict : Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(vec![]));
+// }
 /*
 all_node_dict : Dict[str, 'ChordNode'] = {}
 lock_of_all_node_dict = threading.Lock()
@@ -170,6 +189,10 @@ lock_of_all_node_dict = threading.Lock()
 // に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
 // 照らし合わせられるようにする
 
+//TODO: ジェネリクスで指定する型を KeyValueに変更する. all_data_list at gval 
+// lazy_static! {
+//     pub static ref all_data_list : Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(vec![]));
+// }
 /*
 all_data_list : List['KeyValue'] = []
 lock_of_all_data_list = threading.Lock()
@@ -177,15 +200,18 @@ lock_of_all_data_list = threading.Lock()
 
 // 検証を分かりやすくするために何ノード目として生成されたか
 // のデバッグ用IDを持たせるためのカウンタ
+pub static already_born_node_num : AtomicIsize = ATOMIC_ISIZE_INIT;
 /*
-pub already_born_node_num : i32 = 0;
+already_born_node_num = 0;
 */
 
+pub static is_network_constructed : AtomicBool = ATOMIC_BOOL_INIT;
 /*
 is_network_constructed = False
 */
 
 // デバッグ用の変数群
+pub static global_get_retry_cnt : AtomicIsize = ATOMIC_ISIZE_INIT;
 /*
 pub global_get_retry_cnt : i32 = 0;
 */
@@ -198,9 +224,11 @@ all_data_placement_dict : Dict[str, List['NodeInfo']] = {}
 */
 
 // 既に発行したputの回数
+pub static already_issued_put_cnt : AtomicIsize = ATOMIC_ISIZE_INIT;
 /*
 already_issued_put_cnt = 0
 */
+
 
 // stabilize_successorのループの回せる回数の上限
 pub const TRYING_GET_SUCC_TIMES_LIMIT : i32 = SUCCESSOR_LIST_NORMAL_LEN * 5;
@@ -212,6 +240,7 @@ pub const ENABLE_ROUTING_INFO_DPRINT : bool = true;
 
 // partial_join_opが実行されることを待っているノードが存在するか否か
 // join と partial_join_op の間で、該当ノードがkillされることを避けるために用いる
+pub static is_waiting_partial_join_op_exists : AtomicBool = ATOMIC_BOOL_INIT;
 /*
 is_waiting_partial_join_op_exists = False
 */

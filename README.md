@@ -28,6 +28,6 @@
 
 ## Runnable platforms (= Rust and Python usable platforms)
 - Linux (**Windows Subsystem for Linux** environment is also OK)
+- Windows native
 - MacOS (Maybe)
-- Windows native (I have not tried yet...)
 - other Unix like OS environments (please try!)

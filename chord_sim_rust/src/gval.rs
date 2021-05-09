@@ -111,6 +111,7 @@ use std::sync::atomic::{AtomicIsize, ATOMIC_ISIZE_INIT, AtomicBool, ATOMIC_BOOL_
 use std::sync::{Mutex, Arc, MutexGuard};
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
+use crate::chord_util::KeyValue;
 
 pub fn add_to_waitlist() {}
 
@@ -170,7 +171,7 @@ pub struct GlobalDatas {
 // getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
 // に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
 // 照らし合わせられるようにする
-    pub all_data_list : Vec<i32>
+    pub all_data_list : Vec<KeyValue>
 }
 
 impl GlobalDatas {

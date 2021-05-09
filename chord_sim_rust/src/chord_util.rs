@@ -357,12 +357,12 @@ pub fn hash_str_to_int(input_str : &String) -> i32 {
 }
 
 // all_data_listグローバル変数に格納される形式としてのみ用いる
+#[derive(Debug)]
 pub struct KeyValue {
     pub key : Option<String>,
     pub value_data : String,
     pub data_id : Option<i32>
 }
-//TODO: (Rust) KeyValue構造体にコンストラクタを定義する at chord_utilモジュール
 
 impl KeyValue {
     pub fn new(key : Option<String>, value : String) -> KeyValue {

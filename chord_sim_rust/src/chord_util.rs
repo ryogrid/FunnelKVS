@@ -358,9 +358,9 @@ pub fn hash_str_to_int(input_str : &String) -> i32 {
 
 // all_data_listグローバル変数に格納される形式としてのみ用いる
 pub struct KeyValue {
-    key : Option<String>,
-    value_data : String,
-    data_id : Option<i32>
+    pub key : Option<String>,
+    pub value_data : String,
+    pub data_id : Option<i32>
 }
 //TODO: (Rust) KeyValue構造体にコンストラクタを定義する at chord_utilモジュール
 
@@ -392,8 +392,8 @@ impl KeyValue {
 
 // TODO: ディープコピーを取得するメソッドを定義しておきたい at DataIdAndValue
 pub struct DataIdAndValue {
-    data_id : i32,
-    value_data : String
+    pub data_id : i32,
+    pub value_data : String
 }
 /*
     def __eq__(self, other):

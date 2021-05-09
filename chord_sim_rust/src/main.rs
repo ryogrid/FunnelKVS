@@ -557,8 +557,8 @@ extern crate rocket;
 */
 
 pub mod gval;
-//pub use crate::gval::*;
-pub use crate::gval::add_to_waitlist;
+pub use crate::gval::*;
+//pub use crate::gval::add_to_waitlist;
 pub mod chord_node;
 pub use crate::chord_node::*;
 pub mod node_info;
@@ -589,6 +589,21 @@ fn main() {
 }
 */
 
+// ネットワークに存在するノードから1ノードをランダムに取得する
+// is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
+fn get_a_random_node(gd : &mut GlobalDatas) {
+    gd.all_node_dict.clear();
+    //let alive_nodes_list : Vec<i32> = gd.all_node_list.clear()
+    // list(
+    //     filter(lambda node: node.is_alive == True and node.is_join_op_finished == True, list(gval.all_node_dict.values()))
+    // )
+    //return ChordUtil.get_random_elem(alive_nodes_list)
+}
+
 fn main() {
+    let mut gd = gval::global_datas.lock().unwrap();
+    get_a_random_node(&mut gd);
+    gd.all_node_dict.insert("kanbayashi".to_string(), 777);
+    println!("{}", gd.all_node_dict.get("kanbayashi").unwrap());
     println!("Hello, world!");
 }

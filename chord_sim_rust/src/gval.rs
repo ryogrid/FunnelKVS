@@ -157,14 +157,18 @@ pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10
 // TODO: all_node_dictとall_data_listのロックはRustの該当するコレクションがスレッドセーフか
 //       確認してから必要なところだけに絞る必要あり（例えば、readアクセスでも結果にセンシティブなところ以外は不要ではないかなど）
 
+//TODO: ジェネリクスで指定している型を適切なものに変更する. GlobalDatas at gval 
+pub struct GlobalDatas {
 // アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 // IPアドレスが分かれば、対応するノードと通信できることと対応している
-
-// TODO: (Rust) 値が変化するグローバル変数の宣言も対応必要 at gvalモジュール
-
-pub struct GlobalDatas {
-    all_node_dict : HashMap<String, i32>,
-    all_data_list : Vec<i32>
+    pub all_node_dict : HashMap<String, i32>,
+// DHT上で保持されている全てのデータが保持されているリスト
+// KeyValueオブジェクトを要素として持つ
+// 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
+// getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
+// に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
+// 照らし合わせられるようにする
+    pub all_data_list : Vec<i32>
 }
 
 impl GlobalDatas {
@@ -173,6 +177,9 @@ impl GlobalDatas {
     }
 }
 
+lazy_static! {
+    pub static ref global_datas : Arc<Mutex<GlobalDatas>> = Arc::new(Mutex::new(GlobalDatas::new()));
+}
 
 // lazy_static! {
 //     pub static ref all_node_dict : Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(vec![]));
@@ -182,14 +189,6 @@ all_node_dict : Dict[str, 'ChordNode'] = {}
 lock_of_all_node_dict = threading.Lock()
 */
 
-// DHT上で保持されている全てのデータが保持されているリスト
-// KeyValueオブジェクトを要素として持つ
-// 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
-// getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
-// に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
-// 照らし合わせられるようにする
-
-//TODO: ジェネリクスで指定する型を KeyValueに変更する. all_data_list at gval 
 // lazy_static! {
 //     pub static ref all_data_list : Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(vec![]));
 // }
@@ -228,7 +227,6 @@ pub static already_issued_put_cnt : AtomicIsize = ATOMIC_ISIZE_INIT;
 /*
 already_issued_put_cnt = 0
 */
-
 
 // stabilize_successorのループの回せる回数の上限
 pub const TRYING_GET_SUCC_TIMES_LIMIT : i32 = SUCCESSOR_LIST_NORMAL_LEN * 5;

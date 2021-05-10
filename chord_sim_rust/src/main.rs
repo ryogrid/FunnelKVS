@@ -557,7 +557,8 @@ extern crate rocket;
 */
 
 pub mod gval;
-use std::sync::{Mutex, Arc, MutexGuard};
+use std::{borrow::Borrow, sync::{Mutex, Arc, MutexGuard}};
+use std::rc::Rc;
 
 pub use crate::gval::*;
 //pub use crate::gval::add_to_waitlist;
@@ -603,10 +604,11 @@ fn get_a_random_node(gd : &mut GlobalDatas) {
 }
 
 //fn get_first_data() -> &'static KeyValue {
-fn get_first_data() {    
+//fn get_first_data() -> Rc<&'static KeyValue> 
+fn get_first_data() -> KeyValue{    
     let tmp = &*gval::global_datas.lock();
-    let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
-    println!("{:?}", gd.all_data_list.get(0).unwrap());
+    let gd = &mut tmp.borrow_mut();
+    return gd.all_data_list.get(0).unwrap().clone();
 }
 
 fn main() {
@@ -636,7 +638,8 @@ fn main() {
         gd.all_data_list.push(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string()));
     }
 
-    get_first_data();
+    let first_elem = get_first_data();
+    println!("{:?}", first_elem);
 
     println!("Hello, world!");
 }

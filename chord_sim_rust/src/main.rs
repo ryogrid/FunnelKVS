@@ -557,7 +557,7 @@ extern crate rocket;
 */
 
 pub mod gval;
-use std::{borrow::Borrow, sync::{Mutex, Arc, MutexGuard}};
+use std::{borrow::Borrow, borrow::BorrowMut, sync::{Mutex, Arc, MutexGuard}};
 use std::rc::Rc;
 
 pub use crate::gval::*;
@@ -605,16 +605,28 @@ fn get_a_random_node(gd : &mut GlobalDatas) {
 
 //fn get_first_data() -> &'static KeyValue {
 //fn get_first_data() -> Rc<&'static KeyValue> 
-fn get_first_data() -> KeyValue{    
+
+
+fn get_first_data() -> &mut KeyValue {    
     let tmp = &*gval::global_datas.lock();
     let gd = &mut tmp.borrow_mut();
     return gd.all_data_list.get(0).unwrap().clone();
 }
 
+
+/*
+fn get_first_data_by_clone() -> KeyValue{    
+    let mut tmp = &*gval::global_datas.lock();
+    let gd = &mut tmp.borrow_mut();
+    return gd.all_data_list.get(0).unwrap().clone();
+}
+*/
+
 fn main() {
     // 通常のMutexを用いた場合
     //let mut gd = gval::global_datas.lock().unwrap();
 
+    //ReentrantMutexとRefCellを用いた場合
 /*    
     let tmp = &*gval::global_datas.lock();
     {        
@@ -631,15 +643,28 @@ fn main() {
     println!("{}", gd2.all_node_dict.get("kanbayashi").unwrap());
 */
 
-    let tmp = &*gval::global_datas.lock();
-
+    //ReentrantMutexとRefCellを用いて、コレクションには値をそのまま生で突っ込んで、cloneしたりした場合
+/*
+    let mut tmp = &*gval::global_datas.lock();
     {
         let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
         gd.all_data_list.push(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string()));
     }
 
+    let first_elem = get_first_data_by_clone();
+    println!("{:?}", first_elem);
+*/
+
+
+    let tmp = &*gval::global_datas.lock();
+    {
+        let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
+        gd.all_data_list.push(Arc::new(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())));
+    }
+
     let first_elem = get_first_data();
     println!("{:?}", first_elem);
+
 
     println!("Hello, world!");
 }

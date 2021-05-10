@@ -183,6 +183,7 @@ impl GlobalDatas {
 lazy_static! {
     //pub static ref global_datas : Arc<Mutex<GlobalDatas>> = Arc::new(Mutex::new(GlobalDatas::new()));
     pub static ref global_datas : Arc<ReentrantMutex<RefCell<GlobalDatas>>> = Arc::new(const_reentrant_mutex(RefCell::new(GlobalDatas::new())));
+    //pub static ref global_datas : Arc<ReentrantMutex<Arc<GlobalDatas>>> = Arc::new(const_reentrant_mutex(Arc::new(GlobalDatas::new())));
 }
 
 /*

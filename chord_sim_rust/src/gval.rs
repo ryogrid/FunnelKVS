@@ -164,14 +164,14 @@ pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10
 pub struct GlobalDatas {
 // アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 // IPアドレスが分かれば、対応するノードと通信できることと対応している
-    pub all_node_dict : HashMap<String, i32>,
+    pub all_node_dict : HashMap<Arc<ReentrantMutex<RefCell<String>>>, Arc<ReentrantMutex<RefCell<i32>>>>,
 // DHT上で保持されている全てのデータが保持されているリスト
 // KeyValueオブジェクトを要素として持つ
 // 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
 // getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
 // に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
 // 照らし合わせられるようにする
-    pub all_data_list : Vec<Arc<KeyValue>>
+    pub all_data_list : Vec<Arc<ReentrantMutex<RefCell<KeyValue>>>>
 }
 
 impl GlobalDatas {
@@ -193,9 +193,11 @@ lazy_static! {
 }
 */
 
+/*
 lazy_static! {
     pub static ref locked_all_data_list : Vec<i32> = Vec::new();
 }
+*/
 
 // lazy_static! {
 //     pub static ref all_node_dict : Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(vec![]));

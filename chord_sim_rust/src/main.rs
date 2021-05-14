@@ -560,6 +560,8 @@ pub mod gval;
 use std::{borrow::Borrow, borrow::BorrowMut, sync::{Mutex, Arc, MutexGuard}};
 use std::rc::Rc;
 use std::cell::RefMut;
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 pub use crate::gval::*;
 //pub use crate::gval::add_to_waitlist;
@@ -604,7 +606,8 @@ fn get_a_random_node(gd : &mut GlobalDatas) {
     //return ChordUtil.get_random_elem(alive_nodes_list)
 }
 
-fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<KeyValue> {
+//fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<KeyValue> {
+fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
         let got_data =  &(*gd.all_data_list.get(0).unwrap());
         let ret = got_data.clone();
         return ret;
@@ -655,11 +658,12 @@ fn main() {
     let tmp = &*gval::global_datas.lock();
     {
         let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
-        gd.all_data_list.push(Arc::new(KeyValue::new(Some("kanbayashi".to_string()), "sugoi".to_string())));
+        gd.all_data_list.push(Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())))));
     }
 
     let tmp = &*gval::global_datas.lock();
-    let first_elem : Arc<KeyValue>;
+    //let first_elem : Arc<KeyValue>;
+    let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
     {
         let gd = tmp.borrow_mut();
 
@@ -667,8 +671,13 @@ fn main() {
         println!("{:?}", first_elem);
     }
 
-    // let hoge = first_elem.borrow_mut();
-    // hoge.value_data = "kankan".to_string();
+
+    let foo = &*first_elem.as_ref().borrow_mut().lock();
+    let bar = &mut foo.borrow_mut();
+    bar.value_data = "kankan".to_string();
+    println!("{:?}", bar);
+
+    //value_data = "kankan".to_string();
 
     println!("Hello, world!");
 }

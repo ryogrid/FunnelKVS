@@ -171,7 +171,7 @@ pub struct GlobalDatas {
 // getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
 // に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
 // 照らし合わせられるようにする
-    pub all_data_list : Vec<KeyValue>
+    pub all_data_list : Vec<Arc<KeyValue>>
 }
 
 impl GlobalDatas {

@@ -559,6 +559,7 @@ extern crate rocket;
 pub mod gval;
 use std::{borrow::Borrow, borrow::BorrowMut, sync::{Mutex, Arc, MutexGuard}};
 use std::rc::Rc;
+use std::cell::RefMut;
 
 pub use crate::gval::*;
 //pub use crate::gval::add_to_waitlist;
@@ -603,16 +604,11 @@ fn get_a_random_node(gd : &mut GlobalDatas) {
     //return ChordUtil.get_random_elem(alive_nodes_list)
 }
 
-//fn get_first_data() -> &'static KeyValue {
-//fn get_first_data() -> Rc<&'static KeyValue> 
-
-
-fn get_first_data() -> &mut KeyValue {    
-    let tmp = &*gval::global_datas.lock();
-    let gd = &mut tmp.borrow_mut();
-    return gd.all_data_list.get(0).unwrap().clone();
+fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<KeyValue> {
+        let got_data =  &(*gd.all_data_list.get(0).unwrap());
+        let ret = got_data.clone();
+        return ret;
 }
-
 
 /*
 fn get_first_data_by_clone() -> KeyValue{    
@@ -659,12 +655,20 @@ fn main() {
     let tmp = &*gval::global_datas.lock();
     {
         let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
-        gd.all_data_list.push(Arc::new(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())));
+        gd.all_data_list.push(Arc::new(KeyValue::new(Some("kanbayashi".to_string()), "sugoi".to_string())));
     }
 
-    let first_elem = get_first_data();
-    println!("{:?}", first_elem);
+    let tmp = &*gval::global_datas.lock();
+    let first_elem : Arc<KeyValue>;
+    {
+        let gd = tmp.borrow_mut();
 
+        first_elem = get_first_data(gd);
+        println!("{:?}", first_elem);
+    }
+
+    // let hoge = first_elem.borrow_mut();
+    // hoge.value_data = "kankan".to_string();
 
     println!("Hello, world!");
 }

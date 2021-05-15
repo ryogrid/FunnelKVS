@@ -545,7 +545,6 @@ if __name__ == '__main__':
     main()
 */
 
-
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]
 
@@ -661,16 +660,19 @@ fn main() {
         gd.all_data_list.push(Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())))));
     }
 
-    let tmp = &*gval::global_datas.lock();
-    //let first_elem : Arc<KeyValue>;
+    //let tmp = &*gval::global_datas.lock();
     let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
     {
+        let tmp = &*gval::global_datas.lock();
         let gd = tmp.borrow_mut();
 
         first_elem = get_first_data(gd);
-        println!("{:?}", first_elem);
-    }
 
+        let first_elem_tmp = &*first_elem.as_ref().borrow_mut().lock();
+        let first_elem_to_print = &mut first_elem_tmp.borrow_mut();
+
+        println!("{:?}", first_elem_to_print);
+    }
 
     let foo = &*first_elem.as_ref().borrow_mut().lock();
     let bar = &mut foo.borrow_mut();

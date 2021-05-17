@@ -605,69 +605,41 @@ fn get_a_random_node(gd : &mut GlobalDatas) {
     //return ChordUtil.get_random_elem(alive_nodes_list)
 }
 
-//fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<KeyValue> {
+fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
+    let mut gd_refcell = &*gval::global_datas.lock();
+    let gd_refmut = &mut gd_refcell.borrow_mut();
+    let kv_arc = gd_refmut.all_data_list.get(0).unwrap().clone();
+    return Arc::clone( &kv_arc);
+}
+
+// qiitaで記事にしたやつ
 fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
         let got_data =  &(*gd.all_data_list.get(0).unwrap());
         let ret = got_data.clone();
         return ret;
 }
 
-/*
-fn get_first_data_by_clone() -> KeyValue{    
-    let mut tmp = &*gval::global_datas.lock();
-    let gd = &mut tmp.borrow_mut();
-    return gd.all_data_list.get(0).unwrap().clone();
-}
-*/
-
 fn main() {
     // 通常のMutexを用いた場合
     //let mut gd = gval::global_datas.lock().unwrap();
 
     //ReentrantMutexとRefCellを用いた場合
-/*    
-    let tmp = &*gval::global_datas.lock();
-    {        
-        let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
-    }
-
-    let tmp2 = &*gval::global_datas.lock();
-    let gd2 : &mut GlobalDatas = &mut tmp2.borrow_mut();
-
-
-    get_a_random_node(gd2);
-
-    gd2.all_node_dict.insert("kanbayashi".to_string(), 777);
-    println!("{}", gd2.all_node_dict.get("kanbayashi").unwrap());
-*/
-
-    //ReentrantMutexとRefCellを用いて、コレクションには値をそのまま生で突っ込んで、cloneしたりした場合
-/*
-    let mut tmp = &*gval::global_datas.lock();
-    {
-        let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
-        gd.all_data_list.push(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string()));
-    }
-
-    let first_elem = get_first_data_by_clone();
-    println!("{:?}", first_elem);
-*/
-
-
     let tmp = &*gval::global_datas.lock();
     {
         let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
         gd.all_data_list.push(Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())))));
     }
 
-    //let tmp = &*gval::global_datas.lock();
     let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
     {
+/*        
         let tmp = &*gval::global_datas.lock();
         let gd = tmp.borrow_mut();
 
         first_elem = get_first_data(gd);
+*/
 
+        first_elem = get_first_data_no_arg();
         let first_elem_tmp = &*first_elem.as_ref().borrow_mut().lock();
         let first_elem_to_print = &mut first_elem_tmp.borrow_mut();
 

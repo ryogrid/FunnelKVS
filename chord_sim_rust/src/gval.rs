@@ -164,7 +164,7 @@ pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10
 pub struct GlobalDatas {
 // アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 // IPアドレスが分かれば、対応するノードと通信できることと対応している
-    pub all_node_dict : HashMap<Arc<ReentrantMutex<RefCell<String>>>, Arc<ReentrantMutex<RefCell<i32>>>>,
+    pub all_node_dict : HashMap<String, Arc<ReentrantMutex<RefCell<KeyValue>>>>,
 // DHT上で保持されている全てのデータが保持されているリスト
 // KeyValueオブジェクトを要素として持つ
 // 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
@@ -181,36 +181,15 @@ impl GlobalDatas {
 }
 
 lazy_static! {
-    //pub static ref global_datas : Arc<Mutex<GlobalDatas>> = Arc::new(Mutex::new(GlobalDatas::new()));
     pub static ref global_datas : Arc<ReentrantMutex<RefCell<GlobalDatas>>> = Arc::new(const_reentrant_mutex(RefCell::new(GlobalDatas::new())));
-    //pub static ref global_datas : Arc<ReentrantMutex<Arc<GlobalDatas>>> = Arc::new(const_reentrant_mutex(Arc::new(GlobalDatas::new())));
 }
 
-/*
-// スレッドが取得したロック獲得済みのデータを保持しておくためのグローバル変数
-lazy_static! {
-    pub static ref locked_all_node_dict : HashMap<String, i32> = HashMap::new();    
-}
-*/
-
-/*
-lazy_static! {
-    pub static ref locked_all_data_list : Vec<i32> = Vec::new();
-}
-*/
-
-// lazy_static! {
-//     pub static ref all_node_dict : Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(vec![]));
-// }
 /*
 all_node_dict : Dict[str, 'ChordNode'] = {}
 lock_of_all_node_dict = threading.Lock()
 */
 
-// lazy_static! {
-//     pub static ref all_data_list : Arc<Mutex<Vec<i32>>> = Arc::new(Mutex::new(vec![]));
-// }
-/*
+/*/
 all_data_list : List['KeyValue'] = []
 lock_of_all_data_list = threading.Lock()
 */

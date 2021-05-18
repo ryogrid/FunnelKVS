@@ -619,39 +619,71 @@ fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<ReentrantMutex<RefCell<chord_
         return ret;
 }
 
+fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>{
+    let mut gd_refcell = &*gval::global_datas.lock();
+    let gd_refmut = &mut gd_refcell.borrow_mut();
+    let kv_arc = gd_refmut.all_node_dict.get(&"ryo_grid".to_string()).unwrap().clone();
+    return Arc::clone(&kv_arc);
+}
+
 fn main() {
     // 通常のMutexを用いた場合
     //let mut gd = gval::global_datas.lock().unwrap();
 
-    //ReentrantMutexとRefCellを用いた場合
-    let tmp = &*gval::global_datas.lock();
     {
-        let gd : &mut GlobalDatas = &mut tmp.borrow_mut();
-        gd.all_data_list.push(Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())))));
-    }
+        //ReentrantMutexとRefCellを用いた場合
+        let refcell_gd = &*gval::global_datas.lock();
+        {
+            let mutref_gd : &mut GlobalDatas = &mut refcell_gd.borrow_mut();
+            mutref_gd.all_data_list.push(Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())))));
+        }
 
-    let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
-    {
+        let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
+        {
 /*        
-        let tmp = &*gval::global_datas.lock();
-        let gd = tmp.borrow_mut();
+            let tmp = &*gval::global_datas.lock();
+            let gd = tmp.borrow_mut();
 
-        first_elem = get_first_data(gd);
+            first_elem = get_first_data(gd);
 */
 
-        first_elem = get_first_data_no_arg();
-        let first_elem_tmp = &*first_elem.as_ref().borrow_mut().lock();
-        let first_elem_to_print = &mut first_elem_tmp.borrow_mut();
+            first_elem = get_first_data_no_arg();
+            let first_elem_tmp = &*first_elem.as_ref().borrow_mut().lock();
+            let first_elem_to_print = &mut first_elem_tmp.borrow_mut();
 
-        println!("{:?}", first_elem_to_print);
+            println!("{:?}", first_elem_to_print);
+        }
+
+        let refcell_kv = &*first_elem.as_ref().borrow_mut().lock();
+        let mutref_kv = &mut refcell_kv.borrow_mut();
+        mutref_kv.value_data = "yabai".to_string();
+        println!("{:?}", mutref_kv);
+
+        //value_data = "kankan".to_string();
     }
 
-    let foo = &*first_elem.as_ref().borrow_mut().lock();
-    let bar = &mut foo.borrow_mut();
-    bar.value_data = "kankan".to_string();
-    println!("{:?}", bar);
+    let refcell_gd = &*gval::global_datas.lock();
+    {
+        let mutref_gd : &mut GlobalDatas = &mut refcell_gd.borrow_mut();
+        mutref_gd.all_node_dict.insert("ryo_grid".to_string(), Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("value".to_string()),"before_mod".to_string())))));
+    }    
 
-    //value_data = "kankan".to_string();
+    let one_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
+    {
+        one_elem = get_node_from_map(&"ryo_grid".to_string());
+        let one_elem_tmp = &*one_elem.as_ref().borrow_mut().lock();
+        let one_elem_to_print = &mut one_elem_tmp.borrow_mut();
+
+        println!("{:?}", one_elem_to_print);
+    }
+
+    let refcell_kv = &*one_elem.as_ref().borrow_mut().lock();
+    let mutref_kv = &mut refcell_kv.borrow_mut();
+    mutref_kv.value_data = "after_mod".to_string();
+    println!("{:?}", mutref_kv);
+
+    // stringはcloneでディープコピーできるようだ
+    let cloneed_string = "clone_base".to_string().clone();
 
     println!("Hello, world!");
 }

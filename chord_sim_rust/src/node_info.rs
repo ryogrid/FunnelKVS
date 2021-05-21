@@ -99,7 +99,7 @@ pub use crate::router::*;
 
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
-    existing_node : ChordNode,
+    pub existing_node : &'static ChordNode,
     node_id : i32,
     address_str: String,
     // デバッグ用のID
@@ -118,7 +118,7 @@ pub struct NodeInfo {
     // ように制御する
     successor_info_list: Vec<NodeInfo>,
     // join後はNoneになることのないように制御される
-    predecessor_info: Option<NodeInfo>,
+    predecessor_info: Option<&'static NodeInfo>,
 /*
     // predecessor_info と successor_info_list のそれぞれに対応する
     // ロック変数(re-entrantロック)
@@ -134,5 +134,5 @@ pub struct NodeInfo {
     // インデックスの小さい方から狭い範囲が格納される形で保持する
     // sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
     // TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
-    finger_table: Vec<Option<NodeInfo>> // = [None] * gval.ID_SPACE_BITS
+    finger_table: Vec<Option<NodeInfo>>, // = [None] * gval.ID_SPACE_BITS
 }

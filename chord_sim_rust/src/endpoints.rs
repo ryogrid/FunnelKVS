@@ -108,5 +108,5 @@ pub use crate::taskqueue::*;
 
 #[derive(Debug, Clone)]
 pub struct Endpoints {
-    existing_node : ChordNode
+    pub existing_node : &'static ChordNode,
 }

@@ -524,8 +524,10 @@ pub struct ChordNode {
 }
 
 impl ChordNode {
+/*
     pub fn new(key : Option<String>, value : String) -> ChordNode {
         //let new_obj = ChordNode {node_info : NodeInfo{}, data_store: DataStore{}, stabilizer : Stabilizer{}, router: Router{}, tqueue : TaskQueue{}, endpoints : Endpoints{}};
+*/
 /*
         gval.already_born_node_num += 1
         // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
@@ -537,6 +539,8 @@ impl ChordNode {
     
         // シミュレーション時のみ必要なフィールド（実システムでは不要）
         is_alive = True
-*/                
+*/
+/*                
     }
+*/
 }

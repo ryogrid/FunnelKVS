@@ -829,5 +829,5 @@ pub use crate::router::*;
 
 #[derive(Debug, Clone)]
 pub struct Stabilizer {
-    pub existing_node : ChordNode
+    pub existing_node : &'static ChordNode,
 }

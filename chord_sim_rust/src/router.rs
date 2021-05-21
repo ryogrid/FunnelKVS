@@ -189,5 +189,5 @@ pub use crate::data_store::*;
 
 #[derive(Debug, Clone)]
 pub struct Router {
-    pub existing_node : ChordNode
+    pub existing_node : &'static ChordNode,
 }

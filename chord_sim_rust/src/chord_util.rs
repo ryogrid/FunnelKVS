@@ -341,7 +341,7 @@ class InternalControlFlowException(Exception):
 // アルゴリズムはSHA1, 160bitで表現される正の整数となる
 // メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
 // TODO: 本来のハッシュ関数に戻す必要あり hash_str_to_int
-pub fn hash_str_to_int(input_str : &String) -> i32 {
+pub fn hash_str_to_int(_input_str : &String) -> i32 {
     // hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
     // hash_id_num = int(hash_hex_str, 16)
 

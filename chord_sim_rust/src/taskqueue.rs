@@ -47,6 +47,6 @@ pub use crate::stabilizer::*;
 
 #[derive(Debug, Clone)]
 pub struct TaskQueue {
-    pub existing_node : ChordNode,
+    pub existing_node : &'static ChordNode,
     tqueue : Vec<String>
 }

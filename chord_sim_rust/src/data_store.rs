@@ -220,7 +220,7 @@ pub use crate::endpoints::*;
 
 #[derive(Debug, Clone)]
 pub struct DataStore {
-    pub existing_node : ChordNode,
+    pub existing_node : &'static ChordNode,
     // Keyはハッシュを通されたものなので元データの値とは異なる
-    stored_data : HashMap<String, DataIdAndValue>
+    stored_data : HashMap<String, DataIdAndValue>,
 }

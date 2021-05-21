@@ -605,7 +605,7 @@ fn get_a_random_node(gd : &mut GlobalDatas) {
 }
 
 fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
-    let mut gd_refcell = &*gval::global_datas.lock();
+    let gd_refcell = &*gval::global_datas.lock();
     let gd_refmut = &mut gd_refcell.borrow_mut();
     let kv_arc = gd_refmut.all_data_list.get(0).unwrap().clone();
     return Arc::clone( &kv_arc);
@@ -618,9 +618,9 @@ fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<ReentrantMutex<RefCell<chord_
         return ret;
 }
 
-fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>{
-    let mut gd_refcell = &*gval::global_datas.lock();
-    let gd_refmut = &mut gd_refcell.borrow_mut();
+fn get_node_from_map(_key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>{
+    let gd_refcell = &*gval::global_datas.lock();
+    let gd_refmut = &gd_refcell.borrow_mut();
     let kv_arc = gd_refmut.all_node_dict.get(&"ryo_grid".to_string()).unwrap().clone();
     return Arc::clone(&kv_arc);
 }
@@ -682,7 +682,7 @@ fn main() {
     println!("{:?}", mutref_kv);
 
     // stringはcloneでディープコピーできるようだ
-    let cloneed_string = "clone_base".to_string().clone();
+    let _cloned_string = "clone_base".to_string().clone();
 
     println!("Hello, world!");
 }

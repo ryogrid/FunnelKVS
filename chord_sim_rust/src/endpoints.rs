@@ -97,6 +97,16 @@ class Endpoints:
         return ret_info
 */
 
+pub use crate::gval::*;
+pub use crate::chord_node::*;
+pub use crate::node_info::*;
+pub use crate::chord_util::*;
+pub use crate::data_store::*;
+pub use crate::router::*;
+pub use crate::stabilizer::*;
+pub use crate::taskqueue::*;
+
 #[derive(Debug, Clone)]
-pub struct EndPoints {
+pub struct Endpoints {
+    existing_node : ChordNode
 }

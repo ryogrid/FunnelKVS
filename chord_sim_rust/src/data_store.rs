@@ -207,6 +207,20 @@ class DataStore:
             ChordUtil.dprint("distribute_replica_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(succ_info))
 */
+use std::collections::HashMap;
+
+pub use crate::gval::*;
+pub use crate::chord_node::*;
+pub use crate::node_info::*;
+pub use crate::chord_util::*;
+pub use crate::stabilizer::*;
+pub use crate::router::*;
+pub use crate::taskqueue::*;
+pub use crate::endpoints::*;
+
 #[derive(Debug, Clone)]
 pub struct DataStore {
+    pub existing_node : ChordNode,
+    // Keyはハッシュを通されたものなので元データの値とは異なる
+    stored_data : HashMap<String, DataIdAndValue>
 }

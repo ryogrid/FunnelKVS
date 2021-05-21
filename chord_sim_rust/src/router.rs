@@ -178,6 +178,16 @@ class Router:
         return self.existing_node
 */
 
+pub use crate::gval::*;
+pub use crate::chord_node::*;
+pub use crate::node_info::*;
+pub use crate::chord_util::*;
+pub use crate::stabilizer::*;
+pub use crate::taskqueue::*;
+pub use crate::endpoints::*;
+pub use crate::data_store::*;
+
 #[derive(Debug, Clone)]
 pub struct Router {
+    pub existing_node : ChordNode
 }

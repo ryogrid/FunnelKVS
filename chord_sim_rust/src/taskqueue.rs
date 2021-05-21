@@ -36,6 +36,17 @@ class TaskQueue:
                         + "INTERNAL_CONTROL_FLOW_EXCEPTION_OCCURED")
 */
 
+pub use crate::gval::*;
+pub use crate::chord_node::*;
+pub use crate::node_info::*;
+pub use crate::chord_util::*;
+pub use crate::endpoints::*;
+pub use crate::data_store::*;
+pub use crate::router::*;
+pub use crate::stabilizer::*;
+
 #[derive(Debug, Clone)]
 pub struct TaskQueue {
+    pub existing_node : ChordNode,
+    tqueue : Vec<String>
 }

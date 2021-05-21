@@ -474,6 +474,16 @@ class ChordNode:
 */
 use std::sync::atomic::AtomicIsize;
 
+pub use crate::gval::*;
+pub use crate::node_info::*;
+pub use crate::chord_util::*;
+pub use crate::stabilizer::*;
+pub use crate::router::*;
+pub use crate::data_store::*;
+pub use crate::taskqueue::*;
+pub use crate::endpoints::*;
+
+
 pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
 pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL";
 
@@ -500,21 +510,22 @@ need_put_retry_node : Optional['ChordNode'] = None
 
 #[derive(Debug, Clone)]
 pub struct ChordNode {
-/*    
-    node_info : NodeInfo = NodeInfo()
-
-    data_store : DataStore = DataStore(self)
-    stabilizer : Stabilizer = Stabilizer(self)
-    router : Router = Router(self)
-    tqueue : TaskQueue = TaskQueue(self)
-    endpoints : Endpoints = Endpoints(self)
-
-*/
+    node_info : NodeInfo,
+    data_store : DataStore,
+    stabilizer : Stabilizer,
+    router : Router,
+    tqueue : TaskQueue,
+    endpoints : Endpoints,
+    // シミュレーション時のみ必要なフィールド（実システムでは不要）
+    pub is_alive : bool,
+    // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
+    // 大本から呼び出されないようにするためのフラグ
+    is_join_op_finished : bool
 }
 
 impl ChordNode {
     pub fn new(key : Option<String>, value : String) -> ChordNode {
-        return ChordNode {};
+        //let new_obj = ChordNode {node_info : NodeInfo{}, data_store: DataStore{}, stabilizer : Stabilizer{}, router: Router{}, tqueue : TaskQueue{}, endpoints : Endpoints{}};
 /*
         gval.already_born_node_num += 1
         // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する

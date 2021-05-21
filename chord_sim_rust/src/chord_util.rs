@@ -337,8 +337,6 @@ class InternalControlFlowException(Exception):
         super(InternalControlFlowException, self).__init__(msg_str)
 */
 
-use std::sync::{Arc};
-
 // 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
 // アルゴリズムはSHA1, 160bitで表現される正の整数となる
 // メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能

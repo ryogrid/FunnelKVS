@@ -35,3 +35,7 @@ class TaskQueue:
                         "exec_first_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                         + "INTERNAL_CONTROL_FLOW_EXCEPTION_OCCURED")
 */
+
+#[derive(Debug, Clone)]
+pub struct TaskQueue {
+}

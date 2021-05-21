@@ -817,3 +817,7 @@ class Stabilizer:
             self.existing_node.node_info.lock_of_succ_infos.release()
             self.existing_node.node_info.lock_of_pred_info.release()
 */
+
+#[derive(Debug, Clone)]
+pub struct Stabilizer {
+}

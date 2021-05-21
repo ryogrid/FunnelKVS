@@ -177,3 +177,7 @@ class Router:
         # ことになる
         return self.existing_node
 */
+
+#[derive(Debug, Clone)]
+pub struct Router {
+}

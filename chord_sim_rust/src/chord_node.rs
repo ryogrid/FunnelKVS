@@ -410,3 +410,122 @@ class ChordNode:
         finally:
             self.node_info.lock_of_succ_infos.release()
 */
+
+/*
+
+class ChordNode:
+    QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
+    OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL"
+
+    # global_get内で探索した担当ノードにgetをかけて、データを持っていないと
+    # レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
+    GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES = 5
+
+    # global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
+    # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+    need_getting_retry_data_id : int = -1
+    need_getting_retry_node : Optional['ChordNode'] = None
+
+    # global_put が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
+    # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+    need_put_retry_data_id : int = -1
+    need_put_retry_data_value : str = ""
+    need_put_retry_node : Optional['ChordNode'] = None
+
+    # join処理もコンストラクタで行ってしまう
+    def __init__(self, node_address: str, first_node=False):
+        self.node_info : NodeInfo = NodeInfo()
+
+        self.data_store : DataStore = DataStore(self)
+        self.stabilizer : Stabilizer = Stabilizer(self)
+        self.router : Router = Router(self)
+        self.tqueue : TaskQueue = TaskQueue(self)
+        self.endpoints : Endpoints = Endpoints(self)
+
+        # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+        self.node_info.address_str = ChordUtil.gen_address_str()
+        self.node_info.node_id = ChordUtil.hash_str_to_int(self.node_info.address_str)
+
+        gval.already_born_node_num += 1
+        self.node_info.born_id = gval.already_born_node_num
+
+        # シミュレーション時のみ必要なフィールド（実システムでは不要）
+        self.is_alive = True
+
+        # join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
+        # 大本から呼び出されないようにするためのフラグ
+        self.is_join_op_finished = False
+
+        if first_node:
+            with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
+                # 最初の1ノードの場合
+
+                # successorとpredecessorは自身として終了する
+                self.node_info.successor_info_list.append(self.node_info.get_partial_deepcopy())
+                self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+
+                # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+                # データの委譲は必要ない
+
+                return
+        else:
+            self.stabilizer.join(node_address)
+
+*/
+use std::sync::atomic::AtomicIsize;
+
+pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
+pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL";
+
+// global_get内で探索した担当ノードにgetをかけて、データを持っていないと
+// レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
+pub const GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES : i32 = 5;
+
+// global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
+// なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+pub static mut need_getting_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
+
+
+/*
+need_getting_retry_node : Optional['ChordNode'] = None
+*/
+
+// global_put が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
+// なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+pub static mut need_put_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
+/*
+need_put_retry_data_value : str = ""
+need_put_retry_node : Optional['ChordNode'] = None
+*/
+
+#[derive(Debug, Clone)]
+pub struct ChordNode {
+/*    
+    node_info : NodeInfo = NodeInfo()
+
+    data_store : DataStore = DataStore(self)
+    stabilizer : Stabilizer = Stabilizer(self)
+    router : Router = Router(self)
+    tqueue : TaskQueue = TaskQueue(self)
+    endpoints : Endpoints = Endpoints(self)
+
+*/
+}
+
+impl ChordNode {
+    pub fn new(key : Option<String>, value : String) -> ChordNode {
+        return ChordNode {};
+/*
+        gval.already_born_node_num += 1
+        // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+        node_info.address_str = ChordUtil.gen_address_str()
+        node_info.node_id = ChordUtil.hash_str_to_int(self.node_info.address_str)
+    
+        
+        node_info.born_id = gval.already_born_node_num
+    
+        // シミュレーション時のみ必要なフィールド（実システムでは不要）
+        is_alive = True
+*/                
+    }
+}

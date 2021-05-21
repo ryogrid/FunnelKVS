@@ -207,3 +207,6 @@ class DataStore:
             ChordUtil.dprint("distribute_replica_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(succ_info))
 */
+#[derive(Debug, Clone)]
+pub struct DataStore {
+}

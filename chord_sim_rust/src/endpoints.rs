@@ -97,4 +97,6 @@ class Endpoints:
         return ret_info
 */
 
-pub use crate::gval::add_to_waitlist;
+#[derive(Debug, Clone)]
+pub struct EndPoints {
+}

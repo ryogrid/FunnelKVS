@@ -107,13 +107,11 @@ is_waiting_partial_join_op_exists = False
 */
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicIsize, ATOMIC_ISIZE_INIT, AtomicBool, ATOMIC_BOOL_INIT, Ordering, AtomicPtr};
-use std::sync::{Mutex, Arc, MutexGuard};
+use std::sync::atomic::{AtomicIsize, AtomicBool};
+use std::sync::Arc;
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use crate::chord_util::KeyValue;
-
-pub fn add_to_waitlist() {}
 
 pub const ID_SPACE_BITS : u32 = 30; // 160 <- sha1での本来の値
 pub const ID_SPACE_RANGE : i32 = 2i32.pow(ID_SPACE_BITS); // 0を含めての数である点に注意
@@ -153,12 +151,6 @@ pub const NODE_NUM_MAX : i32 = 10000;
 
 pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10
 
-// プロセス内の全てのデータへのアクセスに対するロック変数
-// 実装していく過程で細粒度のロックに対応できていない場合や、デバッグ用途に用いる
-/* lock_of_all_data = threading.Lock() */
-
-// TODO: all_node_dictとall_data_listのロックはRustの該当するコレクションがスレッドセーフか
-//       確認してから必要なところだけに絞る必要あり（例えば、readアクセスでも結果にセンシティブなところ以外は不要ではないかなど）
 
 //TODO: ジェネリクスで指定している型を適切なものに変更する. GlobalDatas at gval 
 pub struct GlobalDatas {
@@ -184,46 +176,25 @@ lazy_static! {
     pub static ref global_datas : Arc<ReentrantMutex<RefCell<GlobalDatas>>> = Arc::new(const_reentrant_mutex(RefCell::new(GlobalDatas::new())));
 }
 
-/*
-all_node_dict : Dict[str, 'ChordNode'] = {}
-lock_of_all_node_dict = threading.Lock()
-*/
-
-/*/
-all_data_list : List['KeyValue'] = []
-lock_of_all_data_list = threading.Lock()
-*/
-
 // 検証を分かりやすくするために何ノード目として生成されたか
 // のデバッグ用IDを持たせるためのカウンタ
-pub static already_born_node_num : AtomicIsize = ATOMIC_ISIZE_INIT;
-/*
-already_born_node_num = 0;
-*/
+pub static mut already_born_node_num : AtomicIsize = AtomicIsize::new(0);
 
-pub static is_network_constructed : AtomicBool = ATOMIC_BOOL_INIT;
-/*
-is_network_constructed = False
-*/
+pub static mut is_network_constructed : AtomicBool = AtomicBool::new(false);
 
 // デバッグ用の変数群
-pub static global_get_retry_cnt : AtomicIsize = ATOMIC_ISIZE_INIT;
-/*
-pub global_get_retry_cnt : i32 = 0;
-*/
+pub static mut global_get_retry_cnt : AtomicIsize = AtomicIsize::new(0);
+
 pub const GLOBAL_GET_RETRY_CNT_LIMIT_TO_DEBEUG_PRINT : i32 = 30;
 
+/*
 // マスターデータとレプリカの区別なく、データIDをKeyに、当該IDに対応するデータを
 // 保持しているノードのリストを得られる dict
-/*
 all_data_placement_dict : Dict[str, List['NodeInfo']] = {}
 */
 
 // 既に発行したputの回数
-pub static already_issued_put_cnt : AtomicIsize = ATOMIC_ISIZE_INIT;
-/*
-already_issued_put_cnt = 0
-*/
+pub static mut already_issued_put_cnt : AtomicIsize = AtomicIsize::new(0);
 
 // stabilize_successorのループの回せる回数の上限
 pub const TRYING_GET_SUCC_TIMES_LIMIT : i32 = SUCCESSOR_LIST_NORMAL_LEN * 5;
@@ -235,7 +206,4 @@ pub const ENABLE_ROUTING_INFO_DPRINT : bool = true;
 
 // partial_join_opが実行されることを待っているノードが存在するか否か
 // join と partial_join_op の間で、該当ノードがkillされることを避けるために用いる
-pub static is_waiting_partial_join_op_exists : AtomicBool = ATOMIC_BOOL_INIT;
-/*
-is_waiting_partial_join_op_exists = False
-*/
+pub static mut is_waiting_partial_join_op_exists : AtomicBool = AtomicBool::new(false);

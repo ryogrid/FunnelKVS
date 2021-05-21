@@ -87,3 +87,7 @@ class NodeInfo:
     def __str__(self):
         return ChordUtil.gen_debug_str_of_node(self)
 */
+
+#[derive(Debug, Clone)]
+pub struct NodeInfo {
+}

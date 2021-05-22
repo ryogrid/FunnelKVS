@@ -556,10 +556,12 @@ extern crate rocket;
 */
 
 
-use std::{borrow::BorrowMut, sync::Arc};
+use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc};
 use std::cell::RefMut;
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
+use std::io::{stdout, stdin};
+use std::sync::{Mutex, mpsc};
 
 pub mod gval;
 pub use crate::gval::*;
@@ -625,6 +627,68 @@ fn get_node_from_map(_key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::Ke
     return Arc::clone(&kv_arc);
 }
 
+fn example_th() {
+    loop{
+        //let kv_arc_at_heap : Box<Arc<ReentrantMutex<RefCell<KeyValue>>>>;
+        {
+            let gd_refcell = &*gval::global_datas.lock();
+            let gd_refmut = &mut gd_refcell.borrow_mut();
+            let kv_arc = gd_refmut.all_data_list.get(0).unwrap().clone();
+            //kv_arc_at_heap = Box::new(Arc::clone( &kv_arc));
+        }
+        println!("thread worked!");
+        stdout().flush().unwrap();
+
+        //std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+
+}
+
+struct Runner {
+    client: Arc<Mutex<RefCell<DataIdAndValue>>>
+}
+
+impl Runner {
+    fn run(&self, data: Vec<i32>) {
+        let (tx, rx) = mpsc::channel();
+        for &x in data.iter() {
+            let tx = tx.clone();
+            let mut client = self.client.clone();
+            std::thread::spawn(move || {
+                let mut tmp1 = client.borrow_mut().lock().unwrap();
+                let tmp2 = &mut *tmp1;
+                let tmp3 = tmp2.get_mut();
+                tmp3.data_id = x as i32;
+                let result = do_something(&tmp3.data_id);
+                tx.send(result);
+            });
+        }
+
+        for i in 0..data.len() {
+            println!("{:?}", rx.recv());
+        }
+    }
+}
+
+
+fn do_something(x : &i32) -> i32{
+    return x * x;
+}
+
+/*
+fn run() {
+    let data = vec![1, 2, 3, 4, 5];
+    for &x in data.iter() {
+        std::thread::spawn(move || {
+            let result = do_something(x);
+            println!("{:?}", result); // 2, 4, 6, 8, 10 が順不同に表示される
+        });
+    }
+
+    std::thread::sleep_ms(500);
+}
+*/
+
 fn main() {
     // 通常のMutexを用いた場合
     //let mut gd = gval::global_datas.lock().unwrap();
@@ -639,13 +703,6 @@ fn main() {
 
         let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
         {
-/*        
-            let tmp = &*gval::global_datas.lock();
-            let gd = tmp.borrow_mut();
-
-            first_elem = get_first_data(gd);
-*/
-
             first_elem = get_first_data_no_arg();
             let first_elem_tmp = &*first_elem.as_ref().borrow_mut().lock();
             let first_elem_to_print = &mut first_elem_tmp.borrow_mut();
@@ -657,15 +714,16 @@ fn main() {
         let mutref_kv = &mut refcell_kv.borrow_mut();
         mutref_kv.value_data = "yabai".to_string();
         println!("{:?}", mutref_kv);
-
-        //value_data = "kankan".to_string();
     }
 
     let refcell_gd = &*gval::global_datas.lock();
     {
         let mutref_gd : &mut GlobalDatas = &mut refcell_gd.borrow_mut();
         mutref_gd.all_node_dict.insert("ryo_grid".to_string(), Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("value".to_string()),"before_mod".to_string())))));
-    }    
+
+        //for (k, v) in &mutref_gd.all_node_dict{
+        //}
+    }
 
     let one_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
     {
@@ -683,6 +741,24 @@ fn main() {
 
     // stringはcloneでディープコピーできるようだ
     let _cloned_string = "clone_base".to_string().clone();
+/*
+    // 複数のスレッドで GLOBAL_DATAS に触ってみる
+    let mut thread_handles = vec![];
+    // thead-1
+    thread_handles.push(std::thread::spawn(example_th));
+    // thead-2
+    thread_handles.push(std::thread::spawn(example_th));
+    for handle in thread_handles {
+        handle.join().unwrap();
+    }
+    // let mut buf = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string();
+    // stdin().read_line(&mut buf);
+*/
+    
+    //run();
+
+    let runner_obj = Runner{ client: Arc::new(Mutex::new(RefCell::new(DataIdAndValue{ data_id : 99, value_data : "ryo_grid".to_string()})))};
+    runner_obj.run(vec![1, 2, 3, 4, 5]);
 
     println!("Hello, world!");
 }

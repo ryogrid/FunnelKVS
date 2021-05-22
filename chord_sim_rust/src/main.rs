@@ -639,6 +639,10 @@ fn example_th(_tx : std::sync::mpsc::Sender<i32>) {
             let kv_refmut = &mut kv_ref.borrow_mut();
             kv_refmut.data_id = Some((kv_refmut.data_id).unwrap() + 1);
             println!{"{:?}", kv_refmut.data_id};
+
+            for (k, v) in &gd_refmut.all_node_dict {
+                println!("{:?} {:?}", k, &(&*v.lock()).borrow());
+            }
             //tx.send(kv_refmut.data_id.unwrap());
         }
         //println!("thread worked!");

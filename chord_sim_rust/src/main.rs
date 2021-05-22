@@ -582,19 +582,6 @@ pub use crate::taskqueue::*;
 pub mod endpoints;
 pub use crate::endpoints::*;
 
-/*
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
-}
-
-fn main() {
-    rocket::ignite()
-        .mount("/", routes![index]) 
-        .launch();
-}
-*/
-
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
 fn get_a_random_node(gd : &mut GlobalDatas) {
@@ -613,13 +600,6 @@ fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>
     return Arc::clone( &kv_arc);
 }
 
-// qiitaで記事にしたやつ
-fn get_first_data(gd : RefMut<GlobalDatas>) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
-        let got_data =  &(*gd.all_data_list.get(0).unwrap());
-        let ret = got_data.clone();
-        return ret;
-}
-
 fn get_node_from_map(_key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>{
     let gd_refcell = &*gval::global_datas.lock();
     let gd_refmut = &gd_refcell.borrow_mut();
@@ -627,7 +607,7 @@ fn get_node_from_map(_key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::Ke
     return Arc::clone(&kv_arc);
 }
 
-fn example_th(_tx : std::sync::mpsc::Sender<i32>) {
+fn example_th() {
     loop{
         let kv_arc_at_heap : Box<Arc<ReentrantMutex<RefCell<KeyValue>>>>;
         {
@@ -643,61 +623,12 @@ fn example_th(_tx : std::sync::mpsc::Sender<i32>) {
             for (k, v) in &gd_refmut.all_node_dict {
                 println!("{:?} {:?}", k, &(&*v.lock()).borrow());
             }
-            //tx.send(kv_refmut.data_id.unwrap());
         }
-        //println!("thread worked!");
         stdout().flush().unwrap();
 
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
-
 }
-/*
-struct Runner {
-    client: Arc<Mutex<RefCell<DataIdAndValue>>>
-}
-
-impl Runner {
-    fn run(&self, data: Vec<i32>) {
-        let (tx, rx) = mpsc::channel();
-        for &x in data.iter() {
-            let tx = tx.clone();
-            let mut client = self.client.clone();
-            std::thread::spawn(move || {
-                let mut tmp1 = client.borrow_mut().lock().unwrap();
-                let tmp2 = &mut *tmp1;
-                let tmp3 = tmp2.get_mut();
-                tmp3.data_id = x as i32;
-                let result = do_something(&tmp3.data_id);
-                tx.send(result);
-            });
-        }
-
-        for i in 0..data.len() {
-            println!("{:?}", rx.recv());
-        }
-    }
-}
-
-
-fn do_something(x : &i32) -> i32{
-    return x * x;
-}
-*/
-
-/*
-fn run() {
-    let data = vec![1, 2, 3, 4, 5];
-    for &x in data.iter() {
-        std::thread::spawn(move || {
-            let result = do_something(x);
-            println!("{:?}", result); // 2, 4, 6, 8, 10 が順不同に表示される
-        });
-    }
-
-    std::thread::sleep_ms(500);
-}
-*/
 
 fn main() {
     // 通常のMutexを用いた場合
@@ -755,34 +686,15 @@ fn main() {
     }   
 
     // 複数のスレッドで GLOBAL_DATAS に触ってみる
-    let (tx, rx) = mpsc::channel();
     let mut thread_handles = vec![];
     // thead-1
-    let tx1 = tx.clone();
-    thread_handles.push(std::thread::spawn(move || { example_th(tx1) }));
+    thread_handles.push(std::thread::spawn(|| { example_th() }));
     // thead-2
-    let tx2 = tx.clone();
-    thread_handles.push(std::thread::spawn(move || { example_th(tx2) }));
+    thread_handles.push(std::thread::spawn(|| { example_th() }));
 
     for handle in thread_handles {
         handle.join().unwrap();
     }
-
-    // loop{
-    //     println!("{:?}", rx.recv());
-    //     stdout().flush().unwrap();        
-    // }
-
-    // let mut buf = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string();
-    // stdin().read_line(&mut buf);
-
-    
-    //run();
-
-/*    
-    let runner_obj = Runner{ client: Arc::new(Mutex::new(RefCell::new(DataIdAndValue{ data_id : 99, value_data : "ryo_grid".to_string()})))};
-    runner_obj.run(vec![1, 2, 3, 4, 5]);
-*/
 
     println!("Hello, world!");
 }

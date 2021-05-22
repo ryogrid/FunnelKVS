@@ -584,9 +584,7 @@ pub use crate::endpoints::*;
 
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
-fn get_a_random_node(gd : &mut GlobalDatas) {
-    gd.all_node_dict.clear();
-    //let alive_nodes_list : Vec<i32> = gd.all_node_list.clear()
+fn get_a_random_node(_gd : &mut GlobalDatas) {
     // list(
     //     filter(lambda node: node.is_alive == True and node.is_join_op_finished == True, list(gval.all_node_dict.values()))
     // )
@@ -600,10 +598,10 @@ fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>
     return Arc::clone( &kv_arc);
 }
 
-fn get_node_from_map(_key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>{
+fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>{
     let gd_refcell = &*gval::global_datas.lock();
     let gd_refmut = &gd_refcell.borrow_mut();
-    let kv_arc = gd_refmut.all_node_dict.get(&"ryo_grid".to_string()).unwrap().clone();
+    let kv_arc = gd_refmut.all_node_dict.get(key).unwrap().clone();
     return Arc::clone(&kv_arc);
 }
 
@@ -631,9 +629,8 @@ fn example_th() {
 }
 
 fn main() {
-    // 通常のMutexを用いた場合
-    //let mut gd = gval::global_datas.lock().unwrap();
-
+/////// 要素もそれ自身もmutableなグローバルアクセス可能な形で定義されたコレクションの操作の例 //////
+    // Vecを操作している処理のブロック
     {
         //ReentrantMutexとRefCellを用いた場合
         let refcell_gd = &*gval::global_datas.lock();
@@ -657,14 +654,24 @@ fn main() {
         println!("{:?}", mutref_kv);
     }
 
+    // HashMapを操作している処理のブロック
     {
         let refcell_gd = &*gval::global_datas.lock();
         {
             let mutref_gd : &mut GlobalDatas = &mut refcell_gd.borrow_mut();
-            mutref_gd.all_node_dict.insert("ryo_grid".to_string(), Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("value".to_string()),"before_mod".to_string())))));
-
-            //for (k, v) in &mutref_gd.all_node_dict{
-            //}
+            mutref_gd.all_node_dict.insert(
+                "ryo_grid".to_string(),
+                 Arc::new(
+                   const_reentrant_mutex(
+                        RefCell::new(
+                                KeyValue::new(
+                                 Some("value".to_string()),
+                                 "before_mod".to_string()
+                                )
+                            )
+                        )
+                    )
+            );
         }
 
         let one_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
@@ -684,17 +691,21 @@ fn main() {
         // stringはcloneでディープコピーできるようだ
         let _cloned_string = "clone_base".to_string().clone();
     }   
+////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*    
     // 複数のスレッドで GLOBAL_DATAS に触ってみる
     let mut thread_handles = vec![];
     // thead-1
-    thread_handles.push(std::thread::spawn(|| { example_th() }));
+    thread_handles.push(std::thread::spawn(example_th));
     // thead-2
-    thread_handles.push(std::thread::spawn(|| { example_th() }));
+    thread_handles.push(std::thread::spawn(example_th));
 
+    // スレッドの処理終了の待ち合わせ
     for handle in thread_handles {
         handle.join().unwrap();
     }
+*/
 
     println!("Hello, world!");
 }

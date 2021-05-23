@@ -123,7 +123,7 @@ pub struct NodeInfo {
     pub successor_info_list: Arc<ReentrantMutex<RefCell<Vec<NodeInfo>>>>,
     // join後はNoneになることのないように制御される
     //predecessor_info: Option<&'static NodeInfo>,
-    pub predecessor_info: Arc<Option<NodeInfo>>,
+    pub predecessor_info: Arc<ReentrantMutex<Option<NodeInfo>>>,
 /*
     // predecessor_info と successor_info_list のそれぞれに対応する
     // ロック変数(re-entrantロック)

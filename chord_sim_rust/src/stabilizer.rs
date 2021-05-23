@@ -812,6 +812,10 @@ class Stabilizer:
             self.existing_node.node_info.lock_of_pred_info.release()
 */
 
+use std::sync::Arc;
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
+
 pub use crate::gval::*;
 pub use crate::chord_node::*;
 pub use crate::node_info::*;
@@ -821,12 +825,21 @@ pub use crate::endpoints::*;
 pub use crate::data_store::*;
 pub use crate::router::*;
 
-
-
+// join が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のjoin処理の際にリトライさせる
+// なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+lazy_static! {
+    pub static ref need_join_retry_node : Arc<ReentrantMutex<RefCell<Option<ChordNode>>>> 
+        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
+}
 /*
-# join が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のjoin処理の際にリトライさせる
-# なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
 need_join_retry_node : Optional['ChordNode'] = None
+*/
+
+lazy_static! {
+    pub static ref need_join_retry_tyukain_node : Arc<ReentrantMutex<RefCell<Option<ChordNode>>>>
+        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
+}
+/*
 need_join_retry_tyukai_node: Optional['ChordNode'] = None
 */
 

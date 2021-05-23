@@ -312,25 +312,10 @@ class DataIdAndValue:
         if not isinstance(other, DataIdAndValue):
             return False
         return self.data_id == other.data_id
-
-class NodeIsDownedExceptiopn(Exception):
-
-    def __init__(self):
-        super(NodeIsDownedExceptiopn, self).__init__("Accessed node seems to be downed.")
-
-class AppropriateNodeNotFoundException(Exception):
-
-    def __init__(self):
-        super(AppropriateNodeNotFoundException, self).__init__("Appropriate node is not found.")
-
-# 通常、join時に all_node_dictにノードオブジェクトが登録される前に
-# ノードのアドレスによる取得を試みた場合など、設計上起きてしまうことがある例外について総じて利用する
-class InternalControlFlowException(Exception):
-
-    def __init__(self, msg_str):
-        super(InternalControlFlowException, self).__init__(msg_str)
 */
+extern crate rand;
 
+use rand::Rng;
 
 pub use crate::gval::*;
 pub use crate::chord_node::*;
@@ -381,6 +366,13 @@ pub struct DataIdAndValue {
     pub data_id : i32,
     pub value_data : String
 }
+
+impl DataIdAndValue {
+    pub fn new(data_id : i32, value_data : String) -> DataIdAndValue {
+        DataIdAndValue {data_id : data_id, value_data : value_data}
+    }
+}
+
 /*
     def __eq__(self, other):
         if not isinstance(other, DataIdAndValue):
@@ -400,9 +392,10 @@ pub fn hash_str_to_int(_input_str : &String) -> i32 {
     //       通常、ID_SPACE_BITS は sha1 で 160 となるが、この検証コードでは
     //       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
     //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
+    let mut rng = rand::thread_rng(); // 乱数生成器の初期化
+    let rand_val: i32 = rng.gen_range(0..(ID_SPACE_RANGE - 1));
 
-    // TODO: (Rust) ちゃんとハッシュ代わりの乱数を返すようにする at hash_str_to_int
+    return rand_val;
     //hash_id_num = random.randint(0, gval.ID_SPACE_RANGE - 1)
     //return hash_id_num
-    return 1000i32
 }

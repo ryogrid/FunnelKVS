@@ -723,5 +723,11 @@ fn main() {
     }
 */
 
+/*
+    for dummy in 1..21{
+        println!("{:?}", hash_str_to_int(&"".to_string()));
+    }
+*/
+
     println!("Hello, world!");
 }

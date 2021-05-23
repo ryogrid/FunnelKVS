@@ -225,3 +225,10 @@ pub struct DataStore {
     // Keyはハッシュを通されたものなので元データの値とは異なる
     pub stored_data : Arc<ReentrantMutex<RefCell<HashMap<String, DataIdAndValue>>>>,
 }
+
+impl DataStore {
+    pub fn new(parent : &'static ChordNode) -> DataStore {
+        let sd = Arc::new(const_reentrant_mutex(RefCell::new(HashMap::new())));
+        DataStore {existing_node : parent, stored_data : sd}
+    }
+}

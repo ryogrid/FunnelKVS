@@ -129,3 +129,20 @@ pub struct NodeInfo {
     // TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
     pub finger_table: Arc<ReentrantMutex<RefCell<Vec<Option<NodeInfo>>>>>, // = [None] * gval.ID_SPACE_BITS
 }
+
+impl NodeInfo {
+    pub fn new(parent : &'static ChordNode) -> NodeInfo {
+        let si_list = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
+        let pred_info = Arc::new(const_reentrant_mutex(None));
+        let ftable = Arc::new(const_reentrant_mutex(RefCell::new(vec![None; ID_SPACE_BITS as usize])));
+        NodeInfo {
+            existing_node : parent,
+            node_id : -1,
+            address_str: "".to_string(),
+            born_id : -1,
+            successor_info_list : si_list,
+            predecessor_info : pred_info,
+            finger_table : ftable
+        }
+    }
+}

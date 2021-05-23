@@ -50,3 +50,10 @@ pub struct TaskQueue {
     pub existing_node : &'static ChordNode,
     pub tqueue : Arc<ReentrantMutex<RefCell<Vec<String>>>>
 }
+
+impl TaskQueue {
+    pub fn new(parent : &'static ChordNode) -> TaskQueue {
+        let tq = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
+        TaskQueue {existing_node : parent, tqueue: tq}
+    }
+}

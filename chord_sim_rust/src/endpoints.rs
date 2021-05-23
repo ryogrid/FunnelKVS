@@ -104,3 +104,9 @@ pub use crate::taskqueue::*;
 pub struct Endpoints {
     pub existing_node : &'static ChordNode,
 }
+
+impl Endpoints {
+    pub fn new(parent : &'static ChordNode) -> Endpoints {
+        Endpoints {existing_node : parent}
+    }
+}

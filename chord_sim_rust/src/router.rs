@@ -185,3 +185,9 @@ pub use crate::data_store::*;
 pub struct Router {
     pub existing_node : &'static ChordNode,
 }
+
+impl Router {
+    pub fn new(parent : &'static ChordNode) -> Router {
+        Router {existing_node : parent}
+    }
+}

@@ -344,16 +344,6 @@ impl KeyValue {
     }
 }
 /*
-    def __init__(self, key : Optional[str], value : str):
-        self.key : Optional[str] = key
-        self.value_data : str = value
-        self.data_id : Optional[int] = None
-        # keyのハッシュ値
-        if key == None:
-            self.data_id = None
-        else:
-            self.data_id = ChordUtil.hash_str_to_int(cast(str, key))
-
     def __eq__(self, other):
         if not isinstance(other, KeyValue):
             return False
@@ -396,6 +386,4 @@ pub fn hash_str_to_int(_input_str : &String) -> i32 {
     let rand_val: i32 = rng.gen_range(0..(ID_SPACE_RANGE - 1));
 
     return rand_val;
-    //hash_id_num = random.randint(0, gval.ID_SPACE_RANGE - 1)
-    //return hash_id_num
 }

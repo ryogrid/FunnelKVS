@@ -337,24 +337,15 @@ class InternalControlFlowException(Exception):
         super(InternalControlFlowException, self).__init__(msg_str)
 */
 
-// 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
-// アルゴリズムはSHA1, 160bitで表現される正の整数となる
-// メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
-// TODO: 本来のハッシュ関数に戻す必要あり hash_str_to_int
-pub fn hash_str_to_int(_input_str : &String) -> i32 {
-    // hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
-    // hash_id_num = int(hash_hex_str, 16)
 
-    // TODO: ID_SPACE_BITS ビットで表現できる符号なし整数をID空間とする.
-    //       通常、ID_SPACE_BITS は sha1 で 160 となるが、この検証コードでは
-    //       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
-    //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
-
-    // TODO: (Rust) ちゃんとハッシュ代わりの乱数を返すようにする at hash_str_to_int
-    //hash_id_num = random.randint(0, gval.ID_SPACE_RANGE - 1)
-    //return hash_id_num
-    return 1000i32
-}
+pub use crate::gval::*;
+pub use crate::chord_node::*;
+pub use crate::node_info::*;
+pub use crate::stabilizer::*;
+pub use crate::router::*;
+pub use crate::taskqueue::*;
+pub use crate::endpoints::*;
+pub use crate::data_store::*;
 
 // all_data_listグローバル変数に格納される形式としてのみ用いる
 #[derive(Debug, Clone)]
@@ -367,10 +358,10 @@ pub struct KeyValue {
 impl KeyValue {
     pub fn new(key : Option<String>, value : String) -> KeyValue {
         let tmp_data_id : Option<i32> = match &key {
-            Some(key_string) => Some(hash_str_to_int(&key_string)),
+            Some(key_string) => Some(hash_str_to_int(key_string)),
             None => None
         };
-        KeyValue {key : key, value_data : value, data_id : tmp_data_id}
+        KeyValue {key : Some(key.unwrap()), value_data : value, data_id : tmp_data_id}
     }
 }
 /*
@@ -402,3 +393,22 @@ pub struct DataIdAndValue {
             return False
         return self.data_id == other.data_id
 */
+
+// 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
+// アルゴリズムはSHA1, 160bitで表現される正の整数となる
+// メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
+// TODO: 本来のハッシュ関数に戻す必要あり hash_str_to_int
+pub fn hash_str_to_int(_input_str : &String) -> i32 {
+    // hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
+    // hash_id_num = int(hash_hex_str, 16)
+
+    // TODO: ID_SPACE_BITS ビットで表現できる符号なし整数をID空間とする.
+    //       通常、ID_SPACE_BITS は sha1 で 160 となるが、この検証コードでは
+    //       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
+    //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
+
+    // TODO: (Rust) ちゃんとハッシュ代わりの乱数を返すようにする at hash_str_to_int
+    //hash_id_num = random.randint(0, gval.ID_SPACE_RANGE - 1)
+    //return hash_id_num
+    return 1000i32
+}

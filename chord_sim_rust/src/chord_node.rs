@@ -472,7 +472,7 @@ class ChordNode:
             self.stabilizer.join(node_address)
 
 */
-use std::sync::atomic::AtomicIsize;
+use std::sync::atomic::{AtomicIsize, AtomicBool};
 
 pub use crate::gval::*;
 pub use crate::node_info::*;
@@ -508,19 +508,19 @@ need_put_retry_data_value : str = ""
 need_put_retry_node : Optional['ChordNode'] = None
 */
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ChordNode {
-    node_info : NodeInfo,
-    data_store : DataStore,
-    stabilizer : Stabilizer,
-    router : Router,
-    tqueue : TaskQueue,
-    endpoints : Endpoints,
+    pub node_info : NodeInfo,
+    pub data_store : DataStore,
+    pub stabilizer : Stabilizer,
+    pub router : Router,
+    pub tqueue : TaskQueue,
+    pub endpoints : Endpoints,
     // シミュレーション時のみ必要なフィールド（実システムでは不要）
-    pub is_alive : bool,
+    pub is_alive : AtomicBool,
     // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
     // 大本から呼び出されないようにするためのフラグ
-    is_join_op_finished : bool
+    pub is_join_op_finished : AtomicBool
 }
 
 impl ChordNode {

@@ -208,6 +208,9 @@ class DataStore:
                              + ChordUtil.gen_debug_str_of_node(succ_info))
 */
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 pub use crate::gval::*;
 pub use crate::chord_node::*;
@@ -222,5 +225,5 @@ pub use crate::endpoints::*;
 pub struct DataStore {
     pub existing_node : &'static ChordNode,
     // Keyはハッシュを通されたものなので元データの値とは異なる
-    stored_data : HashMap<String, DataIdAndValue>,
+    pub stored_data : Arc<ReentrantMutex<RefCell<HashMap<String, DataIdAndValue>>>>,
 }

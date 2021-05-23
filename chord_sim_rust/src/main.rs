@@ -598,11 +598,11 @@ fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>
     return Arc::clone( &kv_arc);
 }
 
-fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>{
+fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
     let gd_refcell = &*gval::global_datas.lock();
     let gd_refmut = &gd_refcell.borrow_mut();
-    let kv_arc = gd_refmut.all_node_dict.get(key).unwrap().clone();
-    return Arc::clone(&kv_arc);
+    let node_arc = gd_refmut.all_node_dict.get(key).unwrap().clone();
+    return Arc::clone(&node_arc);
 }
 
 fn example_th() {
@@ -636,7 +636,16 @@ fn main() {
         let refcell_gd = &*gval::global_datas.lock();
         {
             let mutref_gd : &mut GlobalDatas = &mut refcell_gd.borrow_mut();
-            mutref_gd.all_data_list.push(Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())))));
+            //mutref_gd.all_data_list.push(Arc::new(const_reentrant_mutex(RefCell::new(KeyValue::new(Some("kanbayashi"),"sugoi")))));
+            mutref_gd.all_data_list.push(
+                Arc::new(
+                const_reentrant_mutex(
+                    RefCell::new(
+                            KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())
+                        )
+                    )
+                )
+            );
         }
 
         let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
@@ -650,12 +659,19 @@ fn main() {
 
         let refcell_kv = &*first_elem.as_ref().borrow_mut().lock();
         let mutref_kv = &mut refcell_kv.borrow_mut();
-        mutref_kv.value_data = "yabai".to_string();
+        
+        let num = 2u32.pow(10u32);
+        mutref_kv.value_data = num.to_string();
+        //mutref_kv.value_data ="yabai".to_string();
         println!("{:?}", mutref_kv);
     }
 
     // HashMapを操作している処理のブロック
     {
+
+// all_node_dictのHashMapが格納する要素のvalueの型をKeyValue型からChordNode型に変更した結果
+// 修正しないと動作しなくなったのでひとまずコメントアウト
+/*        
         let refcell_gd = &*gval::global_datas.lock();
         {
             let mutref_gd : &mut GlobalDatas = &mut refcell_gd.borrow_mut();
@@ -687,6 +703,7 @@ fn main() {
         let mutref_kv = &mut refcell_kv.borrow_mut();
         mutref_kv.value_data = "after_mod".to_string();
         println!("{:?}", mutref_kv);
+*/
 
         // stringはcloneでディープコピーできるようだ
         let _cloned_string = "clone_base".to_string().clone();

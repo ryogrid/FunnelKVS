@@ -35,6 +35,9 @@ class TaskQueue:
                         "exec_first_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                         + "INTERNAL_CONTROL_FLOW_EXCEPTION_OCCURED")
 */
+use std::sync::Arc;
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 pub use crate::gval::*;
 pub use crate::chord_node::*;
@@ -45,8 +48,10 @@ pub use crate::data_store::*;
 pub use crate::router::*;
 pub use crate::stabilizer::*;
 
+pub const JOIN_PARTIAL : &str = "join_partial";
+
 #[derive(Debug, Clone)]
 pub struct TaskQueue {
     pub existing_node : &'static ChordNode,
-    tqueue : Vec<String>
+    pub tqueue : Arc<ReentrantMutex<RefCell<Vec<String>>>>
 }

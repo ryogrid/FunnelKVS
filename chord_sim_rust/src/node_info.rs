@@ -88,6 +88,10 @@ class NodeInfo:
         return ChordUtil.gen_debug_str_of_node(self)
 */
 
+use std::sync::Arc;
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
+
 pub use crate::gval::*;
 pub use crate::chord_node::*;
 pub use crate::chord_util::*;
@@ -100,13 +104,13 @@ pub use crate::router::*;
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
     pub existing_node : &'static ChordNode,
-    node_id : i32,
-    address_str: String,
+    pub node_id : i32,
+    pub address_str: String,
     // デバッグ用のID
     // 何ノード目として生成されたかの値
     // TODO: 実システムでは開発中（というか、スクリプトで順にノード起動していくような形）でないと
     //       利用できないことは念頭おいて置く必要あり NodeInfo#born_id
-    born_id : i32,
+    pub born_id : i32,
     // 以下の2つはNodeInfoオブジェクトを保持.
     // ある時点で取得したものが保持されており、変化する場合のあるフィールド
     // の内容は最新の内容となっているとは限らないため注意が必要.
@@ -116,9 +120,10 @@ pub struct NodeInfo {
     //
     // 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
     // ように制御する
-    successor_info_list: Vec<NodeInfo>,
+    pub successor_info_list: Arc<ReentrantMutex<RefCell<Vec<NodeInfo>>>>,
     // join後はNoneになることのないように制御される
-    predecessor_info: Option<&'static NodeInfo>,
+    //predecessor_info: Option<&'static NodeInfo>,
+    pub predecessor_info: Arc<Option<NodeInfo>>,
 /*
     // predecessor_info と successor_info_list のそれぞれに対応する
     // ロック変数(re-entrantロック)
@@ -134,5 +139,5 @@ pub struct NodeInfo {
     // インデックスの小さい方から狭い範囲が格納される形で保持する
     // sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
     // TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
-    finger_table: Vec<Option<NodeInfo>>, // = [None] * gval.ID_SPACE_BITS
+    pub finger_table: Arc<ReentrantMutex<RefCell<Vec<Option<NodeInfo>>>>>, // = [None] * gval.ID_SPACE_BITS
 }

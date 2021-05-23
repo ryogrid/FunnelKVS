@@ -1,18 +1,12 @@
 /*
 # coding:utf-8
 
-from typing import Dict, List, Optional, cast, TYPE_CHECKING
-
 import sys
 import modules.gval as gval
 import traceback
 from .chord_util import ChordUtil, KeyValue, NodeIsDownedExceptiopn, AppropriateNodeNotFoundException, \
     InternalControlFlowException, DataIdAndValue, ErrorCode, PResult
 from .taskqueue import TaskQueue
-
-if TYPE_CHECKING:
-    from .node_info import NodeInfo
-    from .chord_node import ChordNode
 
 class Stabilizer:
 
@@ -826,6 +820,15 @@ pub use crate::taskqueue::*;
 pub use crate::endpoints::*;
 pub use crate::data_store::*;
 pub use crate::router::*;
+
+
+
+/*
+# join が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のjoin処理の際にリトライさせる
+# なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+need_join_retry_node : Optional['ChordNode'] = None
+need_join_retry_tyukai_node: Optional['ChordNode'] = None
+*/
 
 #[derive(Debug, Clone)]
 pub struct Stabilizer {

@@ -1,8 +1,6 @@
 /*
 # coding:utf-8
 
-from typing import Dict, List, Tuple, Optional, cast
-
 import sys
 import modules.gval as gval
 from .node_info import NodeInfo
@@ -473,6 +471,9 @@ class ChordNode:
 
 */
 use std::sync::atomic::{AtomicIsize, AtomicBool};
+use std::sync::Arc;
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 pub use crate::gval::*;
 pub use crate::node_info::*;
@@ -482,7 +483,6 @@ pub use crate::router::*;
 pub use crate::data_store::*;
 pub use crate::taskqueue::*;
 pub use crate::endpoints::*;
-
 
 pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
 pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL";
@@ -495,7 +495,10 @@ pub const GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES : i32 = 5;
 // なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
 pub static mut need_getting_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
 
-
+lazy_static! {
+    pub static ref need_getting_retry_node : Arc<ReentrantMutex<RefCell<Option<ChordNode>>>> 
+        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
+}
 /*
 need_getting_retry_node : Optional['ChordNode'] = None
 */
@@ -503,8 +506,21 @@ need_getting_retry_node : Optional['ChordNode'] = None
 // global_put が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
 // なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
 pub static mut need_put_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
+
+lazy_static! {
+    pub static ref need_put_retry_data_value : Arc<ReentrantMutex<RefCell<String>>> 
+        = Arc::new(const_reentrant_mutex(RefCell::new("".to_string())));
+}
 /*
 need_put_retry_data_value : str = ""
+*/
+
+
+lazy_static! {
+    pub static ref need_put_retry_node : Arc<ReentrantMutex<RefCell<Option<ChordNode>>>> 
+        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
+}
+/*
 need_put_retry_node : Optional['ChordNode'] = None
 */
 

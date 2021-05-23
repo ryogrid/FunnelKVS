@@ -1,13 +1,7 @@
 /*
 # coding:utf-8
 
-from typing import Dict, List, Optional, cast, TYPE_CHECKING
-
 from .chord_util import ChordUtil, KeyValue, DataIdAndValue, PResult, ErrorCode
-
-if TYPE_CHECKING:
-    from .chord_node import ChordNode
-    from .node_info import NodeInfo
 
 class DataStore:
 
@@ -220,6 +214,10 @@ pub use crate::stabilizer::*;
 pub use crate::router::*;
 pub use crate::taskqueue::*;
 pub use crate::endpoints::*;
+
+pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";
+pub const DATA_STORE_OP_DIRECT_STORE : &str = "DIRECT_STORE";
+pub const DATA_STORE_OP_DIRECT_REMOVE : &str = "DIRECT_REMOVE";
 
 #[derive(Debug, Clone)]
 pub struct DataStore {

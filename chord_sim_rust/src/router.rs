@@ -1,15 +1,9 @@
 /*
 # coding:utf-8
 
-from typing import Dict, List, Optional, cast, TYPE_CHECKING
-
 import modules.gval as gval
 from .chord_util import ChordUtil, NodeIsDownedExceptiopn, \
     AppropriateNodeNotFoundException, InternalControlFlowException, PResult, ErrorCode
-
-if TYPE_CHECKING:
-    from .node_info import NodeInfo
-    from .chord_node import ChordNode
 
 class Router:
 

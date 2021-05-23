@@ -1,12 +1,7 @@
 /*
 # coding:utf-8
 
-from typing import Dict, List, Optional, cast, TYPE_CHECKING
-
 from .chord_util import ChordUtil, InternalControlFlowException, NodeIsDownedExceptiopn
-
-if TYPE_CHECKING:
-    from .chord_node import ChordNode
 
 class TaskQueue:
     JOIN_PARTIAL = "join_partial"

@@ -7,13 +7,7 @@ import random
 import datetime
 import dataclasses
 import traceback
-from typing import List, Any, Optional, TypeVar, Generic, Union, cast, TYPE_CHECKING
-
 from . import gval
-
-if TYPE_CHECKING:
-    from .chord_node import ChordNode
-    from .node_info import NodeInfo
 
 class ErrorCode:
     KeyError_CODE = 1

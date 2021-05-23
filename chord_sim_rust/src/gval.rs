@@ -2,14 +2,6 @@
 # coding:utf-8
 
 import threading
-from typing import Dict, List, TYPE_CHECKING
-# from readerwriterlock import rwlock
-
-if TYPE_CHECKING:
-    from .chord_node import ChordNode
-    from .node_info import NodeInfo
-    from .chord_util import KeyValue
-    from .chord_node import ChordNode
 
 ID_SPACE_BITS = 30 # 160 <- sha1での本来の値
 ID_SPACE_RANGE = 2**ID_SPACE_BITS # 0を含めての数である点に注意

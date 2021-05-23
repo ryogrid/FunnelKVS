@@ -2,7 +2,6 @@
 # coding:utf-8
 
 import copy
-from typing import List, Optional
 
 from . import gval
 from .chord_util import ChordUtil
@@ -124,17 +123,6 @@ pub struct NodeInfo {
     // join後はNoneになることのないように制御される
     //predecessor_info: Option<&'static NodeInfo>,
     pub predecessor_info: Arc<ReentrantMutex<Option<NodeInfo>>>,
-/*
-    // predecessor_info と successor_info_list のそれぞれに対応する
-    // ロック変数(re-entrantロック)
-    lock_of_pred_info : threading.RLock = threading.RLock()
-    lock_of_succ_infos : threading.RLock = threading.RLock()
-*/
-/*
-    // stored_data, master2data_idx、master_node_dict 全てのフィールドに対する
-    // ロック変数(re-entrantロック)
-    self.lock_of_datastore : threading.RLock = threading.RLock()
-*/
     // NodeInfoオブジェクトを要素として持つリスト
     // インデックスの小さい方から狭い範囲が格納される形で保持する
     // sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる

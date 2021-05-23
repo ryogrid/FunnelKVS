@@ -1,14 +1,8 @@
 /*
 # coding:utf-8
 
-from typing import Dict, List, Tuple, Optional, cast, TYPE_CHECKING
-
 from .chord_util import ChordUtil, InternalControlFlowException,\
     NodeIsDownedExceptiopn, DataIdAndValue, KeyValue, PResult
-
-if TYPE_CHECKING:
-    from .chord_node import ChordNode
-    from .node_info import NodeInfo
 
 class Endpoints:
 

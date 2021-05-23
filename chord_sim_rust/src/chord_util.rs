@@ -370,6 +370,13 @@ impl DataIdAndValue {
         return self.data_id == other.data_id
 */
 
+// 0からlimitより1少ない数までの値の乱数を返す
+pub fn get_rnd_int_with_limit(limit : i32) -> i32{
+    let mut rng = rand::thread_rng(); // 乱数生成器の初期化
+    let rand_val: i32 = rng.gen_range(0..limit);
+    return rand_val;
+}
+
 // 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
 // アルゴリズムはSHA1, 160bitで表現される正の整数となる
 // メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
@@ -382,8 +389,6 @@ pub fn hash_str_to_int(_input_str : &String) -> i32 {
     //       通常、ID_SPACE_BITS は sha1 で 160 となるが、この検証コードでは
     //       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
     //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
-    let mut rng = rand::thread_rng(); // 乱数生成器の初期化
-    let rand_val: i32 = rng.gen_range(0..(ID_SPACE_RANGE - 1));
-
+    let rand_val: i32 = get_rnd_int_with_limit(ID_SPACE_RANGE);
     return rand_val;
 }

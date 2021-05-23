@@ -555,6 +555,18 @@ extern crate rocket;
 */
 
 
+macro_rules! get_refcell_from_arc {
+    ($arc:ident) => (
+        &*$arc.as_ref().borrow_mut().lock();         
+    );
+}
+
+macro_rules! get_refmut_from_refcell {
+    ($refcell:ident) => (
+        &mut $refcell.borrow_mut();
+    );
+}
+
 use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc};
 use std::cell::RefMut;
 use std::cell::RefCell;
@@ -581,9 +593,21 @@ pub use crate::taskqueue::*;
 pub mod endpoints;
 pub use crate::endpoints::*;
 
+
+
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノードは返らない
-fn get_a_random_node(_gd : &mut GlobalDatas) {
+fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<ChordNode>>>{
+    let gd_refcell = &*gval::global_datas.lock();
+    let gd_refmut = &mut gd_refcell.borrow_mut();
+    let mut tmp_vec = vec![];
+    for (k, v) in &gd_refmut.all_node_dict{
+        tmp_vec.push(v);
+    }
+    let rand_val = get_rnd_int_with_limit(tmp_vec.len() as i32);
+    let node_arc = tmp_vec.get(rand_val as usize);
+    let ret = Arc::clone(*node_arc.unwrap());
+    return ret;
     // list(
     //     filter(lambda node: node.is_alive == True and node.is_join_op_finished == True, list(gval.all_node_dict.values()))
     // )
@@ -650,19 +674,30 @@ fn main() {
         let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
         {
             first_elem = get_first_data_no_arg();
+            /*
             let first_elem_tmp = &*first_elem.as_ref().borrow_mut().lock();
             let first_elem_to_print = &mut first_elem_tmp.borrow_mut();
+            */
+            let refcell = get_refcell_from_arc!(first_elem);
+            let refmut_kv = get_refmut_from_refcell!(refcell);            
 
-            println!("{:?}", first_elem_to_print);
+            //println!("{:?}", first_elem_to_print);
+            println!("{:?}", refmut_kv);
         }
 
+        /*
         let refcell_kv = &*first_elem.as_ref().borrow_mut().lock();
         let mutref_kv = &mut refcell_kv.borrow_mut();
+        */
+
+        //let mutref_kv = get_mut_ref_from_arc!(first_elem);
+        let refcell = get_refcell_from_arc!(first_elem);
+        let refmut_kv = get_refmut_from_refcell!(refcell);
         
         let num = 2u32.pow(10u32);
-        mutref_kv.value_data = num.to_string();
+        refmut_kv.value_data = num.to_string();
         //mutref_kv.value_data ="yabai".to_string();
-        println!("{:?}", mutref_kv);
+        println!("{:?}", refmut_kv);
     }
 
     // HashMapを操作している処理のブロック

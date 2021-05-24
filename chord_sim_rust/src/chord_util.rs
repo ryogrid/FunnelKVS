@@ -315,6 +315,13 @@ class DataIdAndValue:
 */
 extern crate rand;
 
+use std::sync::Arc;
+use std::borrow::{Borrow, BorrowMut};
+use std::cell::RefMut;
+use std::cell::RefCell;
+use std::sync::atomic::Ordering;
+
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rand::Rng;
 use chrono::{Local, DateTime, Date};
 
@@ -368,6 +375,32 @@ impl DataIdAndValue {
         if not isinstance(other, DataIdAndValue):
             return False
         return self.data_id == other.data_id
+*/
+
+#[derive(Debug, Clone)]
+pub struct NodeIsDownedError {
+    pub message: String,
+    pub line : usize,
+    pub column: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct AppropriateNodeNotFoundError {
+    pub message: String,
+    pub line : usize,
+    pub column: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct InternalControlFlowError {
+    pub message: String,
+    pub line : usize,
+    pub column: usize,
+}
+/*
+NodeIsDownedException_CODE = 2
+AppropriateNodeNotFoundException_CODE = 3
+InternalControlFlowException_CODE = 4
 */
 
 // 0からlimitより1少ない数までの値の乱数を返す
@@ -558,7 +591,7 @@ def dprint(cls, print_str : str, flush=False):
     print(str(datetime.datetime.now()) + "," + print_str, flush=flush)
 */
 
-pub fn gen_debug_str_of_node(node_info : Option<NodeInfo>) -> String {
+pub fn gen_debug_str_of_node(node_info : Option<&NodeInfo>) -> String {
     let casted_info = node_info.unwrap();
     return casted_info.born_id.to_string() + &",".to_string() + &format!("{:X}", casted_info.node_id) + &",".to_string()
        + &conv_id_to_ratio_str(casted_info.node_id);
@@ -585,20 +618,27 @@ pub fn gen_debug_str_of_data(data_id : i32) -> String {
 //            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
 // TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
 //       ChordNodeオブジェクトを返す get_node_by_address
-pub fn get_node_by_address(address : &String) -> Result<Option<ChordNode>> {
+pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMutex<RefCell<ChordNode>>>>, NodeIsDownedError> {
+    let gd_refcell = get_refcell_from_arc!(global_datas);
+    let gd_refmut = get_refmut_from_refcell!(gd_refcell);
 
-        // with gval.lock_of_all_node_dict:
-        ret_val = gval.all_node_dict[address]
+    let get_result = gd_refmut.all_node_dict.get(address);
+    let ret_val = 
+        match get_result {
+            // join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
+            None => return Err(NodeIsDownedError{message: "".to_string(), line: 0, column: 0}),
+            Some(arc_val) => arc_val,
+        };
 
-        // join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
-        return Err(ErrorCode.InternalControlFlowException_CODE);
 
-    if ret_val.is_alive == False {
-        ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
-        return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
+    let node_refcell = get_refcell_from_arc!(ret_val);
+    let node_refmut = get_refmut_from_refcell!(node_refcell);
+    if node_refmut.is_alive.load(Ordering::Relaxed) == false {
+        dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(&node_refmut.node_info))));
+        return Err(NodeIsDownedError{message: "".to_string(), line: 0, column: 0});
     }
 
-    return Ok(ret_val);
+    return Ok(Some(Arc::clone(ret_val)));
 }
 
 /*

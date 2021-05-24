@@ -601,10 +601,6 @@ pub use crate::endpoints::*;
 // および、is_join_op_finishedフィールドがFalseでjoin処理が完全に完了していない
 // ノードは返らない
 fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<ChordNode>>>{
-    /*
-    let gd_refcell = &*gval::global_datas.lock();
-    let gd_refmut = &mut gd_refcell.borrow_mut();
-    */
     let gd_refcell = get_refcell_from_arc!(gval::global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);
     let mut tmp_vec = vec![];

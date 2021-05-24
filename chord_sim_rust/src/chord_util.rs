@@ -316,6 +316,7 @@ class DataIdAndValue:
 extern crate rand;
 
 use rand::Rng;
+use chrono::{Local, DateTime, Date};
 
 pub use crate::gval::*;
 pub use crate::chord_node::*;
@@ -362,7 +363,6 @@ impl DataIdAndValue {
         DataIdAndValue {data_id : data_id, value_data : value_data}
     }
 }
-
 /*
     def __eq__(self, other):
         if not isinstance(other, DataIdAndValue):
@@ -392,3 +392,257 @@ pub fn hash_str_to_int(_input_str : &String) -> i32 {
     let rand_val: i32 = get_rnd_int_with_limit(ID_SPACE_RANGE);
     return rand_val;
 }
+
+pub fn overflow_check_and_conv(id : i32) -> i32 {
+    let mut ret_id = id;
+    if id > ID_MAX {
+        // 1を足すのは MAX より 1大きい値が 0 となるようにするため
+        ret_id = id - (ID_MAX + 1);
+    }
+    return ret_id;
+}
+/*
+# 計算したID値がID空間の最大値を超えていた場合は、空間内に収まる値に変換する
+@classmethod
+def overflow_check_and_conv(cls, id : int) -> int:
+    ret_id = id
+    if id > gval.ID_MAX:
+        # 1を足すのは MAX より 1大きい値が 0 となるようにするため
+        ret_id = id - (gval.ID_MAX + 1)
+    return ret_id
+*/
+
+pub fn conv_id_to_ratio_str(id : i32) -> String {
+    let mut ratio = (id / ID_MAX) as f32 * 100.0;
+    return format!("{:.4}", ratio);
+}
+/*
+# idがID空間の最大値に対して何パーセントの位置かを適当な精度の浮動小数の文字列
+# にして返す
+@classmethod
+def conv_id_to_ratio_str(cls, id : int) -> str:
+    ratio = (id / gval.ID_MAX) * 100.0
+    return '%2.4f' % ratio
+*/
+
+pub fn calc_distance_between_nodes_left_mawari(base_id : i32, target_id : i32) -> i32 {
+    // successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
+    // 距離0と考えることもできるが、一周分を距離として返す
+    if base_id == target_id {
+        return ID_SPACE_RANGE - 1;
+    }
+
+    // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
+    // 同じ数だけずらす
+    let mut slided_base_id = base_id - target_id;
+    if slided_base_id < 0 {
+        // マイナスの値をとった場合は値0を通り越しているので
+        // それにあった値に置き換える
+        slided_base_id = ID_MAX + slided_base_id
+    }
+
+    // 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
+    // が結果となる. ここでは slided_target_id は 0 であり、slided_base_id は必ず正の値
+    // となっているので、 slided_base_idの値を返せばよい
+
+    return slided_base_id
+}
+/*
+# ID空間が環状になっていることを踏まえて base_id から前方をたどった場合の
+# ノード間の距離を求める
+# ここで前方とは、IDの値が小さくなる方向である
+@classmethod
+def calc_distance_between_nodes_left_mawari(cls, base_id : int, target_id : int) -> int:
+    # successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
+    # 距離0と考えることもできるが、一周分を距離として返す
+    if base_id == target_id:
+        return gval.ID_SPACE_RANGE - 1
+
+    # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
+    # 同じ数だけずらす
+    slided_target_id = 0
+    slided_base_id = base_id - target_id
+    if(slided_base_id < 0):
+        # マイナスの値をとった場合は値0を通り越しているので
+        # それにあった値に置き換える
+        slided_base_id = gval.ID_MAX + slided_base_id
+
+    # 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
+    # が結果となる. ここでは slided_target_id は 0 であり、slided_base_id は必ず正の値
+    # となっているので、 slided_base_idの値を返せばよい
+
+    return slided_base_id
+*/
+
+pub fn calc_distance_between_nodes_right_mawari(base_id : i32, target_id : i32) -> i32 {
+    // successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
+    // 距離0と考えることもできるが、一周分を距離として返す
+    if base_id == target_id {
+        return ID_SPACE_RANGE - 1;
+    }
+
+    // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
+    // 同じ数だけずらす
+    let mut slided_target_id = target_id - base_id;
+    if slided_target_id < 0 {
+        // マイナスの値をとった場合は値0を通り越しているので
+        // それにあった値に置き換える
+        slided_target_id = ID_MAX + slided_target_id;
+    }
+
+    // 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
+    // が結果となる. ここでは slided_base_id は 0 であり、slided_target_id は必ず正の値
+    // となっているので、 slided_base_idの値を返せばよい
+
+    return slided_target_id
+}
+/*
+# ID空間が環状になっていることを踏まえて base_id から後方をたどった場合の
+# ノード間の距離を求める
+# ここで後方とは、IDの値が大きくなる方向である
+@classmethod
+def calc_distance_between_nodes_right_mawari(cls, base_id : int, target_id : int) -> int:
+    # successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
+    # 距離0と考えることもできるが、一周分を距離として返す
+    if base_id == target_id:
+        return gval.ID_SPACE_RANGE - 1
+
+    # 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
+    # 同じ数だけずらす
+    slided_target_id = target_id - base_id
+    if(slided_target_id < 0):
+        # マイナスの値をとった場合は値0を通り越しているので
+        # それにあった値に置き換える
+        slided_target_id = gval.ID_MAX + slided_target_id
+
+    # 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
+    # が結果となる. ここでは slided_base_id は 0 であり、slided_target_id は必ず正の値
+    # となっているので、 slided_base_idの値を返せばよい
+
+    return slided_target_id
+*/
+
+pub fn exist_between_two_nodes_right_mawari(from_id : i32, end_id : i32, target_id : i32) -> bool { 
+    let mut distance_end = calc_distance_between_nodes_right_mawari(from_id, end_id);
+    let mut distance_target = calc_distance_between_nodes_right_mawari(from_id, target_id);
+
+    if distance_target < distance_end {
+        return true;
+    } else {
+        return false;
+    }
+}
+/*
+# from_id から IDが大きくなる方向にたどった場合に、 end_id との間に
+# target_idが存在するか否かを bool値で返す
+@classmethod
+def exist_between_two_nodes_right_mawari(cls, from_id : int, end_id : int, target_id : int) -> bool:
+    distance_end = ChordUtil.calc_distance_between_nodes_right_mawari(from_id, end_id)
+    distance_target = ChordUtil.calc_distance_between_nodes_right_mawari(from_id, target_id)
+
+    if distance_target < distance_end:
+        return True
+    else:
+        return False
+*/
+
+pub fn dprint(print_str : &String) {
+    let local = Local::now();
+    let local_naive = local.naive_local();
+    println!("{:?},{}", local_naive, print_str);
+}
+/*
+# TODO: マルチプロセス安全ないしそれに近いものにする必要あり dprint
+@classmethod
+def dprint(cls, print_str : str, flush=False):
+    print(str(datetime.datetime.now()) + "," + print_str, flush=flush)
+*/
+
+pub fn gen_debug_str_of_node(node_info : Option<NodeInfo>) -> String {
+    let casted_info = node_info.unwrap();
+    return casted_info.born_id.to_string() + &",".to_string() + &format!("{:X}", casted_info.node_id) + &",".to_string()
+       + &conv_id_to_ratio_str(casted_info.node_id);
+}
+/* 
+    @classmethod
+    def gen_debug_str_of_node(cls, node_info : Optional['NodeInfo']) -> str:
+        casted_info : 'NodeInfo' = cast('NodeInfo', node_info)
+        return str(casted_info.born_id) + "," + hex(casted_info.node_id) + "," \
+               + ChordUtil.conv_id_to_ratio_str(casted_info.node_id)
+*/
+
+pub fn gen_debug_str_of_data(data_id : i32) -> String {
+    return format!("{:X}", data_id) + &",".to_string() + &conv_id_to_ratio_str(data_id);
+}
+/*
+    @classmethod
+    def gen_debug_str_of_data(cls, data_id : int) -> str:
+        return hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)
+*/
+
+
+// Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
+//            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
+// TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
+//       ChordNodeオブジェクトを返す get_node_by_address
+pub fn get_node_by_address(address : &String) -> Result<Option<ChordNode>> {
+
+        // with gval.lock_of_all_node_dict:
+        ret_val = gval.all_node_dict[address]
+
+        // join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
+        return Err(ErrorCode.InternalControlFlowException_CODE);
+
+    if ret_val.is_alive == False {
+        ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
+        return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
+    }
+
+    return Ok(ret_val);
+}
+
+/*
+    # TODO: InteernalExp, DownedeExp at get_node_by_address
+
+    # Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
+    #            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
+    # TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
+    #       ChordNodeオブジェクトを返す get_node_by_address
+    @classmethod
+    def get_node_by_address(cls, address : str) -> PResult[Optional['ChordNode']]:
+        try:
+            # with gval.lock_of_all_node_dict:
+            ret_val = gval.all_node_dict[address]
+        except KeyError:
+            # join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
+            # traceback.print_stack(file=sys.stdout)
+            # print("KeyError occured", flush=True)
+
+            return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
+
+        if ret_val.is_alive == False:
+            ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
+            return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
+
+        return PResult.Ok(ret_val)
+*/
+
+/*
+    # TODO: InternalExp at is_node_alive
+
+    # Attention: InternalControlFlowException を raiseする場合がある
+    # TODO: 実システム化する際は アドレス指定で呼び出せる（ChordNodeオブジェクトのメソッドという形でない）
+    #       RPC化する必要がありそう。もしくはこのメソッドの呼び出し自体を無くすか。 is_node_alive
+    @classmethod
+    def is_node_alive(cls, address : str) -> PResult[Optional[bool]]:
+        ret = ChordUtil.get_node_by_address(address)
+        if(ret.is_ok):
+            return PResult.Ok(True)
+        else:
+            if ret.err_code == ErrorCode.NodeIsDownedException_CODE:
+                return PResult.Ok(False)
+            else: #ret.err_code == ErrorCode.InternalControlFlowException_CODE:
+                return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+
+        #return True
+*/

@@ -377,6 +377,7 @@ impl DataIdAndValue {
         return self.data_id == other.data_id
 */
 
+/*
 #[derive(Debug, Clone)]
 pub struct NodeIsDownedError {
     pub message: String,
@@ -397,11 +398,20 @@ pub struct InternalControlFlowError {
     pub line : usize,
     pub column: usize,
 }
-/*
-NodeIsDownedException_CODE = 2
-AppropriateNodeNotFoundException_CODE = 3
-InternalControlFlowException_CODE = 4
 */
+
+// GeneralError型で利用するエラーコード
+pub const ERR_CODE_NODE_IS_DOWNED : u32 = 1;
+pub const ERR_CODE_APPROPRIATE_NODE_NOT_FOND : u32 = 2;
+pub const ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM : u32 = 3;
+
+#[derive(Debug, Clone)]
+pub struct GeneralError {
+    pub message: String,
+    pub line : usize,
+    pub column: usize,
+    pub err_code: u32,
+}
 
 // 0からlimitより1少ない数までの値の乱数を返す
 pub fn get_rnd_int_with_limit(limit : i32) -> i32{
@@ -618,7 +628,7 @@ pub fn gen_debug_str_of_data(data_id : i32) -> String {
 //            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
 // TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
 //       ChordNodeオブジェクトを返す get_node_by_address
-pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMutex<RefCell<ChordNode>>>>, NodeIsDownedError> {
+pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMutex<RefCell<ChordNode>>>>, GeneralError> {
     let gd_refcell = get_refcell_from_arc!(global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);
 
@@ -626,7 +636,7 @@ pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMute
     let ret_val = 
         match get_result {
             // join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
-            None => return Err(NodeIsDownedError{message: "".to_string(), line: 0, column: 0}),
+            None => return Err(GeneralError{message: "".to_string(), line: 0, column: 0, err_code: ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM}),
             Some(arc_val) => arc_val,
         };
 
@@ -635,7 +645,7 @@ pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMute
     let node_refmut = get_refmut_from_refcell!(node_refcell);
     if node_refmut.is_alive.load(Ordering::Relaxed) == false {
         dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(&node_refmut.node_info))));
-        return Err(NodeIsDownedError{message: "".to_string(), line: 0, column: 0});
+        return Err(GeneralError{message: "".to_string(), line: 0, column: 0, err_code: ERR_CODE_NODE_IS_DOWNED});
     }
 
     return Ok(Some(Arc::clone(ret_val)));
@@ -667,6 +677,23 @@ pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMute
         return PResult.Ok(ret_val)
 */
 
+
+// Attention: InternalControlFlowException を raiseする場合がある
+// TODO: 実システム化する際は アドレス指定で呼び出せる（ChordNodeオブジェクトのメソッドという形でない）
+//       RPC化する必要がありそう。もしくはこのメソッドの呼び出し自体を無くすか。 is_node_alive
+pub fn is_node_alive(address : &String) -> Result<bool, GeneralError> {
+    let tmp = get_node_by_address(address);
+    match tmp {
+        Ok(arc_val) => return Ok(true),
+        Err(err) => {
+            if err.err_code == ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM {
+                return Err(err);
+            }else{ // ERR_CODE_NODE_IS_DOWNED
+                return Ok(false);
+            }
+        }
+    }
+}
 /*
     # TODO: InternalExp at is_node_alive
 

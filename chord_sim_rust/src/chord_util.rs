@@ -413,6 +413,13 @@ pub struct GeneralError {
     pub err_code: u32,
 }
 
+impl GeneralError {
+    pub fn new(message: String, err_code: u32) -> GeneralError {
+        GeneralError {message: message, line: 0, column: 0, err_code: err_code}
+    }
+}
+
+
 // 0からlimitより1少ない数までの値の乱数を返す
 pub fn get_rnd_int_with_limit(limit : i32) -> i32{
     let mut rng = rand::thread_rng(); // 乱数生成器の初期化
@@ -636,7 +643,7 @@ pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMute
     let ret_val = 
         match get_result {
             // join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
-            None => return Err(GeneralError{message: "".to_string(), line: 0, column: 0, err_code: ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM}),
+            None => return Err(GeneralError::new("".to_string(), ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM)),
             Some(arc_val) => arc_val,
         };
 
@@ -645,7 +652,7 @@ pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMute
     let node_refmut = get_refmut_from_refcell!(node_refcell);
     if node_refmut.is_alive.load(Ordering::Relaxed) == false {
         dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(&node_refmut.node_info))));
-        return Err(GeneralError{message: "".to_string(), line: 0, column: 0, err_code: ERR_CODE_NODE_IS_DOWNED});
+        return Err(GeneralError::new("".to_string(), ERR_CODE_NODE_IS_DOWNED));
     }
 
     return Ok(Some(Arc::clone(ret_val)));

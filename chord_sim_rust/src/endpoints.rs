@@ -90,6 +90,7 @@ class Endpoints:
             ret_info.predecessor_info = cast('NodeInfo', self.existing_node.node_info.predecessor_info).get_partial_deepcopy()
         return ret_info
 */
+use std::sync::Arc;
 
 pub use crate::gval::*;
 pub use crate::chord_node::*;
@@ -102,11 +103,11 @@ pub use crate::taskqueue::*;
 
 #[derive(Debug, Clone)]
 pub struct Endpoints {
-    pub existing_node : &'static ChordNode,
+    pub existing_node : Arc<ChordNode>,
 }
 
 impl Endpoints {
-    pub fn new(parent : &'static ChordNode) -> Endpoints {
+    pub fn new(parent : Arc<ChordNode>) -> Endpoints {
         Endpoints {existing_node : parent}
     }
 }

@@ -47,12 +47,12 @@ pub const JOIN_PARTIAL : &str = "join_partial";
 
 #[derive(Debug, Clone)]
 pub struct TaskQueue {
-    pub existing_node : &'static ChordNode,
+    pub existing_node : Arc<ChordNode>,
     pub tqueue : Arc<ReentrantMutex<RefCell<Vec<String>>>>
 }
 
 impl TaskQueue {
-    pub fn new(parent : &'static ChordNode) -> TaskQueue {
+    pub fn new(parent : Arc<ChordNode>) -> TaskQueue {
         let tq = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
         TaskQueue {existing_node : parent, tqueue: tq}
     }

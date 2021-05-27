@@ -102,7 +102,7 @@ pub use crate::router::*;
 
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
-    pub existing_node : &'static ChordNode,
+    pub existing_node : Arc<ChordNode>,
     pub node_id : i32,
     pub address_str: String,
     // デバッグ用のID
@@ -131,7 +131,7 @@ pub struct NodeInfo {
 }
 
 impl NodeInfo {
-    pub fn new(parent : &'static ChordNode) -> NodeInfo {
+    pub fn new(parent : Arc<ChordNode>) -> NodeInfo {
         let si_list = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
         let pred_info = Arc::new(const_reentrant_mutex(None));
         let ftable = Arc::new(const_reentrant_mutex(RefCell::new(vec![None; ID_SPACE_BITS as usize])));

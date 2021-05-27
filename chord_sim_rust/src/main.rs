@@ -617,16 +617,14 @@ fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<ChordNode>>>{
     return ret;
 }
 
-fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
+fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<KeyValue>>> {
     let gd_refcell = get_refcell_from_arc!(gval::global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);    
     let kv_arc = gd_refmut.all_data_list.get(0).unwrap().clone();
     return Arc::clone( &kv_arc);
 }
 
-fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
-    //let gd_refcell = &*gval::global_datas.lock();
-    //let gd_refmut = &gd_refcell.borrow_mut();
+fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<ChordNode>>>{
     let gd_refcell = get_refcell_from_arc!(gval::global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);
     let node_arc = gd_refmut.all_node_dict.get(key).unwrap().clone();
@@ -637,14 +635,10 @@ fn example_th() {
     loop{
         let kv_arc_at_heap : Box<Arc<ReentrantMutex<RefCell<KeyValue>>>>;
         {
-            //let gd_refcell = &*gval::global_datas.lock();
-            //let gd_refmut = &mut gd_refcell.borrow_mut();
             let gd_refcell = get_refcell_from_arc!(gval::global_datas);
             let gd_refmut = get_refmut_from_refcell!(gd_refcell);
             let kv_arc = gd_refmut.all_data_list.get(0).unwrap().clone();
             kv_arc_at_heap = Box::new(Arc::clone( &kv_arc));
-            //let kv_ref = &*kv_arc.as_ref().borrow_mut().lock();
-            //let kv_refmut = &mut kv_ref.borrow_mut();
             let kv_refcell = get_refcell_from_arc!(kv_arc);
             let kv_refmut = get_refmut_from_refcell!(kv_refcell);    
             kv_refmut.data_id = Some((kv_refmut.data_id).unwrap() + 1);
@@ -730,8 +724,9 @@ fn main() {
             println!("{:?}", one_elem_to_print);
         }
 
-        let refcell_kv = &*one_elem.as_ref().borrow_mut().lock();
-        let mutref_kv = &mut refcell_kv.borrow_mut();
+        let refcell_kv = get_refcell_from_arc!(one_elem);
+        let mutref_kv = get_refmut_from_refcell!(refcell_kv);
+
         mutref_kv.value_data = "after_mod".to_string();
         println!("{:?}", mutref_kv);
 

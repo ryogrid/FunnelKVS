@@ -104,14 +104,14 @@ use std::sync::Arc;
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
-pub use crate::chord_node::*;
-pub use crate::node_info::*;
-pub use crate::stabilizer::*;
-pub use crate::router::*;
-pub use crate::taskqueue::*;
-pub use crate::endpoints::*;
-pub use crate::data_store::*;
-pub use crate::chord_util::*;
+use crate::chord_node;
+use crate::node_info;
+use crate::stabilizer;
+use crate::router;
+use crate::taskqueue;
+use crate::endpoints;
+use crate::data_store;
+use crate::chord_util;
 
 pub const ID_SPACE_BITS : u32 = 30; // 160 <- sha1での本来の値
 pub const ID_SPACE_RANGE : i32 = 2i32.pow(ID_SPACE_BITS); // 0を含めての数である点に注意
@@ -177,14 +177,14 @@ pub static mut is_waiting_partial_join_op_exists : AtomicBool = AtomicBool::new(
 pub struct GlobalDatas {
 // アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 // IPアドレスが分かれば、対応するノードと通信できることと対応している
-    pub all_node_dict : HashMap<String, Arc<ReentrantMutex<RefCell<ChordNode>>>>,
+    pub all_node_dict : HashMap<String, Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>>,
 // DHT上で保持されている全てのデータが保持されているリスト
 // KeyValueオブジェクトを要素として持つ
 // 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
 // getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
 // に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
 // 照らし合わせられるようにする
-    pub all_data_list : Vec<Arc<ReentrantMutex<RefCell<KeyValue>>>>
+    pub all_data_list : Vec<Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>>
 }
 
 impl GlobalDatas {

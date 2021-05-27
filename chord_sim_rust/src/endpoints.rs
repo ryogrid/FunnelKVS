@@ -92,22 +92,22 @@ class Endpoints:
 */
 use std::sync::Arc;
 
-pub use crate::gval::*;
-pub use crate::chord_node::*;
-pub use crate::node_info::*;
-pub use crate::chord_util::*;
-pub use crate::data_store::*;
-pub use crate::router::*;
-pub use crate::stabilizer::*;
-pub use crate::taskqueue::*;
+use crate::gval;
+use crate::chord_node;
+use crate::node_info;
+use crate::chord_util;
+use crate::data_store;
+use crate::router;
+use crate::stabilizer;
+use crate::taskqueue;
 
 #[derive(Debug, Clone)]
 pub struct Endpoints {
-    pub existing_node : Arc<ChordNode>,
+    pub existing_node : Arc<chord_node::ChordNode>,
 }
 
 impl Endpoints {
-    pub fn new(parent : Arc<ChordNode>) -> Endpoints {
+    pub fn new(parent : Arc<chord_node::ChordNode>) -> Endpoints {
         Endpoints {existing_node : parent}
     }
 }

@@ -206,14 +206,14 @@ use std::sync::Arc;
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
-pub use crate::gval::*;
-pub use crate::chord_node::*;
-pub use crate::node_info::*;
-pub use crate::chord_util::*;
-pub use crate::stabilizer::*;
-pub use crate::router::*;
-pub use crate::taskqueue::*;
-pub use crate::endpoints::*;
+use crate::gval;
+use crate::chord_node;
+use crate::node_info;
+use crate::chord_util;
+use crate::stabilizer;
+use crate::router;
+use crate::taskqueue;
+use crate::endpoints;
 
 pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";
 pub const DATA_STORE_OP_DIRECT_STORE : &str = "DIRECT_STORE";
@@ -221,13 +221,13 @@ pub const DATA_STORE_OP_DIRECT_REMOVE : &str = "DIRECT_REMOVE";
 
 #[derive(Debug, Clone)]
 pub struct DataStore {
-    pub existing_node : Arc<ChordNode>,
+    pub existing_node : Arc<chord_node::ChordNode>,
     // Keyはハッシュを通されたものなので元データの値とは異なる
-    pub stored_data : Arc<ReentrantMutex<RefCell<HashMap<String, DataIdAndValue>>>>,
+    pub stored_data : Arc<ReentrantMutex<RefCell<HashMap<String, chord_util::DataIdAndValue>>>>,
 }
 
 impl DataStore {
-    pub fn new(parent : Arc<ChordNode>) -> DataStore {
+    pub fn new(parent : Arc<chord_node::ChordNode>) -> DataStore {
         let sd = Arc::new(const_reentrant_mutex(RefCell::new(HashMap::new())));
         DataStore {existing_node : parent, stored_data : sd}
     }

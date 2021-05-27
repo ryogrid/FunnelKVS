@@ -325,14 +325,14 @@ use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rand::Rng;
 use chrono::{Local, DateTime, Date};
 
-pub use crate::gval::*;
-pub use crate::chord_node::*;
-pub use crate::node_info::*;
-pub use crate::stabilizer::*;
-pub use crate::router::*;
-pub use crate::taskqueue::*;
-pub use crate::endpoints::*;
-pub use crate::data_store::*;
+use crate::gval;
+use crate::chord_node;
+use crate::node_info;
+use crate::stabilizer;
+use crate::router;
+use crate::taskqueue;
+use crate::endpoints;
+use crate::data_store;
 
 // all_data_listグローバル変数に格納される形式としてのみ用いる
 #[derive(Debug, Clone)]
@@ -439,15 +439,15 @@ pub fn hash_str_to_int(_input_str : &String) -> i32 {
     //       通常、ID_SPACE_BITS は sha1 で 160 となるが、この検証コードでは
     //       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
     //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
-    let rand_val: i32 = get_rnd_int_with_limit(ID_SPACE_RANGE);
+    let rand_val: i32 = get_rnd_int_with_limit(gval::ID_SPACE_RANGE);
     return rand_val;
 }
 
 pub fn overflow_check_and_conv(id : i32) -> i32 {
     let mut ret_id = id;
-    if id > ID_MAX {
+    if id > gval::ID_MAX {
         // 1を足すのは MAX より 1大きい値が 0 となるようにするため
-        ret_id = id - (ID_MAX + 1);
+        ret_id = id - (gval::ID_MAX + 1);
     }
     return ret_id;
 }
@@ -463,7 +463,7 @@ def overflow_check_and_conv(cls, id : int) -> int:
 */
 
 pub fn conv_id_to_ratio_str(id : i32) -> String {
-    let mut ratio = (id / ID_MAX) as f32 * 100.0;
+    let mut ratio = (id / gval::ID_MAX) as f32 * 100.0;
     return format!("{:.4}", ratio);
 }
 /*
@@ -479,7 +479,7 @@ pub fn calc_distance_between_nodes_left_mawari(base_id : i32, target_id : i32) -
     // successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
     // 距離0と考えることもできるが、一周分を距離として返す
     if base_id == target_id {
-        return ID_SPACE_RANGE - 1;
+        return gval::ID_SPACE_RANGE - 1;
     }
 
     // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
@@ -488,7 +488,7 @@ pub fn calc_distance_between_nodes_left_mawari(base_id : i32, target_id : i32) -
     if slided_base_id < 0 {
         // マイナスの値をとった場合は値0を通り越しているので
         // それにあった値に置き換える
-        slided_base_id = ID_MAX + slided_base_id
+        slided_base_id = gval::ID_MAX + slided_base_id
     }
 
     // 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
@@ -528,7 +528,7 @@ pub fn calc_distance_between_nodes_right_mawari(base_id : i32, target_id : i32) 
     // successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
     // 距離0と考えることもできるが、一周分を距離として返す
     if base_id == target_id {
-        return ID_SPACE_RANGE - 1;
+        return gval::ID_SPACE_RANGE - 1;
     }
 
     // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
@@ -537,7 +537,7 @@ pub fn calc_distance_between_nodes_right_mawari(base_id : i32, target_id : i32) 
     if slided_target_id < 0 {
         // マイナスの値をとった場合は値0を通り越しているので
         // それにあった値に置き換える
-        slided_target_id = ID_MAX + slided_target_id;
+        slided_target_id = gval::ID_MAX + slided_target_id;
     }
 
     // 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
@@ -608,7 +608,7 @@ def dprint(cls, print_str : str, flush=False):
     print(str(datetime.datetime.now()) + "," + print_str, flush=flush)
 */
 
-pub fn gen_debug_str_of_node(node_info : Option<&NodeInfo>) -> String {
+pub fn gen_debug_str_of_node(node_info : Option<&node_info::NodeInfo>) -> String {
     let casted_info = node_info.unwrap();
     return casted_info.born_id.to_string() + &",".to_string() + &format!("{:X}", casted_info.node_id) + &",".to_string()
        + &conv_id_to_ratio_str(casted_info.node_id);
@@ -635,8 +635,8 @@ pub fn gen_debug_str_of_data(data_id : i32) -> String {
 //            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
 // TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
 //       ChordNodeオブジェクトを返す get_node_by_address
-pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMutex<RefCell<ChordNode>>>>, GeneralError> {
-    let gd_refcell = get_refcell_from_arc!(global_datas);
+pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>>, GeneralError> {
+    let gd_refcell = get_refcell_from_arc!(gval::global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);
 
     let get_result = gd_refmut.all_node_dict.get(address);

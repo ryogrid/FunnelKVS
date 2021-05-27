@@ -544,16 +544,20 @@ if __name__ == '__main__':
     main()
 */
 
-#![feature(proc_macro_hygiene)]
-#![feature(decl_macro)]
-
-#[macro_use] extern crate lazy_static;
+//#![allow(dead_code)] 
+// disables unused_imports lint
+#![allow(unused_imports)]
 
 /*
+#![feature(proc_macro_hygiene)]
+#![feature(decl_macro)]
 #[macro_use]
 extern crate rocket;
 */
 
+#[macro_use] extern crate lazy_static;
+
+// utility macros
 
 macro_rules! get_refcell_from_arc {
     ($arc:expr) => (
@@ -576,31 +580,20 @@ use std::sync::{Mutex, mpsc};
 use std::sync::atomic::Ordering;
 
 pub mod gval;
-pub use crate::gval::*;
 pub mod chord_node;
-pub use crate::chord_node::*;
 pub mod node_info;
-pub use crate::node_info::*;
 pub mod chord_util;
-pub use crate::chord_util::*;
 pub mod stabilizer;
-pub use crate::stabilizer::*;
 pub mod router;
-pub use crate::router::*;
 pub mod data_store;
-pub use crate::data_store::*;
 pub mod taskqueue;
-pub use crate::taskqueue::*;
 pub mod endpoints;
-pub use crate::endpoints::*;
-
-
 
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノード
 // および、is_join_op_finishedフィールドがFalseでjoin処理が完全に完了していない
 // ノードは返らない
-fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<ChordNode>>>{
+fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
     let gd_refcell = get_refcell_from_arc!(gval::global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);
     let mut tmp_vec = vec![];
@@ -611,20 +604,20 @@ fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<ChordNode>>>{
             tmp_vec.push(v);
         }
     }
-    let rand_val = get_rnd_int_with_limit(tmp_vec.len() as i32);
+    let rand_val = chord_util::get_rnd_int_with_limit(tmp_vec.len() as i32);
     let node_arc = tmp_vec.get(rand_val as usize);
     let ret = Arc::clone(*node_arc.unwrap());
     return ret;
 }
 
-fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<KeyValue>>> {
+fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
     let gd_refcell = get_refcell_from_arc!(gval::global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);    
     let kv_arc = gd_refmut.all_data_list.get(0).unwrap().clone();
     return Arc::clone( &kv_arc);
 }
 
-fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<ChordNode>>>{
+fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
     let gd_refcell = get_refcell_from_arc!(gval::global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);
     let node_arc = gd_refmut.all_node_dict.get(key).unwrap().clone();
@@ -633,7 +626,7 @@ fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<ChordNode>>>{
 
 fn example_th() {
     loop{
-        let kv_arc_at_heap : Box<Arc<ReentrantMutex<RefCell<KeyValue>>>>;
+        let kv_arc_at_heap : Box<Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>>;
         {
             let gd_refcell = get_refcell_from_arc!(gval::global_datas);
             let gd_refmut = get_refmut_from_refcell!(gd_refcell);
@@ -666,7 +659,7 @@ fn main() {
                 Arc::new(
                 const_reentrant_mutex(
                     RefCell::new(
-                            KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())
+                            chord_util::KeyValue::new(Some("kanbayashi".to_string()),"sugoi".to_string())
                         )
                     )
                 )

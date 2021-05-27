@@ -179,22 +179,22 @@ use std::sync::atomic::Ordering;
 
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
-pub use crate::gval::*;
-pub use crate::chord_node::*;
-pub use crate::node_info::*;
-pub use crate::chord_util::*;
-pub use crate::stabilizer::*;
-pub use crate::taskqueue::*;
-pub use crate::endpoints::*;
-pub use crate::data_store::*;
+use crate::gval;
+use crate::chord_node;
+use crate::node_info;
+use crate::chord_util;
+use crate::stabilizer;
+use crate::taskqueue;
+use crate::endpoints;
+use crate::data_store;
 
 #[derive(Debug, Clone)]
 pub struct Router {
-    pub existing_node : Arc<ChordNode>,
+    pub existing_node : Arc<chord_node::ChordNode>,
 }
 
 impl Router {
-    pub fn new(parent : Arc<ChordNode>) -> Router {
+    pub fn new(parent : Arc<chord_node::ChordNode>) -> Router {
         Router {existing_node : parent}
     }
 
@@ -320,28 +320,32 @@ impl Router {
 
 
     //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-    pub fn closest_preceding_finger(&self, id : i32) -> Arc<ReentrantMutex<RefCell<ChordNode>>> {
+    pub fn closest_preceding_finger(&self, id : i32) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>> {
         // 範囲の広いエントリから探索していく
         // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
         // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         // 順に見ていくようにする
         
+
         //for node_info in self.existing_node.node_info.finger_table.rev() {
-        for node_info in self.existing_node.node_info.finger_table {
+        let ft_refcell = get_refcell_from_arc!(self.existing_node.as_ref().node_info.finger_table);
+        let ft_refmut = get_refmut_from_refcell!(ft_refcell);
+
+        for node_info in ft_refmut.iter().rev() {
             // 埋まっていないエントリも存在し得る
             
-            let ninfo_refcell = get_refcell_from_arc!(node_info);
-            let info_refmut = get_refmut_from_refcell!(ninfo_refcell);
+            let conved_node_info = match *node_info {
+                None => {
+                    chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(Some(&self.existing_node.as_ref().node_info)).as_str()));
+                    continue;
+                },
+                Some(ni) => ni
+            };
 
-            if node_info == None {
-                dprint("closest_preceding_finger_0,".to_string() + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info));
-                continue
-            }
+            //conved_node_info = cast('NodeInfo', node_info)
 
-            casted_node_info = cast('NodeInfo', node_info)
-
-            ChordUtil.dprint("closest_preceding_finger_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                + ChordUtil.gen_debug_str_of_node(casted_node_info))
+            chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(Some(&self.existing_node.as_ref().node_info)).as_str() + ","
+                + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));
 
             // テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
             // それを返す
@@ -349,20 +353,24 @@ impl Router {
             //  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
             //  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
             //  見つけるという処理になっていると思われる）
-            if ChordUtil.exist_between_two_nodes_right_mawari(self.existing_node.node_info.node_id, id, casted_node_info.node_id):
-                ChordUtil.dprint("closest_preceding_finger_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-                                + ChordUtil.gen_debug_str_of_node(casted_node_info))
+            if chord_util::exist_between_two_nodes_right_mawari(self.existing_node.as_ref().node_info.node_id, id, conved_node_info.node_id) {
 
-                                ret = ChordUtil.get_node_by_address(casted_node_info.address_str)
+                chord_util::dprint("closest_preceding_finger_2," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                + chord_util::gen_debug_str_of_node(conved_node_info));
+
+                let ret = chord_util::get_node_by_address(conved_node_info.address_str);
+/*
                 if (ret.is_ok):
                     casted_node : 'ChordNode' = cast('ChordNode', ret.result)
                     return casted_node
                 else:  // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
                     // ここでは何も対処しない
                     continue
+*/                    
             }
+        }
 
-        ChordUtil.dprint(&"closest_preceding_finger_3".to_string());
+        chord_util::dprint(&"closest_preceding_finger_3".to_string());
 
         // どんなに範囲を狭めても探索対象のIDを超えてしまうノードしか存在しなかった場合
         // 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という

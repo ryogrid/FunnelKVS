@@ -845,11 +845,11 @@ need_join_retry_tyukai_node: Optional['ChordNode'] = None
 
 #[derive(Debug, Clone)]
 pub struct Stabilizer {
-    pub existing_node : Arc<chord_node::ChordNode>,
+    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
 }
 
 impl Stabilizer {
-    pub fn new(parent : Arc<chord_node::ChordNode>) -> Stabilizer {
+    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> Stabilizer {
         Stabilizer {existing_node : parent}
     }
 }

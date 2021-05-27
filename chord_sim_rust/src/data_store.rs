@@ -221,13 +221,13 @@ pub const DATA_STORE_OP_DIRECT_REMOVE : &str = "DIRECT_REMOVE";
 
 #[derive(Debug, Clone)]
 pub struct DataStore {
-    pub existing_node : Arc<chord_node::ChordNode>,
+    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
     // Keyはハッシュを通されたものなので元データの値とは異なる
     pub stored_data : Arc<ReentrantMutex<RefCell<HashMap<String, chord_util::DataIdAndValue>>>>,
 }
 
 impl DataStore {
-    pub fn new(parent : Arc<chord_node::ChordNode>) -> DataStore {
+    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> DataStore {
         let sd = Arc::new(const_reentrant_mutex(RefCell::new(HashMap::new())));
         DataStore {existing_node : parent, stored_data : sd}
     }

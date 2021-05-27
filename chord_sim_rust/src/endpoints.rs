@@ -91,6 +91,8 @@ class Endpoints:
         return ret_info
 */
 use std::sync::Arc;
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
 use crate::chord_node;
@@ -103,11 +105,11 @@ use crate::taskqueue;
 
 #[derive(Debug, Clone)]
 pub struct Endpoints {
-    pub existing_node : Arc<chord_node::ChordNode>,
+    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
 }
 
 impl Endpoints {
-    pub fn new(parent : Arc<chord_node::ChordNode>) -> Endpoints {
+    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> Endpoints {
         Endpoints {existing_node : parent}
     }
 }

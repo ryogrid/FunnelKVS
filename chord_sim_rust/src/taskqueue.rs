@@ -34,25 +34,25 @@ use std::sync::Arc;
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
-pub use crate::gval::*;
-pub use crate::chord_node::*;
-pub use crate::node_info::*;
-pub use crate::chord_util::*;
-pub use crate::endpoints::*;
-pub use crate::data_store::*;
-pub use crate::router::*;
-pub use crate::stabilizer::*;
+use crate::gval;
+use crate::chord_node;
+use crate::node_info;
+use crate::chord_util;
+use crate::endpoints;
+use crate::data_store;
+use crate::router;
+use crate::stabilizer;
 
 pub const JOIN_PARTIAL : &str = "join_partial";
 
 #[derive(Debug, Clone)]
 pub struct TaskQueue {
-    pub existing_node : Arc<ChordNode>,
+    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
     pub tqueue : Arc<ReentrantMutex<RefCell<Vec<String>>>>
 }
 
 impl TaskQueue {
-    pub fn new(parent : Arc<ChordNode>) -> TaskQueue {
+    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> TaskQueue {
         let tq = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
         TaskQueue {existing_node : parent, tqueue: tq}
     }

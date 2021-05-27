@@ -250,7 +250,78 @@ impl Router {
                 return PResult.Err(None, ErrorCode.AppropriateNodeNotFoundException_CODE)
         finally:
             self.existing_node.node_info.lock_of_succ_infos.release()
+*/
 
+// id(int)　の前で一番近い位置に存在するノードを探索する
+pub fn find_predecessor(&self, id: i32) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>> {
+    chord_util::dprint("find_predecessor_1," + chord_util::gen_debug_str_of_node(self.existing_node.node_info));
+
+    let n_dash = self.existing_node;
+
+    if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval::LOCK_ACQUIRE_TIMEOUT) == false {
+        // 最初の n_dash を返してしまい、find_predecessorは失敗したと判断させる
+        chord_util::dprint("find_predecessor_1_1," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                         + "LOCK_ACQUIRE_TIMEOUT");
+        return n_dash;
+    }
+
+    // n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
+    // TODO: direct access to node_id and successor_info_list of n_dash at find_predecessor
+    while !chord_util::exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info_list[0].node_id, id) {
+        // TODO: x direct access to node_info of n_dash at find_predecessor
+        chord_util::dprint("find_predecessor_2," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                            + chord_util::gen_debug_str_of_node(n_dash.node_info));
+        // TODO: closest_preceding_finger call at find_predecessor
+        let n_dash_found = n_dash.endpoints.grpc__closest_preceding_finger(id);
+
+        // TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
+        if n_dash_found.node_info.node_id == n_dash.node_info.node_id {
+            // 見つかったノードが、n_dash と同じで、変わらなかった場合
+            // 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
+            // なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
+            // TODO: x direct access to node_info of n_dash at find_predecessor
+            chord_util::dprint("find_predecessor_3," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                + chord_util::gen_debug_str_of_node(n_dash.node_info));
+            return n_dash_found;
+        }
+
+        // closelst_preceding_finger は id を通り越してしまったノードは返さない
+        // という前提の元で以下のチェックを行う
+        // TODO: x direct access to node_info of n_dash at find_predecessor
+        let distance_old = chord_util::calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash.node_info.node_id);
+        // TODO: x direct access to node_info of n_dash_found at find_predecessor
+        let distance_found = chord_util::calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash_found.node_info.node_id);
+        let distance_data_id = chord_util::calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, id);
+        if distance_found < distance_old && !(distance_old >= distance_data_id) {
+            // 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
+            // 自ノードからはより遠い位置の値になっていくということのはずである
+            // 従って、そうなっていなかった場合は、繰り返しを継続しても意味が無く、最悪、無限ループになってしまう
+            // 可能性があるため、探索を打ち切り、探索結果は古いn_dashを返す.
+            // ただし、古い n_dash が 一回目の探索の場合 self であり、同じ node_idの距離は ID_SPACE_RANGE となるようにしている
+            // ため、上記の条件が常に成り立ってしまう. 従って、その場合は例外とする（n_dashが更新される場合は、更新されたn_dashのnode_idが
+            // 探索対象のデータのid を通り越すことは無い）
+
+            // TODO: x direct access to node_info of n_dash at find_predecessor
+            chord_util::dprint("find_predecessor_4," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                + chord_util::gen_debug_str_of_node(n_dash.node_info));
+
+            return n_dash;
+        }
+
+        // TODO: x direct access to node_info of n_dash and n_dash_found at find_predecessor
+        chord_util::dprint("find_predecessor_5_n_dash_updated," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                            + chord_util::gen_debug_str_of_node(n_dash.node_info) + "->"
+                            + chord_util::gen_debug_str_of_node(n_dash_found.node_info));
+
+        // チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
+        // ノード情報 n_dash_foundに置き換える
+        n_dash = n_dash_found;
+    }
+
+    return n_dash;
+}
+
+/*
     # id(int)　の前で一番近い位置に存在するノードを探索する
     def find_predecessor(self, id: int) -> 'ChordNode':
         ChordUtil.dprint("find_predecessor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
@@ -318,7 +389,6 @@ impl Router {
         return n_dash
 */
 
-
     //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
     pub fn closest_preceding_finger(&self, id : i32) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>> {
         // 範囲の広いエントリから探索していく
@@ -376,8 +446,6 @@ impl Router {
         // ことになる
         return Arc::clone(&self.existing_node);
     }
-
-
 /*
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
     def closest_preceding_finger(self, id : int) -> 'ChordNode':

@@ -91,18 +91,18 @@ use std::sync::Arc;
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
-use crate::gval::*;
-use crate::chord_node::*;
-use crate::chord_util::*;
-use crate::stabilizer::*;
-use crate::taskqueue::*;
-use crate::endpoints::*;
-use crate::data_store::*;
-use crate::router::*;
+use crate::gval;
+use crate::chord_node;
+use crate::chord_util;
+use crate::stabilizer;
+use crate::taskqueue;
+use crate::endpoints;
+use crate::data_store;
+use crate::router;
 
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
-    pub existing_node : Arc<ChordNode>,
+    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
     pub node_id : i32,
     pub address_str: String,
     // デバッグ用のID
@@ -127,14 +127,15 @@ pub struct NodeInfo {
     // インデックスの小さい方から狭い範囲が格納される形で保持する
     // sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
     // TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
+    
     pub finger_table: Arc<ReentrantMutex<RefCell<Vec<Option<NodeInfo>>>>>, // = [None] * gval.ID_SPACE_BITS
 }
 
 impl NodeInfo {
-    pub fn new(parent : Arc<ChordNode>) -> NodeInfo {
+    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> NodeInfo {
         let si_list = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
         let pred_info = Arc::new(const_reentrant_mutex(None));
-        let ftable = Arc::new(const_reentrant_mutex(RefCell::new(vec![None; ID_SPACE_BITS as usize])));
+        let ftable = Arc::new(const_reentrant_mutex(RefCell::new(vec![None; gval::ID_SPACE_BITS as usize])));
         NodeInfo {
             existing_node : parent,
             node_id : -1,

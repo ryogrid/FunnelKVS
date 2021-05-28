@@ -475,14 +475,14 @@ use std::sync::Arc;
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
-use crate::gval::*;
-use crate::node_info::*;
-use crate::chord_util::*;
-use crate::stabilizer::*;
-use crate::router::*;
-use crate::data_store::*;
-use crate::taskqueue::*;
-use crate::endpoints::*;
+use crate::gval;
+use crate::node_info;
+use crate::chord_util;
+use crate::stabilizer;
+use crate::router;
+use crate::data_store;
+use crate::taskqueue;
+use crate::endpoints;
 
 pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
 pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL";
@@ -526,12 +526,12 @@ need_put_retry_node : Optional['ChordNode'] = None
 
 #[derive(Debug)]
 pub struct ChordNode {
-    pub node_info : NodeInfo,
-    pub data_store : DataStore,
-    pub stabilizer : Stabilizer,
-    pub router : Router,
-    pub tqueue : TaskQueue,
-    pub endpoints : Endpoints,
+    pub node_info : Option<Arc<node_info::NodeInfo>>,
+    pub data_store : Option<Arc<data_store::DataStore>>,
+    pub stabilizer : Option<Arc<stabilizer::Stabilizer>>,
+    pub router : Option<Arc<router::Router>>,
+    pub tqueue : Option<Arc<taskqueue::TaskQueue>>,
+    pub endpoints : Option<Arc<endpoints::Endpoints>>,
     // シミュレーション時のみ必要なフィールド（実システムでは不要）
     pub is_alive : AtomicBool,
     // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
@@ -540,6 +540,35 @@ pub struct ChordNode {
 }
 
 impl ChordNode {
+
+    //検証用の仮のコンストラクタ
+    pub fn powerful_new() -> Arc<ReentrantMutex<RefCell<ChordNode>>> {
+        let node = 
+            Arc::new(
+            const_reentrant_mutex(
+                RefCell::new(
+                            ChordNode {
+                            node_info: None,
+                            data_store: None,
+                            stabilizer: None,
+                            router: None,
+                            tqueue: None,
+                            endpoints: None,
+                            is_alive: AtomicBool::new(false),
+                            is_join_op_finished: AtomicBool::new(false)
+                        }
+                    )
+                )
+            );
+        let cn_refcell = get_refcell_from_arc_with_locking!(node);
+        let cn_ref = get_ref_from_refcell!(node);
+        cn_ref.node_info = Some(Arc::new(node_info::NodeInfo::new(Arc::clone(&node))));
+        cn_ref.data_store = Some(Arc::new(stabilizer::Stabilizer::new(Arc::clone(&node))));
+
+        return node;
+    }
+
+
 /*
     pub fn new(key : Option<String>, value : String) -> ChordNode {
         //let new_obj = ChordNode {node_info : NodeInfo{}, data_store: DataStore{}, stabilizer : Stabilizer{}, router: Router{}, tqueue : TaskQueue{}, endpoints : Endpoints{}};

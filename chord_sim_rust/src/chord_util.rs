@@ -651,7 +651,7 @@ pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMute
     let node_refcell = get_refcell_from_arc_with_locking!(ret_val);
     let node_ref = get_ref_from_refcell!(node_refcell);
     if node_ref.is_alive.load(Ordering::Relaxed) == false {
-        dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(&node_ref.node_info))));
+        dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(&node_ref.node_info.unwrap()))));
         return Err(GeneralError::new("".to_string(), ERR_CODE_NODE_IS_DOWNED));
     }
 

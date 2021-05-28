@@ -565,13 +565,6 @@ extern crate rocket;
 
 // IN:  Arc<ReentrandMutex<RefCell<T>>>
 // OUT: &RefCell<T>
-/*
-macro_rules! get_refcell_from_arc_with_locking {
-    ($arc:expr) => (
-        &*$arc.as_ref().borrow_mut().lock();         
-    );
-}
-*/
 macro_rules! get_refcell_from_arc_with_locking {
     ($arc:expr) => (
         &*(($arc.as_ref()).borrow().lock());
@@ -582,7 +575,7 @@ macro_rules! get_refcell_from_arc_with_locking {
 // OUT: &mut RefMut<T>
 macro_rules! get_refmut_from_refcell {
     ($refcell:expr) => (
-        &mut $refcell.borrow_mut();
+        &mut ($refcell).borrow_mut();
     );
 }
 
@@ -590,7 +583,7 @@ macro_rules! get_refmut_from_refcell {
 // OUT: &Ref<T>
 macro_rules! get_ref_from_refcell {
     ($refcell:expr) => (
-        &$refcell.borrow();
+        &($refcell).borrow();
     );
 }
 
@@ -621,7 +614,7 @@ fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
     let gd_ref = get_ref_from_refcell!(gd_refcell);
     let mut tmp_vec = vec![];
     for (k, v) in &gd_ref.all_node_dict{
-        let node_refcell = get_refcell_from_arc_with_locking!(v);
+        let node_refcell = get_refcell_from_arc_with_locking!(*v);
         //let node_refmut = get_refmut_from_refcell!(node_refcell);
         let node_refmut = get_ref_from_refcell!(node_refcell);
         if node_refmut.is_join_op_finished.load(Ordering::Relaxed) == true && node_refmut.is_join_op_finished.load(Ordering::Relaxed) == true {

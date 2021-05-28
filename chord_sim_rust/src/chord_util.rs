@@ -334,6 +334,8 @@ use crate::taskqueue;
 use crate::endpoints;
 use crate::data_store;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 // all_data_listグローバル変数に格納される形式としてのみ用いる
 #[derive(Debug, Clone)]
 pub struct KeyValue {
@@ -635,7 +637,7 @@ pub fn gen_debug_str_of_data(data_id : i32) -> String {
 //            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
 // TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
 //       ChordNodeオブジェクトを返す get_node_by_address
-pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>>, GeneralError> {
+pub fn get_node_by_address(address : &String) -> Result<Option<ArRmRs<chord_node::ChordNode>>, GeneralError> {
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
 

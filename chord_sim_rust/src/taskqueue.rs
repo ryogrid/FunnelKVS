@@ -43,16 +43,18 @@ use crate::data_store;
 use crate::router;
 use crate::stabilizer;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 pub const JOIN_PARTIAL : &str = "join_partial";
 
 #[derive(Debug, Clone)]
 pub struct TaskQueue {
-    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
-    pub tqueue : Arc<ReentrantMutex<RefCell<Vec<String>>>>
+    pub existing_node : ArRmRs<chord_node::ChordNode>,
+    pub tqueue : ArRmRs<Vec<String>>
 }
 
 impl TaskQueue {
-    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> TaskQueue {
+    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> TaskQueue {
         let tq = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
         TaskQueue {existing_node : parent, tqueue: tq}
     }

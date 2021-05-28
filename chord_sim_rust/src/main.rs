@@ -605,11 +605,13 @@ pub mod data_store;
 pub mod taskqueue;
 pub mod endpoints;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノード
 // および、is_join_op_finishedフィールドがFalseでjoin処理が完全に完了していない
 // ノードは返らない
-fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
+fn get_a_random_node() -> ArRmRs<chord_node::ChordNode>{
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
     let mut tmp_vec = vec![];
@@ -627,14 +629,14 @@ fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
     return ret;
 }
 
-fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
+fn get_first_data_no_arg() -> ArRmRs<chord_util::KeyValue> {
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
     let kv_arc = gd_ref.all_data_list.get(0).unwrap().clone();
     return Arc::clone( &kv_arc);
 }
 
-fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
+fn get_node_from_map(key: &String) -> ArRmRs<chord_node::ChordNode>{
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
     let node_arc = gd_ref.all_node_dict.get(key).unwrap().clone();
@@ -643,7 +645,7 @@ fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_node::Cho
 
 fn example_th() {
     loop{
-        let kv_arc_at_heap : Box<Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>>;
+        let kv_arc_at_heap : Box<ArRmRs<chord_util::KeyValue>>;
         {
             let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
             let gd_ref = get_ref_from_refcell!(gd_refcell);
@@ -683,7 +685,7 @@ fn main() {
             );
         }
 
-        let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
+        let first_elem : ArRmRs<chord_util::KeyValue>;
         {
             first_elem = get_first_data_no_arg();
             let refcell = get_refcell_from_arc_with_locking!(first_elem);
@@ -725,7 +727,7 @@ fn main() {
             );
         }
 
-        let one_elem : Arc<ReentrantMutex<RefCell<chord_util::ChordNode>>>;
+        let one_elem : ArRmRs<chord_util::ChordNode>>>;
         {
             one_elem = get_node_from_map(&"ryo_grid".to_string());
             let one_elem_tmp = get_refcell_from_arc!(one_elem);

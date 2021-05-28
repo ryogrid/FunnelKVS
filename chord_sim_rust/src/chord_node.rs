@@ -484,6 +484,8 @@ use crate::data_store;
 use crate::taskqueue;
 use crate::endpoints;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
 pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL";
 
@@ -496,7 +498,7 @@ pub const GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES : i32 = 5;
 pub static mut need_getting_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
 
 lazy_static! {
-    pub static ref need_getting_retry_node : Arc<ReentrantMutex<RefCell<Option<ChordNode>>>> 
+    pub static ref need_getting_retry_node : ArRmRs<Option<ChordNode>> 
         = Arc::new(const_reentrant_mutex(RefCell::new(None)));
 }
 /*
@@ -508,7 +510,7 @@ need_getting_retry_node : Optional['ChordNode'] = None
 pub static mut need_put_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
 
 lazy_static! {
-    pub static ref need_put_retry_data_value : Arc<ReentrantMutex<RefCell<String>>> 
+    pub static ref need_put_retry_data_value : ArRmRs<String> 
         = Arc::new(const_reentrant_mutex(RefCell::new("".to_string())));
 }
 /*
@@ -517,7 +519,7 @@ need_put_retry_data_value : str = ""
 
 
 lazy_static! {
-    pub static ref need_put_retry_node : Arc<ReentrantMutex<RefCell<Option<ChordNode>>>> 
+    pub static ref need_put_retry_node : ArRmRs<Option<ChordNode>> 
         = Arc::new(const_reentrant_mutex(RefCell::new(None)));
 }
 /*
@@ -540,9 +542,9 @@ pub struct ChordNode {
 }
 
 impl ChordNode {
-
+/*
     //検証用の仮のコンストラクタ
-    pub fn powerful_new() -> Arc<ReentrantMutex<RefCell<ChordNode>>> {
+    pub fn powerful_new() -> ArRmRs<ChordNode>>> {
         let node = 
             Arc::new(
             const_reentrant_mutex(
@@ -567,7 +569,7 @@ impl ChordNode {
 
         return node;
     }
-
+*/
 
 /*
     pub fn new(key : Option<String>, value : String) -> ChordNode {

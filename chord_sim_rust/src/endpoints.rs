@@ -103,13 +103,15 @@ use crate::router;
 use crate::stabilizer;
 use crate::taskqueue;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 #[derive(Debug, Clone)]
 pub struct Endpoints {
-    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
+    pub existing_node : ArRmRs<chord_node::ChordNode>,
 }
 
 impl Endpoints {
-    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> Endpoints {
+    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> Endpoints {
         Endpoints {existing_node : parent}
     }
 }

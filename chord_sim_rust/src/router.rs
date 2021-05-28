@@ -189,13 +189,15 @@ use crate::taskqueue;
 use crate::endpoints;
 use crate::data_store;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 #[derive(Debug, Clone)]
 pub struct Router {
-    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
+    pub existing_node : ArRmRs<chord_node::ChordNode>,
 }
 
 impl Router {
-    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> Router {
+    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> Router {
         Router {existing_node : parent}
     }
 
@@ -255,7 +257,7 @@ impl Router {
 
 /*
 // id(int)　の前で一番近い位置に存在するノードを探索する
-pub fn find_predecessor(&self, id: i32) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>> {
+pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
     let n_dash_refcell = get_refcell_from_arc_with_locking!(self.existing_node);
     let n_dash = get_ref_from_refcell!(n_dash_refcell);
 
@@ -403,7 +405,7 @@ pub fn find_predecessor(&self, id: i32) -> Arc<ReentrantMutex<RefCell<chord_node
 */
 
     //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-    pub fn closest_preceding_finger(&self, id : i32) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>> {        
+    pub fn closest_preceding_finger(&self, id : i32) -> ArRmRs<chord_node::ChordNode> {        
         // 範囲の広いエントリから探索していく
         // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
         // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
@@ -428,7 +430,7 @@ pub fn find_predecessor(&self, id: i32) -> Arc<ReentrantMutex<RefCell<chord_node
             chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(Some(&exnode_ref.node_info.unwrap())).as_str() + ","
                 + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));
 
-            // テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
+            // テーブル内のエントリが保持しているノードのIDが7自身のIDと探索対象のIDの間にあれば
             // それを返す
             // (大きな範囲を見た場合、探索対象のIDが自身のIDとエントリが保持しているノードのIDの中に含まれて
             //  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている

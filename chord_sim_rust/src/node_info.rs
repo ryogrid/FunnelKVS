@@ -100,9 +100,11 @@ use crate::endpoints;
 use crate::data_store;
 use crate::router;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
-    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
+    pub existing_node : ArRmRs<chord_node::ChordNode>,
     pub node_id : i32,
     pub address_str: String,
     // デバッグ用のID
@@ -119,7 +121,7 @@ pub struct NodeInfo {
     //
     // 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
     // ように制御する
-    pub successor_info_list: Arc<ReentrantMutex<RefCell<Vec<NodeInfo>>>>,
+    pub successor_info_list: ArRmRs<Vec<NodeInfo>>,
     // join後はNoneになることのないように制御される
     //predecessor_info: Option<&'static NodeInfo>,
     pub predecessor_info: Arc<ReentrantMutex<Option<NodeInfo>>>,
@@ -128,11 +130,11 @@ pub struct NodeInfo {
     // sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
     // TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
     
-    pub finger_table: Arc<ReentrantMutex<RefCell<Vec<Option<NodeInfo>>>>>, // = [None] * gval.ID_SPACE_BITS
+    pub finger_table: ArRmRs<Vec<Option<NodeInfo>>>, // = [None] * gval.ID_SPACE_BITS
 }
 
 impl NodeInfo {
-    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> NodeInfo {
+    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> NodeInfo {
         let si_list = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
         let pred_info = Arc::new(const_reentrant_mutex(None));
         let ftable = Arc::new(const_reentrant_mutex(RefCell::new(vec![None; gval::ID_SPACE_BITS as usize])));

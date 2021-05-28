@@ -825,10 +825,12 @@ use crate::endpoints;
 use crate::data_store;
 use crate::router;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 // join が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のjoin処理の際にリトライさせる
 // なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
 lazy_static! {
-    pub static ref need_join_retry_node : Arc<ReentrantMutex<RefCell<Option<chord_node::ChordNode>>>> 
+    pub static ref need_join_retry_node : ArRmRs<Option<chord_node::ChordNode>> 
         = Arc::new(const_reentrant_mutex(RefCell::new(None)));
 }
 /*
@@ -836,7 +838,7 @@ need_join_retry_node : Optional['ChordNode'] = None
 */
 
 lazy_static! {
-    pub static ref need_join_retry_tyukain_node : Arc<ReentrantMutex<RefCell<Option<chord_node::ChordNode>>>>
+    pub static ref need_join_retry_tyukain_node : ArRmRs<Option<chord_node::ChordNode>>
         = Arc::new(const_reentrant_mutex(RefCell::new(None)));
 }
 /*
@@ -845,11 +847,11 @@ need_join_retry_tyukai_node: Optional['ChordNode'] = None
 
 #[derive(Debug, Clone)]
 pub struct Stabilizer {
-    pub existing_node : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>,
+    pub existing_node : ArRmRs<chord_node::ChordNode>,
 }
 
 impl Stabilizer {
-    pub fn new(parent : Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>) -> Stabilizer {
+    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> Stabilizer {
         Stabilizer {existing_node : parent}
     }
 }

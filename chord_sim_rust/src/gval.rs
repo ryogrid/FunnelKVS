@@ -113,6 +113,8 @@ use crate::endpoints;
 use crate::data_store;
 use crate::chord_util;
 
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
 pub const ID_SPACE_BITS : u32 = 30; // 160 <- sha1での本来の値
 pub const ID_SPACE_RANGE : i32 = 2i32.pow(ID_SPACE_BITS); // 0を含めての数である点に注意
 
@@ -177,14 +179,14 @@ pub static mut is_waiting_partial_join_op_exists : AtomicBool = AtomicBool::new(
 pub struct GlobalDatas {
 // アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 // IPアドレスが分かれば、対応するノードと通信できることと対応している
-    pub all_node_dict : HashMap<String, Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>>,
+    pub all_node_dict : HashMap<String, ArRmRs<chord_node::ChordNode>>,
 // DHT上で保持されている全てのデータが保持されているリスト
 // KeyValueオブジェクトを要素として持つ
 // 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
 // getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
 // に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
 // 照らし合わせられるようにする
-    pub all_data_list : Vec<Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>>
+    pub all_data_list : Vec<ArRmRs<chord_util::KeyValue>>
 }
 
 impl GlobalDatas {
@@ -194,7 +196,7 @@ impl GlobalDatas {
 }
 
 lazy_static! {
-    pub static ref global_datas : Arc<ReentrantMutex<RefCell<GlobalDatas>>> = Arc::new(const_reentrant_mutex(RefCell::new(GlobalDatas::new())));
+    pub static ref global_datas : ArRmRs<GlobalDatas> = Arc::new(const_reentrant_mutex(RefCell::new(GlobalDatas::new())));
 }
 
 /*

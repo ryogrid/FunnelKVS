@@ -542,9 +542,9 @@ pub struct ChordNode {
 }
 
 impl ChordNode {
-/*
+
     //検証用の仮のコンストラクタ
-    pub fn powerful_new() -> ArRmRs<ChordNode>>> {
+    pub fn powerful_new() -> ArRmRs<ChordNode> {
         let node = 
             Arc::new(
             const_reentrant_mutex(
@@ -569,7 +569,7 @@ impl ChordNode {
 
         return node;
     }
-*/
+
 
 /*
     pub fn new(key : Option<String>, value : String) -> ChordNode {

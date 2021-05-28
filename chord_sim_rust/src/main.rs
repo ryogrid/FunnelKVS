@@ -545,8 +545,12 @@ if __name__ == '__main__':
 */
 
 //#![allow(dead_code)] 
-// disables unused_imports lint
+// disables several lint warnings
 #![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(non_upper_case_globals)]
+#![allow(unused_assignments)]
+#![allow(dead_code)]
 
 /*
 #![feature(proc_macro_hygiene)]
@@ -559,15 +563,34 @@ extern crate rocket;
 
 // utility macros
 
-macro_rules! get_refcell_from_arc {
+// IN:  Arc<ReentrandMutex<RefCell<T>>>
+// OUT: &RefCell<T>
+/*
+macro_rules! get_refcell_from_arc_with_locking {
     ($arc:expr) => (
         &*$arc.as_ref().borrow_mut().lock();         
     );
 }
+*/
+macro_rules! get_refcell_from_arc_with_locking {
+    ($arc:expr) => (
+        &*(($arc.as_ref()).borrow().lock());
+    );
+}
 
+// IN:  &RefCell<T>
+// OUT: &mut RefMut<T>
 macro_rules! get_refmut_from_refcell {
     ($refcell:expr) => (
         &mut $refcell.borrow_mut();
+    );
+}
+
+// IN:  &RefCell<T>
+// OUT: &Ref<T>
+macro_rules! get_ref_from_refcell {
+    ($refcell:expr) => (
+        &$refcell.borrow();
     );
 }
 
@@ -594,33 +617,34 @@ pub mod endpoints;
 // および、is_join_op_finishedフィールドがFalseでjoin処理が完全に完了していない
 // ノードは返らない
 fn get_a_random_node() -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
-    let gd_refcell = get_refcell_from_arc!(gval::global_datas);
-    let gd_refmut = get_refmut_from_refcell!(gd_refcell);
+    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    let gd_ref = get_ref_from_refcell!(gd_refcell);
     let mut tmp_vec = vec![];
-    for (k, v) in &gd_refmut.all_node_dict{
-        let node_refcell = get_refcell_from_arc!(v);
-        let node_refmut = get_refmut_from_refcell!(node_refcell);
+    for (k, v) in &gd_ref.all_node_dict{
+        let node_refcell = get_refcell_from_arc_with_locking!(v);
+        //let node_refmut = get_refmut_from_refcell!(node_refcell);
+        let node_refmut = get_ref_from_refcell!(node_refcell);
         if node_refmut.is_join_op_finished.load(Ordering::Relaxed) == true && node_refmut.is_join_op_finished.load(Ordering::Relaxed) == true {
             tmp_vec.push(v);
         }
     }
     let rand_val = chord_util::get_rnd_int_with_limit(tmp_vec.len() as i32);
     let node_arc = tmp_vec.get(rand_val as usize);
-    let ret = Arc::clone(*node_arc.unwrap());
+    let ret = Arc::clone(*(node_arc.unwrap()));
     return ret;
 }
 
 fn get_first_data_no_arg() -> Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>> {
-    let gd_refcell = get_refcell_from_arc!(gval::global_datas);
-    let gd_refmut = get_refmut_from_refcell!(gd_refcell);    
-    let kv_arc = gd_refmut.all_data_list.get(0).unwrap().clone();
+    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    let gd_ref = get_ref_from_refcell!(gd_refcell);
+    let kv_arc = gd_ref.all_data_list.get(0).unwrap().clone();
     return Arc::clone( &kv_arc);
 }
 
 fn get_node_from_map(key: &String) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>{
-    let gd_refcell = get_refcell_from_arc!(gval::global_datas);
-    let gd_refmut = get_refmut_from_refcell!(gd_refcell);
-    let node_arc = gd_refmut.all_node_dict.get(key).unwrap().clone();
+    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    let gd_ref = get_ref_from_refcell!(gd_refcell);
+    let node_arc = gd_ref.all_node_dict.get(key).unwrap().clone();
     return Arc::clone(&node_arc);
 }
 
@@ -628,16 +652,16 @@ fn example_th() {
     loop{
         let kv_arc_at_heap : Box<Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>>;
         {
-            let gd_refcell = get_refcell_from_arc!(gval::global_datas);
-            let gd_refmut = get_refmut_from_refcell!(gd_refcell);
-            let kv_arc = gd_refmut.all_data_list.get(0).unwrap().clone();
+            let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+            let gd_ref = get_ref_from_refcell!(gd_refcell);
+            let kv_arc = gd_ref.all_data_list.get(0).unwrap().clone();
             kv_arc_at_heap = Box::new(Arc::clone( &kv_arc));
-            let kv_refcell = get_refcell_from_arc!(kv_arc);
+            let kv_refcell = get_refcell_from_arc_with_locking!(kv_arc);
             let kv_refmut = get_refmut_from_refcell!(kv_refcell);    
             kv_refmut.data_id = Some((kv_refmut.data_id).unwrap() + 1);
             println!{"{:?}", kv_refmut.data_id};
 
-            for (k, v) in &gd_refmut.all_node_dict {
+            for (k, v) in &gd_ref.all_node_dict {
                 println!("{:?} {:?}", k, &(&*v.lock()).borrow());
             }
         }
@@ -652,7 +676,7 @@ fn main() {
     // Vecを操作している処理のブロック
     {
         //ReentrantMutexとRefCellを用いた場合
-        let refcell_gd = get_refcell_from_arc!(gval::global_datas);        
+        let refcell_gd = get_refcell_from_arc_with_locking!(gval::global_datas);        
         {
             let refmut_gd = get_refmut_from_refcell!(refcell_gd);
             refmut_gd.all_data_list.push(
@@ -669,13 +693,13 @@ fn main() {
         let first_elem : Arc<ReentrantMutex<RefCell<chord_util::KeyValue>>>;
         {
             first_elem = get_first_data_no_arg();
-            let refcell = get_refcell_from_arc!(first_elem);
-            let refmut_kv = get_refmut_from_refcell!(refcell);            
+            let refcell = get_refcell_from_arc_with_locking!(first_elem);
+            let ref_kv = get_ref_from_refcell!(refcell);
 
-            println!("{:?}", refmut_kv);
+            println!("{:?}", ref_kv);
         }
 
-        let refcell = get_refcell_from_arc!(first_elem);
+        let refcell = get_refcell_from_arc_with_locking!(first_elem);
         let refmut_kv = get_refmut_from_refcell!(refcell);
         
         let num = 2u32.pow(10u32);
@@ -712,7 +736,7 @@ fn main() {
         {
             one_elem = get_node_from_map(&"ryo_grid".to_string());
             let one_elem_tmp = get_refcell_from_arc!(one_elem);
-            let one_elem_to_print = get_refmut_from_refcell!(one_elem_tmp);
+            let one_elem_to_print = get_ref_from_refcell!(one_elem_tmp);
 
             println!("{:?}", one_elem_to_print);
         }
@@ -730,7 +754,7 @@ fn main() {
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*    
+/*
     // 複数のスレッドで GLOBAL_DATAS に触ってみる
     let mut thread_handles = vec![];
     // thead-1

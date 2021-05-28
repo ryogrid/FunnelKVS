@@ -463,7 +463,7 @@ def overflow_check_and_conv(cls, id : int) -> int:
 */
 
 pub fn conv_id_to_ratio_str(id : i32) -> String {
-    let mut ratio = (id / gval::ID_MAX) as f32 * 100.0;
+    let ratio = (id / gval::ID_MAX) as f32 * 100.0;
     return format!("{:.4}", ratio);
 }
 /*
@@ -573,8 +573,8 @@ def calc_distance_between_nodes_right_mawari(cls, base_id : int, target_id : int
 */
 
 pub fn exist_between_two_nodes_right_mawari(from_id : i32, end_id : i32, target_id : i32) -> bool { 
-    let mut distance_end = calc_distance_between_nodes_right_mawari(from_id, end_id);
-    let mut distance_target = calc_distance_between_nodes_right_mawari(from_id, target_id);
+    let distance_end = calc_distance_between_nodes_right_mawari(from_id, end_id);
+    let distance_target = calc_distance_between_nodes_right_mawari(from_id, target_id);
 
     if distance_target < distance_end {
         return true;
@@ -636,10 +636,10 @@ pub fn gen_debug_str_of_data(data_id : i32) -> String {
 // TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
 //       ChordNodeオブジェクトを返す get_node_by_address
 pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>>>, GeneralError> {
-    let gd_refcell = get_refcell_from_arc!(gval::global_datas);
-    let gd_refmut = get_refmut_from_refcell!(gd_refcell);
+    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    let gd_ref = get_ref_from_refcell!(gd_refcell);
 
-    let get_result = gd_refmut.all_node_dict.get(address);
+    let get_result = gd_ref.all_node_dict.get(address);
     let ret_val = 
         match get_result {
             // join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
@@ -648,10 +648,10 @@ pub fn get_node_by_address(address : &String) -> Result<Option<Arc<ReentrantMute
         };
 
 
-    let node_refcell = get_refcell_from_arc!(ret_val);
-    let node_refmut = get_refmut_from_refcell!(node_refcell);
-    if node_refmut.is_alive.load(Ordering::Relaxed) == false {
-        dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(&node_refmut.node_info))));
+    let node_refcell = get_refcell_from_arc_with_locking!(ret_val);
+    let node_ref = get_ref_from_refcell!(node_refcell);
+    if node_ref.is_alive.load(Ordering::Relaxed) == false {
+        dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(&node_ref.node_info))));
         return Err(GeneralError::new("".to_string(), ERR_CODE_NODE_IS_DOWNED));
     }
 

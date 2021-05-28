@@ -198,7 +198,7 @@ impl Router {
         Router {existing_node : parent}
     }
 
-/*    
+/*
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
     # TODO: AppropriateExp, DownedExp, InternalExp at find_successor
@@ -252,13 +252,17 @@ impl Router {
             self.existing_node.node_info.lock_of_succ_infos.release()
 */
 
+/*
 // id(int)　の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(&self, id: i32) -> Arc<ReentrantMutex<RefCell<chord_node::ChordNode>>> {
-    chord_util::dprint("find_predecessor_1," + chord_util::gen_debug_str_of_node(self.existing_node.node_info));
+    chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self.existing_node.as_ref().node_info).as_str()));
 
-    let n_dash = self.existing_node;
+    let n_dash_refcell = get_refcell_from_arc_with_locking!(self.existing_node);
+    let n_dash = get_refmut_from_refcell!(n_dash_refcell);
 
-    if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval::LOCK_ACQUIRE_TIMEOUT) == false {
+    //if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval::LOCK_ACQUIRE_TIMEOUT) == false {
+    // ここで、n_dashはself.existing_nodeに対応するノードである点に注意
+    if n_dash.node_info.successor_info_list
         // 最初の n_dash を返してしまい、find_predecessorは失敗したと判断させる
         chord_util::dprint("find_predecessor_1_1," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
                          + "LOCK_ACQUIRE_TIMEOUT");
@@ -320,6 +324,7 @@ pub fn find_predecessor(&self, id: i32) -> Arc<ReentrantMutex<RefCell<chord_node
 
     return n_dash;
 }
+*/
 
 /*
     # id(int)　の前で一番近い位置に存在するノードを探索する
@@ -396,23 +401,23 @@ pub fn find_predecessor(&self, id: i32) -> Arc<ReentrantMutex<RefCell<chord_node
         // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         // 順に見ていくようにする
         
-        let exnode_refcell = get_refcell_from_arc!(self.existing_node);
-        let exnode_refmut = get_refmut_from_refcell!(exnode_refcell);
+        let exnode_refcell = get_refcell_from_arc_with_locking!(self.existing_node);
+        let exnode_ref = get_ref_from_refcell!(exnode_refcell);
         
-        let ft_refcell = get_refcell_from_arc!(exnode_refmut.node_info.finger_table);
-        let ft_refmut = get_refmut_from_refcell!(ft_refcell);
+        let ft_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info.finger_table);
+        let ft_ref = get_ref_from_refcell!(ft_refcell);
 
-        for node_info in ft_refmut.iter().rev() {
+        for node_info in ft_ref.iter().rev() {
             // 注: Noneなエントリも存在し得る
             let conved_node_info = match node_info {
                 None => {
-                    chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(Some(&exnode_refmut.node_info)).as_str()));
+                    chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(Some(&exnode_ref.node_info)).as_str()));
                     continue;
                 },
                 Some(ni) => ni
             };
 
-            chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(Some(&exnode_refmut.node_info)).as_str() + ","
+            chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(Some(&exnode_ref.node_info)).as_str() + ","
                 + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));
 
             // テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
@@ -421,9 +426,9 @@ pub fn find_predecessor(&self, id: i32) -> Arc<ReentrantMutex<RefCell<chord_node
             //  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
             //  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
             //  見つけるという処理になっていると思われる）
-            if chord_util::exist_between_two_nodes_right_mawari(exnode_refmut.node_info.node_id, id, conved_node_info.node_id) {
+            if chord_util::exist_between_two_nodes_right_mawari(exnode_ref.node_info.node_id, id, conved_node_info.node_id) {
 
-                chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(Some(&exnode_refmut.node_info)).as_str() + ","
+                chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(Some(&exnode_ref.node_info)).as_str() + ","
                                 + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));
 
                 let gnba_rslt = chord_util::get_node_by_address(&conved_node_info.address_str);

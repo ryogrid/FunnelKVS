@@ -527,6 +527,7 @@ lazy_static! {
 need_put_retry_node : Optional['ChordNode'] = None
 */
 
+/*
 #[derive(Debug)]
 pub struct ChordNode {
     pub node_info : Option<ArRmRs<node_info::NodeInfo>>,
@@ -541,40 +542,95 @@ pub struct ChordNode {
     // 大本から呼び出されないようにするためのフラグ
     pub is_join_op_finished : AtomicBool
 }
+*/
+#[derive(Debug)]
+pub struct ChordNode {
+    pub node_info : ArRmRs<node_info::NodeInfo>,
+    pub data_store : ArRmRs<data_store::DataStore>,
+    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
+    pub router : ArRmRs<router::Router>,
+    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
+    pub endpoints : ArRmRs<endpoints::Endpoints>,
+    // シミュレーション時のみ必要なフィールド（実システムでは不要）
+    pub is_alive : AtomicBool,
+    // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
+    // 大本から呼び出されないようにするためのフラグ
+    pub is_join_op_finished : AtomicBool
+}
+
+use std::ptr;
 
 impl ChordNode {
 
     //検証用の仮のコンストラクタ
     pub fn powerful_new() -> ArRmRs<ChordNode> {
+        let p: *const i32 = ptr::null();
+        let node: ArRmRs<ChordNode>; 
+        unsafe{
+            let dummy_NodeInfo = &*(p as *const Arc<ReentrantMutex<RefCell<node_info::NodeInfo>>>);
+            let dummy_DataStore = &*(p as *const Arc<ReentrantMutex<RefCell<data_store::DataStore>>>);
+            let dummy_Stabilizer = &*(p as *const Arc<ReentrantMutex<RefCell<stabilizer::Stabilizer>>>);
+            let dummy_Router = &*(p as *const Arc<ReentrantMutex<RefCell<router::Router>>>);
+            let dummy_TaskQueue = &*(p as *const Arc<ReentrantMutex<RefCell<taskqueue::TaskQueue>>>);
+            let dummy_Endpoints = &*(p as *const Arc<ReentrantMutex<RefCell<endpoints::Endpoints>>>);            
+            node =
+                Arc::new(
+                    const_reentrant_mutex(
+                        RefCell::new(
+                                    ChordNode {
+                                        node_info: Arc::clone(dummy_NodeInfo),
+                                        data_store: Arc::clone(dummy_DataStore),
+                                        stabilizer: Arc::clone(dummy_Stabilizer),
+                                        router: Arc::clone(dummy_Router),
+                                        tqueue: Arc::clone(dummy_TaskQueue),
+                                        endpoints: Arc::clone(dummy_Endpoints),
+                                        is_alive: AtomicBool::new(false),
+                                        is_join_op_finished: AtomicBool::new(false)
+                                    }
+                            )
+                        )
+                    );                
+            let cn_refcell = get_refcell_from_arc_with_locking!(node);
+            let cn_refmut = get_refmut_from_refcell!(cn_refcell);
+
+            cn_refmut.node_info = ArRmRs_new!(node_info::NodeInfo::new(Arc::clone(&node)));
+            cn_refmut.data_store = ArRmRs_new!(data_store::DataStore::new(Arc::clone(&node)));
+            cn_refmut.stabilizer = ArRmRs_new!(stabilizer::Stabilizer::new(Arc::clone(&node)));
+            cn_refmut.router = ArRmRs_new!(router::Router::new(Arc::clone(&node)));
+            cn_refmut.tqueue = ArRmRs_new!(taskqueue::TaskQueue::new(Arc::clone(&node)));
+            cn_refmut.endpoints = ArRmRs_new!(endpoints::Endpoints::new(Arc::clone(&node)));
+        }
+
+/*        
         let node = 
-            Arc::new(
-            const_reentrant_mutex(
-                RefCell::new(
-                            ChordNode {
-                            node_info: None,
-                            data_store: None,
-                            stabilizer: None,
-                            router: None,
-                            tqueue: None,
-                            endpoints: None,
-                            is_alive: AtomicBool::new(false),
-                            is_join_op_finished: AtomicBool::new(false)
-                        }
-                    )
+        Arc::new(
+        const_reentrant_mutex(
+            RefCell::new(
+                        ChordNode {
+                        node_info: None,
+                        data_store: None,
+                        stabilizer: None,
+                        router: None,
+                        tqueue: None,
+                        endpoints: None,
+                        is_alive: AtomicBool::new(false),
+                        is_join_op_finished: AtomicBool::new(false)
+                    }
                 )
-            );
+            )
+        );
         let cn_refcell = get_refcell_from_arc_with_locking!(node);
-        let cn_ref = get_ref_from_refcell!(cn_refcell);
-        cn_ref.node_info = Some(ArRmRs_new!(node_info::NodeInfo::new(Arc::clone(&node))));
-        cn_ref.data_store = Some(ArRmRs_new!(data_store::DataStore::new(Arc::clone(&node))));
-        cn_ref.stabilizer = Some(ArRmRs_new!(stabilizer::Stabilizer::new(Arc::clone(&node))));
-        cn_ref.router = Some(ArRmRs_new!(router::Router::new(Arc::clone(&node))));
-        cn_ref.tqueue = Some(ArRmRs_new!(taskqueue::TaskQueue::new(Arc::clone(&node))));
-        cn_ref.endpoints = Some(ArRmRs_new!(endpoints::Endpoints::new(Arc::clone(&node))));
-        let hoge = Some(ArRmRs_new!(endpoints::Endpoints::new(Arc::clone(&node))));
+        let mut cn_refmut = get_refmut_from_refcell!(cn_refcell);        
+        
+        cn_refmut.node_info = Some(ArRmRs_new!(node_info::NodeInfo::new(Arc::clone(&node))));
+        cn_refmut.data_store = Some(ArRmRs_new!(data_store::DataStore::new(Arc::clone(&node))));
+        cn_refmut.stabilizer = Some(ArRmRs_new!(stabilizer::Stabilizer::new(Arc::clone(&node))));
+        cn_refmut.router = Some(ArRmRs_new!(router::Router::new(Arc::clone(&node))));
+        cn_refmut.tqueue = Some(ArRmRs_new!(taskqueue::TaskQueue::new(Arc::clone(&node))));
+        cn_refmut.endpoints = Some(ArRmRs_new!(endpoints::Endpoints::new(Arc::clone(&node))));        
+*/
 
-
-        return node;
+        return Arc::clone(&node);
     }
 
 

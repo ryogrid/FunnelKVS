@@ -551,6 +551,7 @@ if __name__ == '__main__':
 #![allow(non_upper_case_globals)]
 #![allow(unused_assignments)]
 #![allow(dead_code)]
+#![allow(non_snake_case)]
 
 /*
 #![feature(proc_macro_hygiene)]
@@ -589,7 +590,7 @@ macro_rules! get_ref_from_refcell {
 
 macro_rules! ArRmRs_new {
     ($wrapped:expr) => (
-        Arc::new(const_reentrant_mutex(RefCell:new($wrapped)))
+        Arc::new(const_reentrant_mutex(RefCell::new($wrapped)))
     );    
 }
 

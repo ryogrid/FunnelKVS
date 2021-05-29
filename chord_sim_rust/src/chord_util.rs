@@ -653,7 +653,7 @@ pub fn get_node_by_address(address : &String) -> Result<Option<ArRmRs<chord_node
     let node_refcell = get_refcell_from_arc_with_locking!(ret_val);
     let node_ref = get_ref_from_refcell!(node_refcell);
 
-    let callee_ninfo_refcell = get_refcell_from_arc_with_locking!(node_ref.node_info.unwrap());
+    let callee_ninfo_refcell = get_refcell_from_arc_with_locking!(node_ref.node_info);
     let callee_ninfo_ref = get_ref_from_refcell!(callee_ninfo_refcell);
 
     if node_ref.is_alive.load(Ordering::Relaxed) == false {

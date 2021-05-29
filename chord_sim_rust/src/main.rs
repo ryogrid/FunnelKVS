@@ -710,54 +710,61 @@ fn main() {
         println!("{:?}", refmut_kv);
     }
 
-/*    
+
     // HashMapを操作している処理のブロック
     {
 // all_node_dictのHashMapが格納する要素のvalueの型をKeyValue型からChordNode型に変更した結果
 // 修正しないと動作しなくなったのでひとまずコメントアウト
 
-        let refcell_gd = get_refcell_from_arc!(gval::global_datas);
+        let refcell_gd = get_refcell_from_arc_with_locking!(gval::global_datas);
         {
             let refmut_gd = get_refmut_from_refcell!(refcell_gd);
             refmut_gd.all_node_dict.insert(
                 "ryo_grid".to_string(),
-                 Arc::new(
-                   const_reentrant_mutex(
-                        RefCell::new(
-                                KeyValue::new(
-                                 Some("value".to_string()),
-                                 "before_mod".to_string()
-                                )
-                            )
-                        )
-                    )
+                chord_node::ChordNode::powerful_new() 
             );
         }
 
-        let one_elem : ArRmRs<chord_util::ChordNode>>>;
+        let one_elem : ArRmRs<chord_node::ChordNode>;
         {
             one_elem = get_node_from_map(&"ryo_grid".to_string());
-            let one_elem_tmp = get_refcell_from_arc!(one_elem);
+            let one_elem_tmp = get_refcell_from_arc_with_locking!(one_elem);
             let one_elem_to_print = get_ref_from_refcell!(one_elem_tmp);
 
             println!("{:?}", one_elem_to_print);
         }
 
-        let refcell_kv = get_refcell_from_arc!(one_elem);
-        let mutref_kv = get_refmut_from_refcell!(refcell_kv);
+        let refcell_node = get_refcell_from_arc_with_locking!(one_elem);
+        let mutref_node = get_refmut_from_refcell!(refcell_node);
 
-        mutref_kv.value_data = "after_mod".to_string();
-        println!("{:?}", mutref_kv);
-
+        //mutref_kv.value_data = "after_mod".to_string();
+        let refcell_router = get_refcell_from_arc_with_locking!(mutref_node.router);
+        let ref_router = get_ref_from_refcell!(refcell_router);
+        let found_node = ref_router.closest_preceding_finger(1024);
+        println!("{:?}", found_node);
 
         // stringはcloneでディープコピーできるようだ
         let _cloned_string = "clone_base".to_string().clone();
     }
-*/
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
     // 複数のスレッドで GLOBAL_DATAS に触ってみる
+    let mut thread_handles = vec![];
+    // thead-1
+    thread_handles.push(std::thread::spawn(example_th));
+    // thead-2
+    thread_handles.push(std::thread::spawn(example_th));
+
+    // スレッドの処理終了の待ち合わせ
+    for handle in thread_handles {
+        handle.join().unwrap();
+    }
+*/
+
+/*
+    // finger_table を触るコードを実際のコードを模してマルチスレッドで動かしてみる
     let mut thread_handles = vec![];
     // thead-1
     thread_handles.push(std::thread::spawn(example_th));

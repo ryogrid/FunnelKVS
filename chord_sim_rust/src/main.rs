@@ -587,6 +587,12 @@ macro_rules! get_ref_from_refcell {
     );
 }
 
+macro_rules! ArRmRs_new {
+    ($wrapped:expr) => (
+        Arc::new(const_reentrant_mutex(RefCell:new($wrapped)))
+    );    
+}
+
 use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc};
 use std::cell::RefMut;
 use std::cell::RefCell;

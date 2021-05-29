@@ -529,12 +529,12 @@ need_put_retry_node : Optional['ChordNode'] = None
 
 #[derive(Debug)]
 pub struct ChordNode {
-    pub node_info : Option<Arc<node_info::NodeInfo>>,
-    pub data_store : Option<Arc<data_store::DataStore>>,
-    pub stabilizer : Option<Arc<stabilizer::Stabilizer>>,
-    pub router : Option<Arc<router::Router>>,
-    pub tqueue : Option<Arc<taskqueue::TaskQueue>>,
-    pub endpoints : Option<Arc<endpoints::Endpoints>>,
+    pub node_info : Option<ArRmRs<node_info::NodeInfo>>,
+    pub data_store : Option<ArRmRs<data_store::DataStore>>,
+    pub stabilizer : Option<ArRmRs<stabilizer::Stabilizer>>,
+    pub router : Option<ArRmRs<router::Router>>,
+    pub tqueue : Option<ArRmRs<taskqueue::TaskQueue>>,
+    pub endpoints : Option<ArRmRs<endpoints::Endpoints>>,
     // シミュレーション時のみ必要なフィールド（実システムでは不要）
     pub is_alive : AtomicBool,
     // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
@@ -565,8 +565,14 @@ impl ChordNode {
             );
         let cn_refcell = get_refcell_from_arc_with_locking!(node);
         let cn_ref = get_ref_from_refcell!(cn_refcell);
-        cn_ref.node_info = Some(Arc::new(node_info::NodeInfo::new(Arc::clone(&node))));
-        cn_ref.data_store = Some(Arc::new(data_store::DataStore::new(Arc::clone(&node))));
+        cn_ref.node_info = Some(ArRmRs_new!(node_info::NodeInfo::new(Arc::clone(&node))));
+        cn_ref.data_store = Some(ArRmRs_new!(data_store::DataStore::new(Arc::clone(&node))));
+        cn_ref.stabilizer = Some(ArRmRs_new!(stabilizer::Stabilizer::new(Arc::clone(&node))));
+        cn_ref.router = Some(ArRmRs_new!(router::Router::new(Arc::clone(&node))));
+        cn_ref.tqueue = Some(ArRmRs_new!(taskqueue::TaskQueue::new(Arc::clone(&node))));
+        cn_ref.endpoints = Some(ArRmRs_new!(endpoints::Endpoints::new(Arc::clone(&node))));
+        let hoge = Some(ArRmRs_new!(endpoints::Endpoints::new(Arc::clone(&node))));
+
 
         return node;
     }

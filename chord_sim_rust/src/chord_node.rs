@@ -473,6 +473,7 @@ class ChordNode:
 use std::sync::atomic::{AtomicIsize, AtomicBool};
 use std::sync::Arc;
 use std::cell::RefCell;
+use std::borrow::Borrow;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
@@ -563,9 +564,9 @@ impl ChordNode {
                 )
             );
         let cn_refcell = get_refcell_from_arc_with_locking!(node);
-        let cn_ref = get_ref_from_refcell!(node);
+        let cn_ref = get_ref_from_refcell!(cn_refcell);
         cn_ref.node_info = Some(Arc::new(node_info::NodeInfo::new(Arc::clone(&node))));
-        cn_ref.data_store = Some(Arc::new(stabilizer::Stabilizer::new(Arc::clone(&node))));
+        cn_ref.data_store = Some(Arc::new(data_store::DataStore::new(Arc::clone(&node))));
 
         return node;
     }

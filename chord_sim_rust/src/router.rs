@@ -193,12 +193,12 @@ type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
 #[derive(Debug, Clone)]
 pub struct Router {
-    pub existing_node : ArRmRs<chord_node::ChordNode>,
+//    pub existing_node : ArRmRs<chord_node::ChordNode>,
 }
 
 impl Router {
-    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> Router {
-        Router {existing_node : parent}
+    pub fn new() -> Router {
+        Router {}
     }
 
 /*

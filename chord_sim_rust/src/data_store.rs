@@ -223,14 +223,14 @@ type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
 #[derive(Debug, Clone)]
 pub struct DataStore {
-    pub existing_node : ArRmRs<chord_node::ChordNode>,
+//    pub existing_node : ArRmRs<chord_node::ChordNode>,
     // Keyはハッシュを通されたものなので元データの値とは異なる
     pub stored_data : ArRmRs<HashMap<String, chord_util::DataIdAndValue>>,
 }
 
 impl DataStore {
-    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> DataStore {
+    pub fn new() -> DataStore {
         let sd = Arc::new(const_reentrant_mutex(RefCell::new(HashMap::new())));
-        DataStore {existing_node : parent, stored_data : sd}
+        DataStore {stored_data : sd}
     }
 }

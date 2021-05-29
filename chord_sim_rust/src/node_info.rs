@@ -104,7 +104,7 @@ type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
-    pub existing_node : ArRmRs<chord_node::ChordNode>,
+//    pub existing_node : ArRmRs<chord_node::ChordNode>,
     pub node_id : i32,
     pub address_str: String,
     // デバッグ用のID
@@ -134,12 +134,11 @@ pub struct NodeInfo {
 }
 
 impl NodeInfo {
-    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> NodeInfo {
+    pub fn new() -> NodeInfo {
         let si_list = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
         let pred_info = Arc::new(const_reentrant_mutex(None));
         let ftable = Arc::new(const_reentrant_mutex(RefCell::new(vec![None; gval::ID_SPACE_BITS as usize])));
         NodeInfo {
-            existing_node : parent,
             node_id : -1,
             address_str: "".to_string(),
             born_id : -1,

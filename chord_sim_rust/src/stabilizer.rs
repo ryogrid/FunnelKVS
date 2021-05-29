@@ -847,11 +847,11 @@ need_join_retry_tyukai_node: Optional['ChordNode'] = None
 
 #[derive(Debug, Clone)]
 pub struct Stabilizer {
-    pub existing_node : ArRmRs<chord_node::ChordNode>,
+//    pub existing_node : ArRmRs<chord_node::ChordNode>,
 }
 
 impl Stabilizer {
-    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> Stabilizer {
-        Stabilizer {existing_node : parent}
+    pub fn new() -> Stabilizer {
+        Stabilizer {}
     }
 }

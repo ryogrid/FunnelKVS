@@ -107,11 +107,11 @@ type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
 #[derive(Debug, Clone)]
 pub struct Endpoints {
-    pub existing_node : ArRmRs<chord_node::ChordNode>,
+//    pub existing_node : ArRmRs<chord_node::ChordNode>,
 }
 
 impl Endpoints {
-    pub fn new(parent : ArRmRs<chord_node::ChordNode>) -> Endpoints {
-        Endpoints {existing_node : parent}
+    pub fn new() -> Endpoints {
+        Endpoints {}
     }
 }

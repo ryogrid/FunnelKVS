@@ -191,12 +191,15 @@ pub struct GlobalDatas {
 
 impl GlobalDatas {
     pub fn new() -> GlobalDatas {
-        GlobalDatas {all_node_dict : HashMap::new(), all_data_list : Vec::new()}
+        GlobalDatas {
+            all_node_dict : HashMap::new(),
+            all_data_list : Vec::new()
+        }
     }
 }
 
 lazy_static! {
-    pub static ref global_datas : ArRmRs<GlobalDatas> = Arc::new(const_reentrant_mutex(RefCell::new(GlobalDatas::new())));
+    pub static ref global_datas : ArRmRs<GlobalDatas> = ArRmRs_new!(GlobalDatas::new());
 }
 
 /*

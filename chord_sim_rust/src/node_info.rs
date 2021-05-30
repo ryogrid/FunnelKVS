@@ -135,9 +135,9 @@ pub struct NodeInfo {
 
 impl NodeInfo {
     pub fn new() -> NodeInfo {
-        let si_list = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
+        let si_list = ArRmRs_new!(Vec::new());
         let pred_info = Arc::new(const_reentrant_mutex(None));
-        let ftable = Arc::new(const_reentrant_mutex(RefCell::new(vec![None; gval::ID_SPACE_BITS as usize])));
+        let ftable = ArRmRs_new!(vec![None; gval::ID_SPACE_BITS as usize]);
         NodeInfo {
             node_id : -1,
             address_str: "".to_string(),

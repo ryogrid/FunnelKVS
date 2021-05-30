@@ -831,7 +831,7 @@ type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 // なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
 lazy_static! {
     pub static ref need_join_retry_node : ArRmRs<Option<chord_node::ChordNode>> 
-        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
+        = ArRmRs_new!(None);
 }
 /*
 need_join_retry_node : Optional['ChordNode'] = None

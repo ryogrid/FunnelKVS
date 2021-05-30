@@ -230,7 +230,7 @@ pub struct DataStore {
 
 impl DataStore {
     pub fn new() -> DataStore {
-        let sd = Arc::new(const_reentrant_mutex(RefCell::new(HashMap::new())));
+        let sd = ArRmRs_new!(HashMap::new());
         DataStore {stored_data : sd}
     }
 }

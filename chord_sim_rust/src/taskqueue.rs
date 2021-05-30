@@ -55,7 +55,7 @@ pub struct TaskQueue {
 
 impl TaskQueue {
     pub fn new() -> TaskQueue {
-        let tq = Arc::new(const_reentrant_mutex(RefCell::new(Vec::new())));
+        let tq = ArRmRs_new!(Vec::new());
         TaskQueue {tqueue: tq}
     }
 }

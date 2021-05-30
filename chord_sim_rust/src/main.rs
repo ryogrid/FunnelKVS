@@ -735,12 +735,12 @@ fn main() {
         }
 
         let refcell_node = get_refcell_from_arc_with_locking!(one_elem);
-        let mutref_node = get_refmut_from_refcell!(refcell_node);
+        let ref_node = get_ref_from_refcell!(refcell_node);
 
         //mutref_kv.value_data = "after_mod".to_string();
-        let refcell_router = get_refcell_from_arc_with_locking!(mutref_node.router);
+        let refcell_router = get_refcell_from_arc_with_locking!(ref_node.router);
         let ref_router = get_ref_from_refcell!(refcell_router);
-        let found_node = ref_router.closest_preceding_finger(1024);
+        let found_node = ref_router.closest_preceding_finger(Arc::clone(&one_elem), 1024);
         println!("{:?}", found_node);
 
         // stringはcloneでディープコピーできるようだ

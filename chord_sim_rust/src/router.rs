@@ -405,13 +405,13 @@ pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
 */
 
     //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-    pub fn closest_preceding_finger(&self, id : i32) -> ArRmRs<chord_node::ChordNode> {        
+    pub fn closest_preceding_finger(&self, existing_node: ArRmRs<chord_node::ChordNode>, id : i32) -> ArRmRs<chord_node::ChordNode> {        
         // 範囲の広いエントリから探索していく
         // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
         // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         // 順に見ていくようにする
         
-        let exnode_refcell = get_refcell_from_arc_with_locking!(&self.existing_node);
+        let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
         let exnode_ref = get_ref_from_refcell!(exnode_refcell);
 
         let ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
@@ -462,7 +462,7 @@ pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
         // どんなに範囲を狭めても探索対象のIDを超えてしまうノードしか存在しなかった場合
         // 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という
         // ことになる
-        return Arc::clone(&self.existing_node);
+        return Arc::clone(&existing_node);
     }
 
 /*

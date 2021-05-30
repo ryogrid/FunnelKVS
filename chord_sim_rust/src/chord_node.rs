@@ -543,28 +543,24 @@ pub struct ChordNode {
 }
 
 /*
-#[derive(Debug)]
-pub struct ChordNode {
-    pub node_info : ArRmRs<node_info::NodeInfo>,
-    pub data_store : ArRmRs<data_store::DataStore>,
-    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
-    pub router : ArRmRs<router::Router>,
-    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
-    pub endpoints : ArRmRs<endpoints::Endpoints>,
-    // シミュレーション時のみ必要なフィールド（実システムでは不要）
-    pub is_alive : AtomicBool,
-    // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
-    // 大本から呼び出されないようにするためのフラグ
-    pub is_join_op_finished : AtomicBool
-}
-*/
-
-/*
 use std::ptr;
 use std::alloc::{alloc, dealloc, Layout};
 */
 
 impl ChordNode {
+
+    pub fn new() -> ChordNode {
+        ChordNode {
+            node_info: ArRmRs_new!(node_info::NodeInfo::new()),
+            data_store: ArRmRs_new!(data_store::DataStore::new()),
+            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
+            router: ArRmRs_new!(router::Router::new()),
+            tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
+            endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
+            is_alive: AtomicBool::new(false),
+            is_join_op_finished: AtomicBool::new(false)
+        }
+    }
 
     //検証用の仮のコンストラクタ
     pub fn powerful_new() -> ArRmRs<ChordNode> {
@@ -651,23 +647,8 @@ impl ChordNode {
             dealloc(p6, layout6);
         }
 */        
-        let node = 
-        Arc::new(
-        const_reentrant_mutex(
-            RefCell::new(
-                        ChordNode {
-                        node_info: ArRmRs_new!(node_info::NodeInfo::new()),
-                        data_store: ArRmRs_new!(data_store::DataStore::new()),
-                        stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
-                        router: ArRmRs_new!(router::Router::new()),
-                        tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
-                        endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
-                        is_alive: AtomicBool::new(false),
-                        is_join_op_finished: AtomicBool::new(false)
-                    }
-                )
-            )
-        );
+
+        let node = ArRmRs_new!(Self::new());
         let cn_refcell = get_refcell_from_arc_with_locking!(node);
         let mut cn_refmut = get_refmut_from_refcell!(cn_refcell);        
 

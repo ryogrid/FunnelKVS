@@ -594,7 +594,7 @@ macro_rules! ArRmRs_new {
     );    
 }
 
-use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc};
+use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc, thread};
 use std::cell::RefMut;
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
@@ -633,6 +633,7 @@ fn get_a_random_node() -> ArRmRs<chord_node::ChordNode>{
     let rand_val = chord_util::get_rnd_int_with_limit(tmp_vec.len() as i32);
     let node_arc = tmp_vec.get(rand_val as usize);
     let ret = Arc::clone(*(node_arc.unwrap()));
+
     return ret;
 }
 
@@ -648,6 +649,93 @@ fn get_node_from_map(key: &String) -> ArRmRs<chord_node::ChordNode>{
     let gd_ref = get_ref_from_refcell!(gd_refcell);
     let node_arc = gd_ref.all_node_dict.get(key).unwrap().clone();
     return Arc::clone(&node_arc);
+}
+
+fn ftable_mod_and_search_th(){
+    loop{
+        println!("thread-{:?}", thread::current().id());
+
+        {
+            // 新たなChordNodeを生成し all_node_dictに追加し、target_node のfinger_table
+            // の適当なインデックスに対応する NodeInfo を設定する
+
+            let new_node_id = chord_util::get_rnd_int_with_limit(gval::ID_MAX);
+            let new_node_address = new_node_id.to_string();
+
+            let mut new_node = chord_node::ChordNode::new();
+            new_node.is_join_op_finished.store(true, Ordering::Relaxed);
+
+            let cloned_new_node_info: node_info::NodeInfo;
+            {
+                let new_node_info_refcell = get_refcell_from_arc_with_locking!(new_node.node_info);
+                let new_node_info_mutref = get_refmut_from_refcell!(new_node_info_refcell);
+                new_node_info_mutref.node_id = new_node_id;
+                // new_nodeのnode_infoをディープコピーしたオブジェクトを生成しておく
+                cloned_new_node_info = new_node_info_mutref.clone();
+            }
+
+
+
+            let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+            // 新たに生成したChordNodeを node_id を string としたものをキーに
+            // all_node_dictに追加する
+            {
+                let gd_refmut = get_refmut_from_refcell!(gd_refcell);
+                gd_refmut.all_node_dict.insert(
+                    new_node_address,
+                    ArRmRs_new!(new_node)
+                );
+            }
+
+            println!("before get_a_random_node");
+
+            // finger_tableの更新と、finger_tableの探索を行うノード
+            let target_node_arrmrs = get_a_random_node();
+
+            println!("after get_a_random_node");
+
+            let target_node_refcell = get_refcell_from_arc_with_locking!(target_node_arrmrs);
+            let target_node_ref = get_ref_from_refcell!(target_node_refcell);
+
+            let ninfo_refcell = get_refcell_from_arc_with_locking!(target_node_ref.node_info);
+            let ninfo_ref = get_ref_from_refcell!(ninfo_refcell);
+
+            let ftable_refcell = get_refcell_from_arc_with_locking!(ninfo_ref.finger_table);
+            {
+                let ftable_refmut = get_refmut_from_refcell!(ftable_refcell);
+                // target_node の fingerテーブルの適当な要素を更新
+                let ftable_len = ftable_refmut.len() as i32;
+
+                ftable_refmut[chord_util::get_rnd_int_with_limit(ftable_len) as usize] = Some(cloned_new_node_info);
+
+                // ftable_refmutを有効なままにすると、後続の処理の内容によってはborrowの際にpanicを生じさせてしまうため
+                // ここで無効にする
+            }
+
+            let target_node_router_refcell = get_refcell_from_arc_with_locking!(target_node_ref.router);
+            let target_node_router_ref = get_ref_from_refcell!(target_node_router_refcell);
+
+            let found_node_arc = target_node_router_ref.closest_preceding_finger(Arc::clone(&target_node_arrmrs), chord_util::get_rnd_int_with_limit(gval::ID_MAX));
+            let found_node_refcell = get_refcell_from_arc_with_locking!(found_node_arc);
+            let found_node_ref = get_ref_from_refcell!(found_node_refcell);
+
+            // TODO: 以下のprintlnを実行するとクラッシュして落ちる
+            //       おそらくだが、NodeInfoの再帰的な構造に対する対処をせずにcloneを用いたか、そもそもの構造によって
+            //       よって無限に参照先を追いかけるというようなことが起きているものと思われる
+            //       error: process didn't exit successfully: `target\debug\chord_sim_rust.exe`
+            //       (exit code: 0xc00000fd, STATUS_STACK_OVERFLOW)
+            // println!("{:?}", found_node_ref);
+
+            let found_node_info_refcell = get_refcell_from_arc_with_locking!(found_node_ref.node_info);
+            let found_node_info_ref = get_ref_from_refcell!(found_node_info_refcell);
+            println!{"node id: {:?}", found_node_info_ref.node_id};
+        
+        // 無効化および解放されていない参照やリソースを全てここで始末する
+        }
+
+        // ロックや可変参照を持たない状態になったので1秒間 sleep して他のスレッドが動作できるようにする
+        std::thread::sleep(std::time::Duration::from_millis(1000));        
+    }
 }
 
 fn example_th() {
@@ -763,19 +851,19 @@ fn main() {
     }
 */
 
-/*
+
     // finger_table を触るコードを実際のコードを模してマルチスレッドで動かしてみる
     let mut thread_handles = vec![];
     // thead-1
-    thread_handles.push(std::thread::spawn(example_th));
+    thread_handles.push(std::thread::spawn(ftable_mod_and_search_th));
     // thead-2
-    thread_handles.push(std::thread::spawn(example_th));
+    thread_handles.push(std::thread::spawn(ftable_mod_and_search_th));
 
     // スレッドの処理終了の待ち合わせ
     for handle in thread_handles {
         handle.join().unwrap();
     }
-*/
+
 
 /*
     for dummy in 1..21{

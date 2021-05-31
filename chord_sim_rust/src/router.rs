@@ -181,7 +181,7 @@ use std::time::Duration;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
-use crate::chord_node;
+use crate::chord_node::{self, ChordNode};
 use crate::node_info;
 use crate::chord_util;
 use crate::stabilizer;
@@ -255,35 +255,46 @@ impl Router {
             self.existing_node.node_info.lock_of_succ_infos.release()
 */
 
-/*
 // id(int)　の前で一番近い位置に存在するノードを探索する
-pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
-    let n_dash_refcell = get_refcell_from_arc_with_locking!(self.existing_node);
-    let n_dash = get_ref_from_refcell!(n_dash_refcell);
+pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id: i32) -> ArRmRs<chord_node::ChordNode> {
+    let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
+    let exnode_ref = get_ref_from_refcell!(exnode_refcell);
 
-    // 下のループに入るまで、n_dashはself.existing_nodeに対応するノードである点に注意
-    chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(&(n_dash.node_info))).as_str()));
+    let exnode_ninfo_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
+    let exnode_ninfo_ref = get_ref_from_refcell!(exnode_ninfo_refcell);
+
+    let exnode_ft_refcell = get_refcell_from_arc_with_locking!(exnode_ninfo_ref.finger_table);
+    let exnode_ft_ref = get_ref_from_refcell!(exnode_ft_refcell);
+
+    let succ_list_refcell = get_refcell_from_arc_with_locking!(exnode_ninfo_ref.successor_info_list);
+    let succ_list_ref = get_ref_from_refcell!(succ_list_refcell);
+
+    let n_dash = exnode_ref;
+    let n_dash_ninfo = exnode_ninfo_ref;
+    let ndash_succ_list_elem0 = succ_list_ref.get(0).unwrap();
+
+    chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ninfo_ref)).as_str()));
 
     //if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval::LOCK_ACQUIRE_TIMEOUT) == false {
 
-    let ftable_ref = match (n_dash.node_info.successor_info_list.as_ref()).borrow().
-        try_lock_for(Duration::from_millis(gval::LOCK_ACQUIRE_TIMEOUT as u64)) {
-        Some(node_info_gurd) => {
-            &*node_info_gurd
-        },
-        None => {
-            // 最初の n_dash を返してしまい、find_predecessorは失敗したと判断させる
-            chord_util::dprint(&("find_predecessor_1_1,".to_string() + chord_util::gen_debug_str_of_node(Some(&(n_dash.node_info))).as_str() + ","
-                         + "LOCK_ACQUIRE_TIMEOUT"));
-            return Arc::clone(&self.existing_node);
-        }
-    };
+    // let ftable_ref = match (n_dash.node_info.successor_info_list.as_ref()).borrow().
+    //         try_lock_for(Duration::from_millis(gval::LOCK_ACQUIRE_TIMEOUT as u64)) {            
+    //     Some(node_info_gurd) => {
+    //         &*node_info_gurd
+    //     },
+    //     None => {
+    //         // 最初の n_dash を返してしまい、find_predecessorは失敗したと判断させる
+    //         chord_util::dprint(&("find_predecessor_1_1,".to_string() + chord_util::gen_debug_str_of_node(Some(&(n_dash.node_info))).as_str() + ","
+    //                      + "LOCK_ACQUIRE_TIMEOUT"));
+    //         return Arc::clone(&existing_node);
+    //     }
+    // };
 
     // n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
     // TODO: direct access to node_id and successor_info_list of n_dash at find_predecessor
-    while !chord_util::exist_between_two_nodes_right_mawari(n_dash.node_info.node_id, n_dash.node_info.successor_info_list[0].node_id, id) {
+    while !chord_util::exist_between_two_nodes_right_mawari(n_dash_ninfo.node_id, n_dash_ninfo.successor_info_list[0].node_id, id) {
         // TODO: x direct access to node_info of n_dash at find_predecessor
-        chord_util::dprint("find_predecessor_2," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+        chord_util::dprint("find_predecessor_2," + chord_util::gen_debug_str_of_node(existing_node.node_info) + ","
                             + chord_util::gen_debug_str_of_node(n_dash.node_info));
         // TODO: closest_preceding_finger call at find_predecessor
         let n_dash_found = n_dash.endpoints.grpc__closest_preceding_finger(id);
@@ -294,7 +305,7 @@ pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
             // 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
             // なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
             // TODO: x direct access to node_info of n_dash at find_predecessor
-            chord_util::dprint("find_predecessor_3," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+            chord_util::dprint("find_predecessor_3," + chord_util::gen_debug_str_of_node(existing_node.node_info) + ","
                                 + chord_util::gen_debug_str_of_node(n_dash.node_info));
             return n_dash_found;
         }
@@ -302,10 +313,10 @@ pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
         // closelst_preceding_finger は id を通り越してしまったノードは返さない
         // という前提の元で以下のチェックを行う
         // TODO: x direct access to node_info of n_dash at find_predecessor
-        let distance_old = chord_util::calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash.node_info.node_id);
+        let distance_old = chord_util::calc_distance_between_nodes_right_mawari(existing_node.node_info.node_id, n_dash.node_info.node_id);
         // TODO: x direct access to node_info of n_dash_found at find_predecessor
-        let distance_found = chord_util::calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, n_dash_found.node_info.node_id);
-        let distance_data_id = chord_util::calc_distance_between_nodes_right_mawari(self.existing_node.node_info.node_id, id);
+        let distance_found = chord_util::calc_distance_between_nodes_right_mawari(existing_node.node_info.node_id, n_dash_found.node_info.node_id);
+        let distance_data_id = chord_util::calc_distance_between_nodes_right_mawari(existing_node.node_info.node_id, id);
         if distance_found < distance_old && !(distance_old >= distance_data_id) {
             // 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
             // 自ノードからはより遠い位置の値になっていくということのはずである
@@ -316,14 +327,14 @@ pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
             // 探索対象のデータのid を通り越すことは無い）
 
             // TODO: x direct access to node_info of n_dash at find_predecessor
-            chord_util::dprint("find_predecessor_4," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+            chord_util::dprint("find_predecessor_4," + chord_util::gen_debug_str_of_node(existing_node.node_info) + ","
                                 + chord_util::gen_debug_str_of_node(n_dash.node_info));
 
             return n_dash;
         }
 
         // TODO: x direct access to node_info of n_dash and n_dash_found at find_predecessor
-        chord_util::dprint("find_predecessor_5_n_dash_updated," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+        chord_util::dprint("find_predecessor_5_n_dash_updated," + chord_util::gen_debug_str_of_node(existing_node.node_info) + ","
                             + chord_util::gen_debug_str_of_node(n_dash.node_info) + "->"
                             + chord_util::gen_debug_str_of_node(n_dash_found.node_info));
 
@@ -334,7 +345,7 @@ pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
 
     return n_dash;
 }
-*/
+
 
 /*
     # id(int)　の前で一番近い位置に存在するノードを探索する
@@ -404,13 +415,15 @@ pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
         return n_dash
 */
 
+
     //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-    pub fn closest_preceding_finger(&self, existing_node: ArRmRs<chord_node::ChordNode>, id : i32) -> ArRmRs<chord_node::ChordNode> {        
+    // ni_ref -> existing_nodeのもの, ft_ref -> existing_nodeのもの
+    pub fn closest_preceding_finger(&self, ni_ref: &node_info::NodeInfo, ft_ref : &Vec<Option<node_info::NodeInfo>>, id : i32) -> ArRmRs<chord_node::ChordNode> {        
         // 範囲の広いエントリから探索していく
         // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
         // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         // 順に見ていくようにする
-        
+/*        
         let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
         let exnode_ref = get_ref_from_refcell!(exnode_refcell);
 
@@ -419,7 +432,7 @@ pub fn find_predecessor(&self, id: i32) -> ArRmRs<chord_node::ChordNode> {
 
         let ft_refcell = get_refcell_from_arc_with_locking!(ni_ref.finger_table);
         let ft_ref = get_ref_from_refcell!(ft_refcell);
-
+*/
         for node_info in ft_ref.iter().rev() {
             // 注: Noneなエントリも存在し得る
             let conved_node_info = match node_info {

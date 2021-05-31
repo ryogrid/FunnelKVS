@@ -651,6 +651,9 @@ fn get_node_from_map(key: &String) -> ArRmRs<chord_node::ChordNode>{
     return Arc::clone(&node_arc);
 }
 
+/*
+// closest_preceding_finger の定義が変わった対応をしないとエラーになるので
+// コメントアウトしておく
 fn ftable_mod_and_search_th(){
     loop{
         println!("thread-{:?}", thread::current().id());
@@ -737,6 +740,7 @@ fn ftable_mod_and_search_th(){
         std::thread::sleep(std::time::Duration::from_millis(1000));        
     }
 }
+*/
 
 fn example_th() {
     loop{
@@ -798,7 +802,7 @@ fn main() {
         println!("{:?}", refmut_kv);
     }
 
-
+/*
     // HashMapを操作している処理のブロック
     {
 // all_node_dictのHashMapが格納する要素のvalueの型をKeyValue型からChordNode型に変更した結果
@@ -834,7 +838,7 @@ fn main() {
         // stringはcloneでディープコピーできるようだ
         let _cloned_string = "clone_base".to_string().clone();
     }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -851,7 +855,7 @@ fn main() {
     }
 */
 
-
+/*
     // finger_table を触るコードを実際のコードを模してマルチスレッドで動かしてみる
     let mut thread_handles = vec![];
     // thead-1
@@ -863,7 +867,7 @@ fn main() {
     for handle in thread_handles {
         handle.join().unwrap();
     }
-
+*/
 
 /*
     for dummy in 1..21{

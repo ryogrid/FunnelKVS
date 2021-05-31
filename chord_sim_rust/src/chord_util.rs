@@ -610,6 +610,8 @@ def dprint(cls, print_str : str, flush=False):
     print(str(datetime.datetime.now()) + "," + print_str, flush=flush)
 */
 
+// TODO: (rust)将来的にはNodeInfoのロックを保持し続けなくて済むように出力に必要な要素を各々引数に渡す形に
+//             する必要がありそう
 pub fn gen_debug_str_of_node(node_info : Option<&node_info::NodeInfo>) -> String {
     let casted_info = node_info.unwrap();
     return casted_info.born_id.to_string() + &",".to_string() + &format!("{:X}", casted_info.node_id) + &",".to_string()

@@ -273,6 +273,9 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id:
     let n_dash_ninfo = exnode_ninfo_ref;
     let ndash_succ_list_elem0 = succ_list_ref.get(0).unwrap();
 
+    // TODO: refcell と ref の両方をメンバとして持つstructを返すことでロックを保持したまま
+    //       1行の関数呼び出しでArRmRs型でラップしている要素を取り出せるような関数が書けないか試す
+
     chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ninfo_ref)).as_str()));
 
     //if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval::LOCK_ACQUIRE_TIMEOUT) == false {

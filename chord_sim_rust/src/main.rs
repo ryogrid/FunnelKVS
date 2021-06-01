@@ -553,12 +553,13 @@ if __name__ == '__main__':
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 
-/*
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]
+/*
 #[macro_use]
 extern crate rocket;
 */
+
 
 #[macro_use] extern crate lazy_static;
 
@@ -588,18 +589,25 @@ macro_rules! get_ref_from_refcell {
     );
 }
 
+/*
+macro_rules! get_ref_from_arc {
+    ($arc:expr, $val_name1:expr, $let_refcell:stmt, $val_name2:expr, $let_tmp:stmt) => (
+        {
+            $let_refcell;
+            $let_tmp;
+            $val_name2 = ($arc.as_ref()).lock();
+            $val_name1 = &*($val_name2);
+            &$val_name1.borrow();
+        }
+    );
+}
+*/
+
 macro_rules! ArRmRs_new {
     ($wrapped:expr) => (
         Arc::new(const_reentrant_mutex(RefCell::new($wrapped)))
     );    
 }
-
-use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc, thread};
-use std::cell::{RefMut, RefCell, Ref};
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
-use std::io::{stdout, stdin};
-use std::sync::{Mutex, mpsc};
-use std::sync::atomic::Ordering;
 
 pub mod gval;
 pub mod chord_node;
@@ -613,6 +621,12 @@ pub mod endpoints;
 
 type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
+use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc, thread};
+use std::cell::{RefMut, RefCell, Ref};
+use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
+use std::io::{stdout, stdin};
+use std::sync::{Mutex, mpsc};
+use std::sync::atomic::Ordering;
 
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノード
@@ -800,6 +814,8 @@ fn main() {
         refmut_kv.value_data ="yabai".to_string();
         println!("{:?}", refmut_kv);
     }
+
+    //let gd_ref = get_ref_from_arc!(gval::global_datas, gd_refcell, let gd_refcell:&RefCell<gval::GlobalDatas>, gd_tmp, let gd_tmp:&ReentrantMutexGuard<RefCell<gval::GlobalDatas>>);
 
 /*
     // HashMapを操作している処理のブロック

@@ -595,8 +595,7 @@ macro_rules! ArRmRs_new {
 }
 
 use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc, thread};
-use std::cell::RefMut;
-use std::cell::RefCell;
+use std::cell::{RefMut, RefCell, Ref};
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use std::io::{stdout, stdin};
 use std::sync::{Mutex, mpsc};
@@ -614,6 +613,7 @@ pub mod endpoints;
 
 type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
+
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノード
 // および、is_join_op_finishedフィールドがFalseでjoin処理が完全に完了していない
@@ -622,9 +622,8 @@ fn get_a_random_node() -> ArRmRs<chord_node::ChordNode>{
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
     let mut tmp_vec = vec![];
-    for (k, v) in &gd_ref.all_node_dict{
+    for (k, v) in &gd_ref.borrow().all_node_dict{
         let node_refcell = get_refcell_from_arc_with_locking!(*v);
-        //let node_refmut = get_refmut_from_refcell!(node_refcell);
         let node_refmut = get_ref_from_refcell!(node_refcell);
         if node_refmut.is_join_op_finished.load(Ordering::Relaxed) == true && node_refmut.is_join_op_finished.load(Ordering::Relaxed) == true {
             tmp_vec.push(v);
@@ -798,7 +797,7 @@ fn main() {
         
         let num = 2u32.pow(10u32);
         refmut_kv.value_data = num.to_string();
-        //mutref_kv.value_data ="yabai".to_string();
+        refmut_kv.value_data ="yabai".to_string();
         println!("{:?}", refmut_kv);
     }
 
@@ -827,10 +826,8 @@ fn main() {
         }
 
         let refcell_node = get_refcell_from_arc_with_locking!(one_elem);
-        let ref_node = get_ref_from_refcell!(refcell_node);
 
-        //mutref_kv.value_data = "after_mod".to_string();
-        let refcell_router = get_refcell_from_arc_with_locking!(ref_node.router);
+        let refcell_router = get_refcell_from_arc_with_locking!(refcell_node.borrow().router);
         let ref_router = get_ref_from_refcell!(refcell_router);
         let found_node = ref_router.closest_preceding_finger(Arc::clone(&one_elem), 1024);
         println!("{:?}", found_node);
@@ -840,6 +837,7 @@ fn main() {
     }
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 /*
     // 複数のスレッドで GLOBAL_DATAS に触ってみる

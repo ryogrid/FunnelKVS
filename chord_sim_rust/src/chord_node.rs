@@ -649,8 +649,8 @@ impl ChordNode {
 */        
 
         let node = ArRmRs_new!(Self::new());
-        let cn_refcell = get_refcell_from_arc_with_locking!(node);
-        let mut cn_refmut = get_refmut_from_refcell!(cn_refcell);        
+        // let cn_refcell = get_refcell_from_arc_with_locking!(node);
+        // let cn_refmut = get_refmut_from_refcell!(cn_refcell);        
 
         return Arc::clone(&node);
     }

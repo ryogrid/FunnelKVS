@@ -658,7 +658,7 @@ pub fn get_node_by_address(address : &String) -> Result<Option<ArRmRs<chord_node
     let callee_ninfo_refcell = get_refcell_from_arc_with_locking!(node_ref.node_info);
     let callee_ninfo_ref = get_ref_from_refcell!(callee_ninfo_refcell);
 
-    if node_ref.is_alive.load(Ordering::Relaxed) == false {
+    if node_refcell.borrow().is_alive.load(Ordering::Relaxed) == false {
         dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(callee_ninfo_ref))));
         return Err(GeneralError::new("".to_string(), ERR_CODE_NODE_IS_DOWNED));
     }

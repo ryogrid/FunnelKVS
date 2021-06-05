@@ -664,7 +664,7 @@ fn ftable_mod_and_search_th(){
             let new_node_id = chord_util::get_rnd_int_with_limit(gval::ID_MAX);
             let new_node_address = new_node_id.to_string();
 
-            let mut new_node = chord_node::ChordNode::new();
+            let new_node = chord_node::ChordNode::new();
             new_node.is_join_op_finished.store(true, Ordering::Relaxed);
 
             let cloned_new_node_info: node_info::NodeInfo;

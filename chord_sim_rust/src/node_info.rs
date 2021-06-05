@@ -143,7 +143,7 @@ impl NodeInfo {
             address_str: "".to_string(),
             born_id : -1,
             successor_info_list : Vec::new(),
-            predecessor_info : Arc::new(None),
+            predecessor_info : Vec::new(),
             finger_table : vec![None; gval::ID_SPACE_BITS as usize]
         }
     }

@@ -123,7 +123,11 @@ pub struct NodeInfo {
     // ように制御する
     pub successor_info_list: Vec<NodeInfo>,
     // join後はNoneになることのないように制御される
-    pub predecessor_info: Arc<Option<NodeInfo>>,
+    // Option<NodeInfo>だと再帰的定義となってコンパイルエラーとなり、
+    // Arc<Option<NodeInfo>> とすると参照アクセスする時にうまくいかないので
+    // 要素数が0もしくは1のVecとして定義する。Noneに対応する状態はlen()の結果が0の時
+    // 格納されている要素自体はimmutableとして扱わなければならないので注意
+    pub predecessor_info: Vec<NodeInfo>,
     // NodeInfoオブジェクトを要素として持つリスト
     // インデックスの小さい方から狭い範囲が格納される形で保持する
     // sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる

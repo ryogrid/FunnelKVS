@@ -664,7 +664,7 @@ fn get_node_from_map(key: &String) -> ArRmRs<chord_node::ChordNode>{
     return Arc::clone(&node_arc);
 }
 
-/*
+
 // closest_preceding_finger の定義が変わった対応をしないとエラーになるので
 // コメントアウトしておく
 fn ftable_mod_and_search_th(){
@@ -713,19 +713,23 @@ fn ftable_mod_and_search_th(){
             let target_node_refcell = get_refcell_from_arc_with_locking!(target_node_arrmrs);
             let target_node_ref = get_ref_from_refcell!(target_node_refcell);
 
-            let ninfo_refcell = get_refcell_from_arc_with_locking!(target_node_ref.node_info);
-            let ninfo_ref = get_ref_from_refcell!(ninfo_refcell);
-
-            let ftable_refcell = get_refcell_from_arc_with_locking!(ninfo_ref.finger_table);
             {
-                let ftable_refmut = get_refmut_from_refcell!(ftable_refcell);
-                // target_node の fingerテーブルの適当な要素を更新
-                let ftable_len = ftable_refmut.len() as i32;
+                let ninfo_refcell = get_refcell_from_arc_with_locking!(target_node_ref.node_info);
+                let ninfo_mutref = get_refmut_from_refcell!(ninfo_refcell);
 
-                ftable_refmut[chord_util::get_rnd_int_with_limit(ftable_len) as usize] = Some(cloned_new_node_info);
+                //let ftable_refcell = get_refcell_from_arc_with_locking!(ninfo_ref.finger_table);
+                {
+                    //let ftable_refmut = get_refmut_from_refcell!(ftable_refcell);
+                    // target_node の fingerテーブルの適当な要素を更新
+                    let ftable_len = ninfo_mutref.finger_table.len() as i32;// ftable_refmut.len() as i32;
 
-                // ftable_refmutを有効なままにすると、後続の処理の内容によってはborrowの際にpanicを生じさせてしまうため
-                // ここで無効にする
+                    ninfo_mutref.finger_table[chord_util::get_rnd_int_with_limit(ftable_len) as usize] = Some(cloned_new_node_info);
+
+                    // ftable_refmutを有効なままにすると、後続の処理の内容によってはborrowの際にpanicを生じさせてしまうため
+                    // ここで無効にする
+                }
+
+                // ninfo_mutrefをここで無効にしておく
             }
 
             let target_node_router_refcell = get_refcell_from_arc_with_locking!(target_node_ref.router);
@@ -753,7 +757,7 @@ fn ftable_mod_and_search_th(){
         std::thread::sleep(std::time::Duration::from_millis(1000));        
     }
 }
-*/
+
 
 fn example_th() {
     loop{
@@ -869,7 +873,7 @@ fn main() {
     }
 */
 
-/*
+
     // finger_table を触るコードを実際のコードを模してマルチスレッドで動かしてみる
     let mut thread_handles = vec![];
     // thead-1
@@ -881,7 +885,7 @@ fn main() {
     for handle in thread_handles {
         handle.join().unwrap();
     }
-*/
+
 
 /*
     for dummy in 1..21{

@@ -531,10 +531,14 @@ need_put_retry_node : Optional['ChordNode'] = None
 pub struct ChordNode {
     pub node_info : ArRmRs<node_info::NodeInfo>,
     pub data_store : ArRmRs<data_store::DataStore>,
-    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
-    pub router : ArRmRs<router::Router>,
     pub tqueue : ArRmRs<taskqueue::TaskQueue>,
-    pub endpoints : ArRmRs<endpoints::Endpoints>,
+//    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
+//    pub router : ArRmRs<router::Router>,
+//    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
+//    pub endpoints : ArRmRs<endpoints::Endpoints>,
+    pub stabilizer : stabilizer::Stabilizer,
+    pub router : router::Router,
+    pub endpoints : endpoints::Endpoints,
     // シミュレーション時のみ必要なフィールド（実システムでは不要）
     pub is_alive : AtomicBool,
     // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
@@ -549,10 +553,13 @@ impl ChordNode {
         ChordNode {
             node_info: ArRmRs_new!(node_info::NodeInfo::new()),
             data_store: ArRmRs_new!(data_store::DataStore::new()),
-            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
-            router: ArRmRs_new!(router::Router::new()),
+//            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
+//            router: ArRmRs_new!(router::Router::new()),
+            stabilizer: stabilizer::Stabilizer::new(),
+            router: router::Router::new(),
             tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
-            endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
+//            endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
+            endpoints: endpoints::Endpoints::new(),
             is_alive: AtomicBool::new(false),
             is_join_op_finished: AtomicBool::new(false)
         }

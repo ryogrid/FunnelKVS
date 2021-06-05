@@ -650,7 +650,7 @@ fn get_node_from_map(key: &String) -> ArRmRs<chord_node::ChordNode>{
     return Arc::clone(&node_arc);
 }
 
-
+/*
 // closest_preceding_finger の定義が変わった対応をしないとエラーになるので
 // コメントアウトしておく
 fn ftable_mod_and_search_th(){
@@ -741,7 +741,7 @@ fn ftable_mod_and_search_th(){
         std::thread::sleep(std::time::Duration::from_millis(1000));        
     }
 }
-
+*/
 
 fn example_th() {
     loop{

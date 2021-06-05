@@ -255,7 +255,7 @@ impl Router {
             self.existing_node.node_info.lock_of_succ_infos.release()
 */
 
-/*
+
 // id(int)　の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id: i32) -> ArRmRs<chord_node::ChordNode> {
     let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
@@ -344,12 +344,25 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id:
 
         // チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
         // ノード情報 n_dash_foundに置き換える
+
+        let n_dash_found_refcell = get_refcell_from_arc_with_locking!(existing_node);
+        let n_dash_found_ref = get_ref_from_refcell!(exnode_refcell);
+    
+        let exnode_ninfo_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
+        let exnode_ninfo_ref = get_ref_from_refcell!(exnode_ninfo_refcell);
+    
+        let exnode_ft_refcell = get_refcell_from_arc_with_locking!(exnode_ninfo_ref.finger_table);
+        let exnode_ft_ref = get_ref_from_refcell!(exnode_ft_refcell);
+    
+        let succ_list_refcell = get_refcell_from_arc_with_locking!(exnode_ninfo_ref.successor_info_list);
+        let succ_list_ref = get_ref_from_refcell!(succ_list_refcell);
+
         n_dash = n_dash_found;
     }
 
     return n_dash;
 }
-*/
+
 
 /*
     # id(int)　の前で一番近い位置に存在するノードを探索する

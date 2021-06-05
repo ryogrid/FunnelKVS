@@ -446,8 +446,6 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id:
         let exnode_ref = get_ref_from_refcell!(exnode_refcell);
         let ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
         let ni_ref = get_ref_from_refcell!(ni_refcell);
-        // let ft_refcell = get_refcell_from_arc_with_locking!(ni_ref.finger_table);
-        // let ft_ref = get_ref_from_refcell!(ft_refcell);
 
         for node_info in ni_ref.finger_table.iter().rev() {
             // 注: Noneなエントリも存在し得る

@@ -542,10 +542,6 @@ pub struct ChordNode {
     pub is_join_op_finished : AtomicBool
 }
 
-/*
-use std::ptr;
-use std::alloc::{alloc, dealloc, Layout};
-*/
 
 impl ChordNode {
 
@@ -564,101 +560,11 @@ impl ChordNode {
 
     //検証用の仮のコンストラクタ
     pub fn powerful_new() -> ArRmRs<ChordNode> {
-/*
-        //let p: *const i32 = ptr::null();
-        let node: ArRmRs<ChordNode>;
-
-        let dummy_ChordNode: &ChordNode;        
-        let dummy_NodeInfo: &Arc<ReentrantMutex<RefCell<node_info::NodeInfo>>>;
-        let dummy_DataStore: &Arc<ReentrantMutex<RefCell<data_store::DataStore>>>;
-        let dummy_Stabilizer: &Arc<ReentrantMutex<RefCell<stabilizer::Stabilizer>>>;
-        let dummy_Router: &Arc<ReentrantMutex<RefCell<router::Router>>>;
-        let dummy_TaskQueue: &Arc<ReentrantMutex<RefCell<taskqueue::TaskQueue>>>;
-        let dummy_Endpoints: &Arc<ReentrantMutex<RefCell<endpoints::Endpoints>>>;
-
-        let layout1: Layout;
-        let layout2: Layout;
-        let layout3: Layout;
-        let layout4: Layout;
-        let layout5: Layout;
-        let layout6: Layout;
-
-        let p1: *mut u8;
-        let p2: *mut u8;
-        let p3: *mut u8;
-        let p4: *mut u8;
-        let p5: *mut u8;
-        let p6: *mut u8;
-
-        let cn: ChordNode;
-
-        unsafe{
-            layout1 = Layout::new::<Arc<ReentrantMutex<RefCell<node_info::NodeInfo>>>>();
-            p1 = alloc(layout1);
-            layout2 = Layout::new::<Arc<ReentrantMutex<RefCell<data_store::DataStore>>>>();
-            p2 = alloc(layout1);
-            layout3 = Layout::new::<Arc<ReentrantMutex<RefCell<stabilizer::Stabilizer>>>>();
-            p3 = alloc(layout1);
-            layout4 = Layout::new::<Arc<ReentrantMutex<RefCell<router::Router>>>>();
-            p4 = alloc(layout1);
-            layout5 = Layout::new::<Arc<ReentrantMutex<RefCell<taskqueue::TaskQueue>>>>();
-            p5 = alloc(layout1);
-            layout6 = Layout::new::<Arc<ReentrantMutex<RefCell<endpoints::Endpoints>>>>();
-            p6 = alloc(layout1);                                                
-
-            let dummy_NodeInfo = &*(p1 as *const Arc<ReentrantMutex<RefCell<node_info::NodeInfo>>>);
-            let dummy_DataStore = &*(p2 as *const Arc<ReentrantMutex<RefCell<data_store::DataStore>>>);
-            let dummy_Stabilizer = &*(p3 as *const Arc<ReentrantMutex<RefCell<stabilizer::Stabilizer>>>);
-            let dummy_Router = &*(p4 as *const Arc<ReentrantMutex<RefCell<router::Router>>>);
-            let dummy_TaskQueue = &*(p5 as *const Arc<ReentrantMutex<RefCell<taskqueue::TaskQueue>>>);
-            let dummy_Endpoints = &*(p6 as *const Arc<ReentrantMutex<RefCell<endpoints::Endpoints>>>);
-
-            cn = ChordNode {
-                node_info: Arc::clone(dummy_NodeInfo),
-                data_store: Arc::clone(dummy_DataStore),
-                stabilizer: Arc::clone(dummy_Stabilizer),
-                router: Arc::clone(dummy_Router),
-                tqueue: Arc::clone(dummy_TaskQueue),
-                endpoints: Arc::clone(dummy_Endpoints),
-                is_alive: AtomicBool::new(false),
-                is_join_op_finished: AtomicBool::new(false)
-            };
-
-        }
-
-        node = Arc::new(const_reentrant_mutex(RefCell::new(cn)));        
-
-        println!("0");
-        println!("1");
-        println!("2");
-
-        let cn_refcell = get_refcell_from_arc_with_locking!(node);
-        let cn_refmut = get_refmut_from_refcell!(cn_refcell);
-
-        println!("3");
-        println!("4");
-
-        unsafe{
-            dealloc(p1, layout1);
-            dealloc(p2, layout2);
-            dealloc(p3, layout3);
-            dealloc(p4, layout4);
-            dealloc(p5, layout5);
-            dealloc(p6, layout6);
-        }
-*/        
-
         let node = ArRmRs_new!(Self::new());
-        // let cn_refcell = get_refcell_from_arc_with_locking!(node);
-        // let cn_refmut = get_refmut_from_refcell!(cn_refcell);        
 
         return Arc::clone(&node);
     }
 
-/*
-    pub fn new(key : Option<String>, value : String) -> ChordNode {
-        //let new_obj = ChordNode {node_info : NodeInfo{}, data_store: DataStore{}, stabilizer : Stabilizer{}, router: Router{}, tqueue : TaskQueue{}, endpoints : Endpoints{}};
-*/
 /*
         gval.already_born_node_num += 1
         // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する

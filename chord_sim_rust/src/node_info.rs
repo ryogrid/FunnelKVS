@@ -123,7 +123,6 @@ pub struct NodeInfo {
     // ように制御する
     pub successor_info_list: Vec<NodeInfo>,
     // join後はNoneになることのないように制御される
-    //predecessor_info: Option<&'static NodeInfo>,
     pub predecessor_info: Arc<Option<NodeInfo>>,
     // NodeInfoオブジェクトを要素として持つリスト
     // インデックスの小さい方から狭い範囲が格納される形で保持する
@@ -135,9 +134,6 @@ pub struct NodeInfo {
 
 impl NodeInfo {
     pub fn new() -> NodeInfo {
-        //let si_list = ArRmRs_new!(Vec::new());
-        //let pred_info = Arc::new(const_reentrant_mutex(None));
-        //let ftable = ArRmRs_new!(vec![None; gval::ID_SPACE_BITS as usize]);
         NodeInfo {
             node_id : -1,
             address_str: "".to_string(),

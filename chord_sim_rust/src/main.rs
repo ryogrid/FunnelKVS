@@ -589,20 +589,6 @@ macro_rules! get_ref_from_refcell {
     );
 }
 
-/*
-macro_rules! get_ref_from_arc {
-    ($arc:expr, $val_name1:expr, $let_refcell:stmt, $val_name2:expr, $let_tmp:stmt) => (
-        {
-            $let_refcell;
-            $let_tmp;
-            $val_name2 = ($arc.as_ref()).lock();
-            $val_name1 = &*($val_name2);
-            &$val_name1.borrow();
-        }
-    );
-}
-*/
-
 macro_rules! ArRmRs_new {
     ($wrapped:expr) => (
         Arc::new(const_reentrant_mutex(RefCell::new($wrapped)))
@@ -717,9 +703,7 @@ fn ftable_mod_and_search_th(){
                 let ninfo_refcell = get_refcell_from_arc_with_locking!(target_node_ref.node_info);
                 let ninfo_mutref = get_refmut_from_refcell!(ninfo_refcell);
 
-                //let ftable_refcell = get_refcell_from_arc_with_locking!(ninfo_ref.finger_table);
                 {
-                    //let ftable_refmut = get_refmut_from_refcell!(ftable_refcell);
                     // target_node の fingerテーブルの適当な要素を更新
                     let ftable_len = ninfo_mutref.finger_table.len() as i32;// ftable_refmut.len() as i32;
 
@@ -873,7 +857,7 @@ fn main() {
     }
 */
 
-
+/*
     // finger_table を触るコードを実際のコードを模してマルチスレッドで動かしてみる
     let mut thread_handles = vec![];
     // thead-1
@@ -885,7 +869,7 @@ fn main() {
     for handle in thread_handles {
         handle.join().unwrap();
     }
-
+*/
 
 /*
     for dummy in 1..21{

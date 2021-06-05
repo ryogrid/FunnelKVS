@@ -50,12 +50,12 @@ pub const JOIN_PARTIAL : &str = "join_partial";
 #[derive(Debug, Clone)]
 pub struct TaskQueue {
 //    pub existing_node : ArRmRs<chord_node::ChordNode>,
-    pub tqueue : ArRmRs<Vec<String>>
+    pub tqueue : Vec<String>
 }
 
 impl TaskQueue {
     pub fn new() -> TaskQueue {
-        let tq = ArRmRs_new!(Vec::new());
+        let tq = Vec::new();
         TaskQueue {tqueue: tq}
     }
 }

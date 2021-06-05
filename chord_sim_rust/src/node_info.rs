@@ -121,30 +121,26 @@ pub struct NodeInfo {
     //
     // 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
     // ように制御する
-    pub successor_info_list: ArRmRs<Vec<NodeInfo>>,
+    pub successor_info_list: Vec<NodeInfo>,
     // join後はNoneになることのないように制御される
-    //predecessor_info: Option<&'static NodeInfo>,
-    pub predecessor_info: Arc<ReentrantMutex<Option<NodeInfo>>>,
+    pub predecessor_info: Arc<Option<NodeInfo>>,
     // NodeInfoオブジェクトを要素として持つリスト
     // インデックスの小さい方から狭い範囲が格納される形で保持する
     // sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
     // TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
     
-    pub finger_table: ArRmRs<Vec<Option<NodeInfo>>>, // = [None] * gval.ID_SPACE_BITS
+    pub finger_table: Vec<Option<NodeInfo>>, // = [None] * gval.ID_SPACE_BITS
 }
 
 impl NodeInfo {
     pub fn new() -> NodeInfo {
-        let si_list = ArRmRs_new!(Vec::new());
-        let pred_info = Arc::new(const_reentrant_mutex(None));
-        let ftable = ArRmRs_new!(vec![None; gval::ID_SPACE_BITS as usize]);
         NodeInfo {
             node_id : -1,
             address_str: "".to_string(),
             born_id : -1,
-            successor_info_list : si_list,
-            predecessor_info : pred_info,
-            finger_table : ftable
+            successor_info_list : Vec::new(),
+            predecessor_info : Arc::new(None),
+            finger_table : vec![None; gval::ID_SPACE_BITS as usize]
         }
     }
 }

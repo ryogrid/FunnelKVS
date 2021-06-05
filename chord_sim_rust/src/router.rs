@@ -255,7 +255,7 @@ impl Router {
             self.existing_node.node_info.lock_of_succ_infos.release()
 */
 
-
+/*
 // id(int)　の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id: i32) -> ArRmRs<chord_node::ChordNode> {
     let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
@@ -362,7 +362,7 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id:
 
     return n_dash;
 }
-
+*/
 
 /*
     # id(int)　の前で一番近い位置に存在するノードを探索する
@@ -432,23 +432,22 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id:
         return n_dash
 */
 
-/*
+
     //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
     // ni_ref -> existing_nodeのもの, ft_ref -> existing_nodeのもの
-    pub fn closest_preceding_finger(&self, ni_ref: &node_info::NodeInfo, ft_ref : &Vec<Option<node_info::NodeInfo>>, id : i32) -> ArRmRs<chord_node::ChordNode> {        
+    //pub fn closest_preceding_finger(&self, ni_ref: &node_info::NodeInfo, ft_ref : &Vec<Option<node_info::NodeInfo>>, id : i32) -> ArRmRs<chord_node::ChordNode> {        
+    pub fn closest_preceding_finger(&self, existing_node : ArRmRs<chord_node::ChordNode>, id : i32) -> ArRmRs<chord_node::ChordNode> {                
         // 範囲の広いエントリから探索していく
         // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
         // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
         // 順に見ていくようにする
         
-        // let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
-        // let exnode_ref = get_ref_from_refcell!(exnode_refcell);
-        // let ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
-        // let ni_ref = get_ref_from_refcell!(ni_refcell);
-        // let ft_refcell = get_refcell_from_arc_with_locking!(ni_ref.finger_table);
-        // let ft_ref = get_ref_from_refcell!(ft_refcell);
+        let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
+        let exnode_ref = get_ref_from_refcell!(exnode_refcell);
+        let ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
+        let ni_ref = get_ref_from_refcell!(ni_refcell);
 
-        for node_info in ft_ref.iter().rev() {
+        for node_info in ni_ref.finger_table.iter().rev() {
             // 注: Noneなエントリも存在し得る
             let conved_node_info = match node_info {
                 None => {
@@ -492,7 +491,7 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, id:
         // ことになる
         return Arc::clone(&existing_node);
     }
-*/
+
 
 /*
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す

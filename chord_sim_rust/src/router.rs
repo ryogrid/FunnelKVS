@@ -200,6 +200,64 @@ impl Router {
         Router {}
     }
 
+    // id（int）で識別されるデータを担当するノードの名前解決を行う
+    // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
+    // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
+    pub fn find_successor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> Result<chord_node::ChordNode, chord_util::GeneralError> {
+        // TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
+        //       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に
+        //       動作せず、パフォーマンスが出ないはず
+
+        // if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+        //     # 失敗させる
+        //     ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+        //                      + "LOCK_ACQUIRE_TIMEOUT")
+        //     return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
+
+        if exnode_ref.is_alive.load(Ordering::Relaxed) == false {
+            // 処理の合間でkillされてしまっていた場合の考慮
+            // 何もしないで終了する
+            chord_util::dprint(&("find_successor_0_5,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                             + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD"));
+            return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_NODE_IS_DOWNED));
+        }
+
+        chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                + chord_util::gen_debug_str_of_data(id).as_str()));
+
+        let n_dash = exnode_ref.router.find_predecessor(Arc::clone(&existing_node), exnode_ni_ref, id);
+
+        if n_dash == None {
+            chord_util::dprint(&("find_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                                + chord_util::gen_debug_str_of_data(id).as_str()));
+            return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
+        }
+
+
+        // TODO: x direct access to node_info of n_dash at find_successor
+        chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                            + chord_util::gen_debug_str_of_node(n_dash.node_info).as_str() + ","
+                            + chord_util::gen_debug_str_of_node(Some(&exnode_ni_ref.successor_info_list[0])).as_str() + ","
+                            + chord_util::gen_debug_str_of_data(id).as_str()));
+
+/*                            
+        // 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
+        // TODO: direct access to successor_info_list of n_dash at find_successor
+        let ret = ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str);
+        if(ret.is_ok){
+            let n_dash_successor : 'ChordNode' = cast('ChordNode', ret.result);
+            return Ok(n_dash_successor);
+        }else{ // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+            // ここでは何も対処しない
+            ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(
+                self.existing_node.node_info) + ","
+                                + ChordUtil.gen_debug_str_of_data(id));
+            return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
+        }
+*/        
+    }
+
+
 /*
     # id（int）で識別されるデータを担当するノードの名前解決を行う
     # Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる

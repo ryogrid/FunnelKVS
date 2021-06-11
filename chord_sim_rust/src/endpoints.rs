@@ -91,7 +91,7 @@ class Endpoints:
         return ret_info
 */
 use std::sync::Arc;
-use std::cell::RefCell;
+use std::cell::{RefCell, Ref};
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
@@ -113,5 +113,9 @@ pub struct Endpoints {
 impl Endpoints {
     pub fn new() -> Endpoints {
         Endpoints {}
+    }
+
+    pub fn grpc__closest_preceding_finger(&self, existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> ArRmRs<chord_node::ChordNode> {
+        return exnode_ref.router.closest_preceding_finger(existing_node, exnode_ni_ref, id);
     }
 }

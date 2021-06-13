@@ -813,7 +813,10 @@ class Stabilizer:
 */
 
 use std::sync::Arc;
-use std::cell::RefCell;
+use std::cell::{RefMut, RefCell, Ref};
+use std::sync::atomic::Ordering;
+use std::borrow::{Borrow, BorrowMut};
+
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
@@ -854,4 +857,141 @@ impl Stabilizer {
     pub fn new() -> Stabilizer {
         Stabilizer {}
     }
+
+    // FingerTableに関するstabilize処理を行う
+    // 一回の呼び出しで1エントリを更新する
+    // FingerTableのエントリはこの呼び出しによって埋まっていく
+    // TODO: InternalExp at stabilize_finger_table
+    // TODO: 注 -> (rust) このメソッドの呼び出し時はexisting_nodeのnode_infoの参照は存在しない状態としておくこと
+    pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, idx: i32) -> Result<bool, chord_util::GeneralError> {
+        // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+        //     ChordUtil.dprint("stabilize_finger_table_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+        //                      + "LOCK_ACQUIRE_TIMEOUT")
+        //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+        // if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+        //     self.existing_node.node_info.lock_of_pred_info.release()
+        //     ChordUtil.dprint("stabilize_finger_table_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+        //                      + "LOCK_ACQUIRE_TIMEOUT")
+        //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+        let find_rslt: Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError>;
+        let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
+        {
+            let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
+
+            if exnode_ref.is_alive.load(Ordering::Relaxed) == false {
+                // 処理の合間でkillされてしまっていた場合の考慮
+                // 何もしないで終了する
+                chord_util::dprint(&("stabilize_finger_table_0_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                                + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD"));
+                return Ok(true);
+            }
+
+            //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
+
+            chord_util::dprint(&("stabilize_finger_table_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str()));
+
+            // FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
+            // 担当するノードに最も近いノードが格納される
+            let update_id = chord_util::overflow_check_and_conv(exnode_ni_ref.node_id + 2i32.pow(idx as u32));
+            find_rslt = exnode_ref.router.find_successor(existing_node, exnode_ref, exnode_ni_ref, update_id);
+        }
+
+        let exnode_ni_refmut = get_refmut_from_refcell!(exnode_ni_refcell);        
+        match find_rslt {
+            Err(err_code) => {
+                // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_Code || ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                //  || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+
+                // 適切な担当ノードを得ることができなかった
+                // 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
+                // ことであるので、更新対象のエントリには None を設定しておく
+                exnode_ni_refmut.finger_table[idx as usize] = None;
+                chord_util::dprint(&("stabilize_finger_table_2_5,NODE_IS_DOWNED,".to_string()
+                    + chord_util::gen_debug_str_of_node(Some(exnode_ni_refmut)).as_str()));
+                    
+                return Ok(true);
+            },
+            Ok(found_node_arrmrs) => {
+                // TODO: x direct access to node_info of found_node at stabilize_finger_table
+
+                let found_node_refcell = get_refcell_from_arc_with_locking!(found_node_arrmrs);
+                let found_node_ref = get_ref_from_refcell!(found_node_refcell);
+            
+                let found_node_ni_refcell = get_refcell_from_arc_with_locking!(found_node_ref.node_info);
+                let found_node_ni_ref = get_ref_from_refcell!(found_node_ni_refcell);
+
+                exnode_ni_refmut.finger_table[idx as usize] = Some(node_info::get_partial_deepcopy(found_node_ni_ref));
+
+                // TODO: x direct access to node_info of found_node at stabilize_finger_table
+                chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
+                        + chord_util::gen_debug_str_of_node(Some(exnode_ni_refmut)).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(Some(found_node_ni_ref)).as_str()));
+
+                return Ok(true);
+            }
+        }
+    }  
+/*
+# FingerTableに関するstabilize処理を行う
+# 一回の呼び出しで1エントリを更新する
+# FingerTableのエントリはこの呼び出しによって埋まっていく
+# TODO: InternalExp at stabilize_finger_table
+def stabilize_finger_table(self, idx) -> PResult[bool]:
+    if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+        ChordUtil.dprint("stabilize_finger_table_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                         + "LOCK_ACQUIRE_TIMEOUT")
+        return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+    if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+        self.existing_node.node_info.lock_of_pred_info.release()
+        ChordUtil.dprint("stabilize_finger_table_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                         + "LOCK_ACQUIRE_TIMEOUT")
+        return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+
+    if self.existing_node.is_alive == False:
+        # 処理の合間でkillされてしまっていた場合の考慮
+        # 何もしないで終了する
+        self.existing_node.node_info.lock_of_succ_infos.release()
+        self.existing_node.node_info.lock_of_pred_info.release()
+        if self.existing_node.is_alive == False:
+            ChordUtil.dprint(
+                "stabilize_finger_table_0_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
+            return PResult.Ok(True)
+
+    try:
+        ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
+
+        ChordUtil.dprint("stabilize_finger_table_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info))
+
+        # FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
+        # 担当するノードに最も近いノードが格納される
+        update_id = ChordUtil.overflow_check_and_conv(self.existing_node.node_info.node_id + 2**idx)
+        ret = self.existing_node.router.find_successor(update_id)
+        if (ret.is_ok):
+            found_node : 'ChordNode' = cast('ChordNode', ret.result)
+        else:
+            # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_Code || ret.err_code == ErrorCode.InternalControlFlowException_CODE
+            #  || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+
+            # 適切な担当ノードを得ることができなかった
+            # 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
+            # ことであるので、更新対象のエントリには None を設定しておく
+            self.existing_node.node_info.finger_table[idx] = None
+            ChordUtil.dprint("stabilize_finger_table_2_5,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(
+                self.existing_node.node_info))
+            return PResult.Ok(True)
+
+        # TODO: x direct access to node_info of found_node at stabilize_finger_table
+        self.existing_node.node_info.finger_table[idx] = found_node.node_info.get_partial_deepcopy()
+
+        # TODO: x direct access to node_info of found_node at stabilize_finger_table
+        ChordUtil.dprint("stabilize_finger_table_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                         + ChordUtil.gen_debug_str_of_node(found_node.node_info))
+
+        return PResult.Ok(True)
+    finally:
+        self.existing_node.node_info.lock_of_succ_infos.release()
+        self.existing_node.node_info.lock_of_pred_info.release()
+*/
 }
+

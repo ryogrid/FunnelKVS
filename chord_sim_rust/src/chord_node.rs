@@ -569,7 +569,7 @@ impl ChordNode {
     pub fn powerful_new() -> ArRmRs<ChordNode> {
         let node = ArRmRs_new!(Self::new());
 
-        return Arc::clone(&node);
+        return node;
     }
 
 /*

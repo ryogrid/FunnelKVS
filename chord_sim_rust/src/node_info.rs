@@ -88,7 +88,7 @@ class NodeInfo:
 */
 
 use std::sync::Arc;
-use std::cell::RefCell;
+use std::cell::{RefMut, RefCell, Ref};
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
@@ -148,3 +148,72 @@ impl NodeInfo {
         }
     }
 }
+
+
+// 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
+// ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
+// を返す.
+// 上述の考慮により、コピーした NodeInfoオブジェクト の successor_infoと
+// predecessor_infoは deepcopy の対象ではあるが、それらの中の同名のフィールド
+// にはNoneが設定される. これにより、あるノードがコピーされた NodeInfo を保持
+// した場合、predecessor や successorは辿ることができるが、その先は辿ることが
+// 直接的にはできないことになる（predecessor や successorの ChordNodeオブジェクト
+// を引いてやれば可能）
+// 用途としては、あるノードの node_info を他のノードが取得し保持する際に利用される
+// ことを想定して実装されている.
+pub fn get_partial_deepcopy(orig_node_info: &Ref<NodeInfo>) -> NodeInfo {
+    let mut ret_node_info = NodeInfo::new();
+
+    ret_node_info.node_id = orig_node_info.node_id;
+    ret_node_info.address_str = orig_node_info.address_str.clone();
+    ret_node_info.born_id = orig_node_info.born_id;
+    ret_node_info.successor_info_list = vec![];
+    ret_node_info.predecessor_info = vec![];
+
+    return ret_node_info;
+}
+
+/*
+pub fn get_partial_deepcopy(orig_node_info: &Ref<NodeInfo>) -> ArRmRs<NodeInfo> {
+    let ret_node_info = RefCell::new(NodeInfo::new());
+    {
+        let ret_node_info_refmut = ret_node_info.borrow_mut();
+        ret_node_info_refmut.node_id = orig_node_info.node_id;
+        ret_node_info_refmut.address_str = orig_node_info.address_str;
+        ret_node_info_refmut.born_id = orig_node_info.born_id;
+        ret_node_info_refmut.successor_info_list = vec![];
+        ret_node_info_refmut.predecessor_info = vec![];
+    }
+
+    return Arc::new(const_reentrant_mutex(ret_node_info));
+}
+*/
+
+/*    
+# 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
+# ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
+# を返す.
+# 上述の考慮により、コピーした NodeInfoオブジェクト の successor_infoと
+# predecessor_infoは deepcopy の対象ではあるが、それらの中の同名のフィールド
+# にはNoneが設定される. これにより、あるノードがコピーされた NodeInfo を保持
+# した場合、predecessor や successorは辿ることができるが、その先は辿ることが
+# 直接的にはできないことになる（predecessor や successorの ChordNodeオブジェクト
+# を引いてやれば可能）
+# 用途としては、あるノードの node_info を他のノードが取得し保持する際に利用される
+# ことを想定して実装されている.
+def get_partial_deepcopy(self) -> 'NodeInfo':
+    ret_node_info: NodeInfo = NodeInfo()
+
+    ret_node_info.node_id = copy.copy(self.node_id)
+    ret_node_info.address_str = copy.copy(self.address_str)
+    ret_node_info.born_id = copy.copy(self.born_id)
+    ret_node_info.successor_info_list = []
+    ret_node_info.predecessor_info = None
+
+    # ロック関連のフィールドは本メソッドでコピーすることで生まれた
+    # オブジェクトにおいて利用されることがあったとしても、ロックの
+    # 対象は上記でコピーしているオブジェクトではなく、フィールドそのもの
+    # であるため、コピーの必要はない
+
+    return ret_node_info
+*/

@@ -650,7 +650,7 @@ fn get_node_from_map(key: &String) -> ArRmRs<chord_node::ChordNode>{
     return Arc::clone(&node_arc);
 }
 
-/*
+
 // closest_preceding_finger の定義が変わった対応をしないとエラーになるので
 // コメントアウトしておく
 fn ftable_mod_and_search_th(){
@@ -716,10 +716,11 @@ fn ftable_mod_and_search_th(){
                 // ninfo_mutrefをここで無効にしておく
             }
 
-            let target_node_router_refcell = get_refcell_from_arc_with_locking!(target_node_ref.router);
-            let target_node_router_ref = get_ref_from_refcell!(target_node_router_refcell);
+            let target_node_ninfo_cloned = Arc::clone(&target_node_ref.node_info);
+            let target_node_ninfo_refcell = get_refcell_from_arc_with_locking!(target_node_ninfo_cloned);
+            let target_node_ninfo_ref = get_ref_from_refcell!(target_node_ninfo_refcell);
 
-            let found_node_arc = target_node_router_ref.closest_preceding_finger(Arc::clone(&target_node_arrmrs), chord_util::get_rnd_int_with_limit(gval::ID_MAX));
+            let found_node_arc = target_node_ref.router.closest_preceding_finger(Arc::clone(&target_node_arrmrs), target_node_ninfo_ref, chord_util::get_rnd_int_with_limit(gval::ID_MAX));
             let found_node_refcell = get_refcell_from_arc_with_locking!(found_node_arc);
             let found_node_ref = get_ref_from_refcell!(found_node_refcell);
 
@@ -741,7 +742,7 @@ fn ftable_mod_and_search_th(){
         std::thread::sleep(std::time::Duration::from_millis(1000));        
     }
 }
-*/
+
 
 fn example_th() {
     loop{
@@ -857,7 +858,7 @@ fn main() {
     }
 */
 
-/*
+
     // finger_table を触るコードを実際のコードを模してマルチスレッドで動かしてみる
     let mut thread_handles = vec![];
     // thead-1
@@ -869,7 +870,7 @@ fn main() {
     for handle in thread_handles {
         handle.join().unwrap();
     }
-*/
+
 
 /*
     for dummy in 1..21{

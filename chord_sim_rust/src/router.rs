@@ -247,23 +247,21 @@ impl Router {
                             + chord_util::gen_debug_str_of_node(Some(&exnode_ni_ref.successor_info_list[0])).as_str() + ","
                             + chord_util::gen_debug_str_of_data(id).as_str()));
 
-/*                            
-        // 取得しようとしたノードがダウンしていた場合 AppropriateNodeNotFoundException が raise される
+        
         // TODO: direct access to successor_info_list of n_dash at find_successor
-        let ret = ChordUtil.get_node_by_address(n_dash.node_info.successor_info_list[0].address_str);
-        if(ret.is_ok){
-            let n_dash_successor : 'ChordNode' = cast('ChordNode', ret.result);
-            return Ok(n_dash_successor);
-        }else{ // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-            // ここでは何も対処しない
-            ChordUtil.dprint("find_successor_4,FOUND_NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(
-                self.existing_node.node_info) + ","
-                                + ChordUtil.gen_debug_str_of_data(id));
-            return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
+        match chord_util::get_node_by_address(&n_dash_ninfo.successor_info_list[0].address_str) {
+            Err(err_code) => {
+                // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+                // ここでは何も対処しない
+                chord_util::dprint(&("find_successor_4,FOUND_NODE_IS_DOWNED,".to_string()
+                + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                + chord_util::gen_debug_str_of_data(id).as_str()));
+                return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
+            },
+            Ok(got_node) => {                
+                return Ok(got_node);
+            }
         }
-*/        
-        // TODO: (Rust) dummy. あとで消すこと!
-        return Ok(Arc::clone(&existing_node));
     }
 
 
@@ -520,7 +518,7 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exn
                 let gnba_rslt = chord_util::get_node_by_address(&conved_node_info.address_str);
 
                 match gnba_rslt {
-                    Ok(node_opt) => { return Arc::clone(&node_opt.unwrap());},
+                    Ok(node_opt) => { return Arc::clone(&node_opt);},
                     Err(_err) => {
                         // err.err_code == chord_util::ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM || err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED
                         // ここでは何も対処しない

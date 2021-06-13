@@ -639,31 +639,33 @@ pub fn gen_debug_str_of_data(data_id : i32) -> String {
 //            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
 // TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
 //       ChordNodeオブジェクトを返す get_node_by_address
-pub fn get_node_by_address(address : &String) -> Result<Option<ArRmRs<chord_node::ChordNode>>, GeneralError> {
+pub fn get_node_by_address(address : &String) -> Result<ArRmRs<chord_node::ChordNode>, GeneralError> {
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
 
     let get_result = gd_ref.all_node_dict.get(address);
-    let ret_val = 
+    let ret_val_cloned = 
         match get_result {
             // join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
-            None => return Err(GeneralError::new("".to_string(), ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM)),
-            Some(arc_val) => arc_val,
+            None => { return Err(GeneralError::new("".to_string(), ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM))},
+            Some(arc_val) => Arc::clone(arc_val),
         };
 
+    {
+        let node_refcell = get_refcell_from_arc_with_locking!(ret_val_cloned);
+        let node_ref = get_ref_from_refcell!(node_refcell);
 
-    let node_refcell = get_refcell_from_arc_with_locking!(ret_val);
-    let node_ref = get_ref_from_refcell!(node_refcell);
+        let callee_ninfo_refcell = get_refcell_from_arc_with_locking!(node_ref.node_info);
+        let callee_ninfo_ref = get_ref_from_refcell!(callee_ninfo_refcell);
 
-    let callee_ninfo_refcell = get_refcell_from_arc_with_locking!(node_ref.node_info);
-    let callee_ninfo_ref = get_ref_from_refcell!(callee_ninfo_refcell);
-
-    if node_refcell.borrow().is_alive.load(Ordering::Relaxed) == false {
-        dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(callee_ninfo_ref))));
-        return Err(GeneralError::new("".to_string(), ERR_CODE_NODE_IS_DOWNED));
+        if node_refcell.borrow().is_alive.load(Ordering::Relaxed) == false {
+            dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(callee_ninfo_ref))));
+            return Err(GeneralError::new("".to_string(), ERR_CODE_NODE_IS_DOWNED));
+        }
+        // ret_val_clonedからborrowしたいた参照を無効にする
     }
 
-    return Ok(Some(Arc::clone(ret_val)));
+    return Ok(ret_val_cloned);
 }
 
 /*

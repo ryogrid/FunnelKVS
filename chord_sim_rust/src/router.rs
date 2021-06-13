@@ -203,11 +203,13 @@ impl Router {
     // id（int）で識別されるデータを担当するノードの名前解決を行う
     // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
     // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-    pub fn find_successor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> Result<chord_node::ChordNode, chord_util::GeneralError> {
+    pub fn find_successor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {
         // TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
         //       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に
         //       動作せず、パフォーマンスが出ないはず
 
+        // TODO: 実システム化する際か、シミュレータでもノード丸ごとロックしてしまう実装から触るデータを個別にロックする
+        //       作りの検証を行う場合はこの手のコードを復活させる必要がある
         // if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
         //     # 失敗させる
         //     ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -226,17 +228,22 @@ impl Router {
                 + chord_util::gen_debug_str_of_data(id).as_str()));
 
         let n_dash = exnode_ref.router.find_predecessor(Arc::clone(&existing_node), exnode_ni_ref, id);
+        let n_dash_refcell = get_refcell_from_arc_with_locking!(n_dash);
+        let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
+        let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
+        let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
 
-        if n_dash == None {
-            chord_util::dprint(&("find_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                                + chord_util::gen_debug_str_of_data(id).as_str()));
-            return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
-        }
+        // below comment-outed code has been not needed at porting
+        // if n_dash == None {
+        //     chord_util::dprint(&("find_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+        //                         + chord_util::gen_debug_str_of_data(id).as_str()));
+        //     return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
+        // }
 
 
         // TODO: x direct access to node_info of n_dash at find_successor
         chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(n_dash.node_info).as_str() + ","
+                            + chord_util::gen_debug_str_of_node(Some(n_dash_ninfo)).as_str() + ","
                             + chord_util::gen_debug_str_of_node(Some(&exnode_ni_ref.successor_info_list[0])).as_str() + ","
                             + chord_util::gen_debug_str_of_data(id).as_str()));
 
@@ -255,6 +262,8 @@ impl Router {
             return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
         }
 */        
+        // TODO: (Rust) dummy. あとで消すこと!
+        return Ok(Arc::clone(&existing_node));
     }
 
 

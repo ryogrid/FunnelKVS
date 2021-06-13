@@ -858,7 +858,7 @@ fn main() {
     }
 */
 
-
+/*
     // finger_table を触るコードを実際のコードを模してマルチスレッドで動かしてみる
     let mut thread_handles = vec![];
     // thead-1
@@ -870,7 +870,7 @@ fn main() {
     for handle in thread_handles {
         handle.join().unwrap();
     }
-
+*/
 
 /*
     for dummy in 1..21{

@@ -618,6 +618,10 @@ use std::sync::atomic::Ordering;
 // is_aliveフィールドがFalseとなっているダウン状態となっているノード
 // および、is_join_op_finishedフィールドがFalseでjoin処理が完全に完了していない
 // ノードは返らない
+// TODO: 注 -> (Rust) 何のロックもとっていない状態で終了するので、取得したオブジェクト単位でロックを
+//       とるのであれば、呼び出し元で取得した値のロックをとって利用する形にする必要がある
+//       スレッドが並列動作しないようにさせるのであれば、各スレッドの1回の処理に対応する処理ブロック
+//       がgval::global_datasのロックをとったまま行われるよう記述する必要がある
 fn get_a_random_node() -> ArRmRs<chord_node::ChordNode>{
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
@@ -650,9 +654,7 @@ fn get_node_from_map(key: &String) -> ArRmRs<chord_node::ChordNode>{
     return Arc::clone(&node_arc);
 }
 
-
-// closest_preceding_finger の定義が変わった対応をしないとエラーになるので
-// コメントアウトしておく
+// マルチスレッド動作のテスト用コード（1）
 fn ftable_mod_and_search_th(){
     loop{
         println!("thread-{:?}", thread::current().id());

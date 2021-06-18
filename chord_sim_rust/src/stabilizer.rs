@@ -858,6 +858,117 @@ impl Stabilizer {
         Stabilizer {}
     }
 
+    pub fn join(&self, new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &String){
+        
+    }
+
+/*
+    # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
+    def join(self, node_address : str):
+        with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
+            # 実装上例外は発生しない.
+            # また実システムでもダウンしているノードの情報が与えられることは想定しない
+            #tyukai_node = ChordUtil.get_node_by_address(node_address)
+            tyukai_node = cast('ChordNode', ChordUtil.get_node_by_address(node_address).result)
+            # TODO: x direct access to node_info of tyukai_node at join
+            ChordUtil.dprint("join_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                             + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
+
+            # 仲介ノードに自身のsuccessorになるべきノードを探してもらう
+
+            # TODO: find_successor call at join
+            ret = tyukai_node.endpoints.grpc__find_successor(self.existing_node.node_info.node_id)
+            if (ret.is_ok):
+                successor : 'ChordNode' = cast('ChordNode', ret.result)
+                # リトライは不要なので、本メソッドの呼び出し元がリトライ処理を行うかの判断に用いる
+                # フィールドをリセットしておく
+                Stabilizer.need_join_retry_node = None
+            else:  # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+                # リトライに必要な情報を記録しておく
+                Stabilizer.need_join_retry_node = self.existing_node
+                Stabilizer.need_join_retry_tyukai_node = tyukai_node
+
+                # 自ノードの情報、仲介ノードの情報
+                # TODO: x direct access to node_info of tyukai_node at join
+                ChordUtil.dprint(
+                    "join_2,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
+                return
+
+            # TODO: x direct access to node_info of successor at join
+            self.existing_node.node_info.successor_info_list.append(successor.node_info.get_partial_deepcopy())
+
+            # finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
+            self.existing_node.node_info.finger_table[0] = self.existing_node.node_info.successor_info_list[0].get_partial_deepcopy()
+
+            # TODO: x direct access to node_info of tyukai_node at join
+            if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id:
+                # secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+
+                predecessor = tyukai_node
+
+                # 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
+                # TODO: x direct access to node_info of predecessor at join
+                self.existing_node.node_info.predecessor_info = predecessor.node_info.get_partial_deepcopy()
+
+                tyukai_node.endpoints.grpc__set_routing_infos_force(
+                    self.existing_node.node_info.get_partial_deepcopy(),
+                    self.existing_node.node_info.get_partial_deepcopy(),
+                    self.existing_node.node_info.get_partial_deepcopy()
+                )
+
+                # TODO: x direct access to node_info of tyukai_node at join
+                ChordUtil.dprint("join_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info) + ","
+                                 + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+            else:
+                # successorと、successorノードの情報だけ適切なものとする
+                # TODO: check_predecessor call at join
+                ret2 = successor.endpoints.grpc__check_predecessor(self.existing_node.node_info)
+                if (ret2.is_ok):
+                    pass
+                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                    # リトライに必要な情報を記録しておく
+                    Stabilizer.need_join_retry_node = self.existing_node
+                    Stabilizer.need_join_retry_tyukai_node = tyukai_node
+
+                    # 既に値を設定してしまっている場合を考慮し、内容をリセットしておく
+                    self.existing_node.node_info.successor_info_list = []
+
+                    # 自ノードの情報、仲介ノードの情報
+                    # TODO: x direct access to node_info of tyukai_node at join
+                    ChordUtil.dprint("join_3,RETRY_IS_NEEDED," + ChordUtil.gen_debug_str_of_node(
+                        self.existing_node.node_info) + ","
+                                     + ChordUtil.gen_debug_str_of_node(tyukai_node.node_info))
+                    ChordUtil.dprint(traceback.format_exc())
+                    return PResult.Err(False, cast(int, ret2.err_code))
+
+                # successor_info_listを埋めておく
+                # TODO: pass_successor_list call at join
+                succ_list_of_succ: List[NodeInfo] = successor.endpoints.grpc__pass_successor_list()
+                list_len = len(succ_list_of_succ)
+                for idx in range(0, gval.SUCCESSOR_LIST_NORMAL_LEN - 1):
+                    if idx < list_len:
+                        self.existing_node.node_info.successor_info_list.append(
+                            succ_list_of_succ[idx].get_partial_deepcopy())
+
+            # successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
+
+            # TODO: delegate_my_tantou_data call at join
+            tantou_data_list: List[KeyValue] = successor.endpoints.grpc__delegate_my_tantou_data(
+                self.existing_node.node_info.node_id)
+
+            with self.existing_node.node_info.lock_of_datastore:
+                for key_value in tantou_data_list:
+                    self.existing_node.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data)
+
+            # 残りのレプリカに関する処理は stabilize処理のためのスレッドに別途実行させる
+            self.existing_node.tqueue.append_task(TaskQueue.JOIN_PARTIAL)
+            gval.is_waiting_partial_join_op_exists = True
+
+            ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
+*/
+            
     // FingerTableに関するstabilize処理を行う
     // 一回の呼び出しで1エントリを更新する
     // FingerTableのエントリはこの呼び出しによって埋まっていく

@@ -320,6 +320,7 @@ use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefMut;
 use std::cell::RefCell;
 use std::sync::atomic::Ordering;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rand::Rng;
@@ -421,7 +422,6 @@ impl GeneralError {
     }
 }
 
-
 // 0からlimitより1少ない数までの値の乱数を返す
 pub fn get_rnd_int_with_limit(limit : i32) -> i32{
     let mut rng = rand::thread_rng(); // 乱数生成器の初期化
@@ -443,6 +443,17 @@ pub fn hash_str_to_int(_input_str : &String) -> i32 {
     //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
     let rand_val: i32 = get_rnd_int_with_limit(gval::ID_SPACE_RANGE);
     return rand_val;
+}
+
+pub fn get_unixtime_in_nanos() -> i32{
+    let now = SystemTime::now();
+    let unixtime = now.duration_since(UNIX_EPOCH).expect("back to the future");
+    return unixtime.subsec_nanos() as i32;
+}
+
+// UNIXTIME（ナノ秒精度）にいくつか値を加算した値からアドレス文字列を生成する
+pub fn gen_address_str() -> String{
+    return (get_unixtime_in_nanos() + 10).to_string();
 }
 
 pub fn overflow_check_and_conv(id : i32) -> i32 {

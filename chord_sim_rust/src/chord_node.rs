@@ -472,8 +472,10 @@ class ChordNode:
 */
 use std::sync::atomic::{AtomicIsize, AtomicBool};
 use std::sync::Arc;
-use std::cell::RefCell;
+use std::cell::{RefMut, RefCell, Ref};
 use std::borrow::Borrow;
+use std::sync::atomic::Ordering;
+
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
@@ -536,8 +538,9 @@ pub struct ChordNode {
 //    pub router : ArRmRs<router::Router>,
 //    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
 //    pub endpoints : ArRmRs<endpoints::Endpoints>,
-    pub stabilizer : stabilizer::Stabilizer,
+    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
     pub router : router::Router,
+    // TODO: (rust) 結局、endpointsもArRmRs型でラップしないとダメな気がする
     pub endpoints : endpoints::Endpoints,
     // シミュレーション時のみ必要なフィールド（実システムでは不要）
     pub is_alive : AtomicBool,
@@ -555,7 +558,7 @@ impl ChordNode {
             data_store: ArRmRs_new!(data_store::DataStore::new()),
 //            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
 //            router: ArRmRs_new!(router::Router::new()),
-            stabilizer: stabilizer::Stabilizer::new(),
+            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
             router: router::Router::new(),
             tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
 //            endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
@@ -565,26 +568,86 @@ impl ChordNode {
         }
     }
 
-    //検証用の仮のコンストラクタ
-    pub fn powerful_new() -> ArRmRs<ChordNode> {
-        let node = ArRmRs_new!(Self::new());
+}
 
-        return node;
+//シミュレータの神々が利用するのはコンストラクタではなくこちらのファクトリメソッド
+pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<ChordNode> {
+    let new_node = ArRmRs_new!(ChordNode::new());
+    let stabilizer: ArRmRs<stabilizer::Stabilizer>;
+
+    {
+        unsafe{
+            gval::already_born_node_num.fetch_add(1, Ordering::Relaxed);
+        }
+
+        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+        let new_node_refmut = get_ref_from_refcell!(new_node_refcell);
+        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+        {
+            let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
+
+            // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+            new_node_ni_refmut.address_str = chord_util::gen_address_str();
+            new_node_ni_refmut.node_id = chord_util::hash_str_to_int(&new_node_ni_refmut.address_str);
+
+            unsafe{
+                new_node_ni_refmut.born_id = gval::already_born_node_num.load(Ordering::Relaxed) as i32;
+            }
+
+            // シミュレーション時のみ必要なフィールド（実システムでは不要）
+            new_node_refmut.is_alive.store(false, Ordering::Relaxed);
+        }
+
+        let new_node_copied_for_succlist : node_info::NodeInfo;
+        let new_node_copied_for_pred_info : node_info::NodeInfo;
+        {
+            let new_node_ni_ref = get_ref_from_refcell!(new_node_ni_refcell);
+            new_node_copied_for_succlist = node_info::get_partial_deepcopy(new_node_ni_ref);
+            new_node_copied_for_pred_info = node_info::get_partial_deepcopy(new_node_ni_ref);
+        }
+        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
+
+        if first_node {
+            //with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
+
+            // 最初の1ノードの場合
+
+            // successorとpredecessorは自身として終了する
+            let succ_list_target_idx = new_node_ni_refmut.successor_info_list.len() - 1;
+            new_node_ni_refmut.successor_info_list.insert(succ_list_target_idx, new_node_copied_for_succlist);
+            new_node_ni_refmut.predecessor_info[0] = new_node_copied_for_pred_info;
+
+            // 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+            // データの委譲は必要ない
+
+            return Arc::clone(&new_node);
+        }
+
+        stabilizer = Arc::clone(&new_node_refmut.stabilizer);
     }
+
+    let stabilizer_refcell = get_refcell_from_arc_with_locking!(stabilizer);
+    let stabilizer_ref = get_ref_from_refcell!(stabilizer_refcell);
+    // first_node == false の場合
+    stabilizer_ref.join(Arc::clone(&new_node), &tyukai_node_address);
+
+    return Arc::clone(&new_node);
+}
 
 /*
-        gval.already_born_node_num += 1
-        // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
-        node_info.address_str = ChordUtil.gen_address_str()
-        node_info.node_id = ChordUtil.hash_str_to_int(self.node_info.address_str)
-    
-        
-        node_info.born_id = gval.already_born_node_num
-    
-        // シミュレーション時のみ必要なフィールド（実システムでは不要）
-        is_alive = True
-*/
-/*                
-    }
-*/
-}
+    if first_node:
+        with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
+            # 最初の1ノードの場合
+
+            # successorとpredecessorは自身として終了する
+            self.node_info.successor_info_list.append(self.node_info.get_partial_deepcopy())
+            self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+
+            # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+            # データの委譲は必要ない
+
+            return
+    else:
+        self.stabilizer.join(node_address)
+
+*/    

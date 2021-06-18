@@ -861,7 +861,6 @@ impl Stabilizer {
     // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     pub fn join(&self, new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &String){
         //with self.existing_node.node_info.lock_of_pred_info, new_node_ni_refmut.lock_of_succ_infos:
-/*
 
         // 実装上例外は発生しない.
         // また実システムでもダウンしているノードの情報が与えられることは想定しない
@@ -922,9 +921,9 @@ impl Stabilizer {
             new_node_ni_refmut.predecessor_info = predecessor.node_info.get_partial_deepcopy();
 
             tyukai_node.endpoints.grpc__set_routing_infos_force(
-                new_node_ni_refmut.get_partial_deepcopy(),
-                new_node_ni_refmut.get_partial_deepcopy(),
-                new_node_ni_refmut.get_partial_deepcopy()
+                new_node_ni_refmut.clone(),
+                new_node_ni_refmut.clone(),
+                new_node_ni_refmut.clone()
             );
 
             // TODO: x direct access to node_info of tyukai_node at join
@@ -985,7 +984,7 @@ impl Stabilizer {
         }
 
         //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
-*/        
+
     }
 
 /*

@@ -102,7 +102,7 @@ use crate::router;
 
 type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct NodeInfo {
 //    pub existing_node : ArRmRs<chord_node::ChordNode>,
     pub node_id : i32,
@@ -149,7 +149,6 @@ impl NodeInfo {
     }
 }
 
-
 // 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
 // ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
 // を返す.
@@ -161,6 +160,21 @@ impl NodeInfo {
 // を引いてやれば可能）
 // 用途としては、あるノードの node_info を他のノードが取得し保持する際に利用される
 // ことを想定して実装されている.
+impl Clone for NodeInfo {
+    fn clone(&self) -> Self {
+        let mut ret_node_info = NodeInfo::new();
+
+        ret_node_info.node_id = self.node_id;
+        ret_node_info.address_str = self.address_str.clone();
+        ret_node_info.born_id = self.born_id;
+        ret_node_info.successor_info_list = vec![];
+        ret_node_info.predecessor_info = vec![];
+    
+        return ret_node_info;
+    }  
+}
+
+/*
 pub fn get_partial_deepcopy(orig_node_info: &Ref<NodeInfo>) -> NodeInfo {
     let mut ret_node_info = NodeInfo::new();
 
@@ -172,6 +186,7 @@ pub fn get_partial_deepcopy(orig_node_info: &Ref<NodeInfo>) -> NodeInfo {
 
     return ret_node_info;
 }
+*/
 
 /*
 pub fn get_partial_deepcopy(orig_node_info: &Ref<NodeInfo>) -> ArRmRs<NodeInfo> {

@@ -568,6 +568,17 @@ impl ChordNode {
         }
     }
 
+/*    
+    # join処理もコンストラクタで行ってしまう
+    def __init__(self, node_address: str, first_node=False):
+        self.node_info : NodeInfo = NodeInfo()
+
+        self.data_store : DataStore = DataStore(self)
+        self.stabilizer : Stabilizer = Stabilizer(self)
+        self.router : Router = Router(self)
+        self.tqueue : TaskQueue = TaskQueue(self)
+        self.endpoints : Endpoints = Endpoints(self)
+*/        
 }
 
 //シミュレータの神々が利用するのはコンストラクタではなくこちらのファクトリメソッド
@@ -583,29 +594,29 @@ pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<Cho
         let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
         let new_node_refmut = get_ref_from_refcell!(new_node_refcell);
         let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-        {
-            let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
+        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
 
-            // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
-            new_node_ni_refmut.address_str = chord_util::gen_address_str();
-            new_node_ni_refmut.node_id = chord_util::hash_str_to_int(&new_node_ni_refmut.address_str);
+        // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+        new_node_ni_refmut.address_str = chord_util::gen_address_str();
+        new_node_ni_refmut.node_id = chord_util::hash_str_to_int(&new_node_ni_refmut.address_str);
 
-            unsafe{
-                new_node_ni_refmut.born_id = gval::already_born_node_num.load(Ordering::Relaxed) as i32;
-            }
-
-            // シミュレーション時のみ必要なフィールド（実システムでは不要）
-            new_node_refmut.is_alive.store(false, Ordering::Relaxed);
+        unsafe{
+            new_node_ni_refmut.born_id = gval::already_born_node_num.load(Ordering::Relaxed) as i32;
         }
+
+        // シミュレーション時のみ必要なフィールド（実システムでは不要）
+        new_node_refmut.is_alive.store(false, Ordering::Relaxed);
+        
 
         let new_node_copied_for_succlist : node_info::NodeInfo;
         let new_node_copied_for_pred_info : node_info::NodeInfo;
         {
-            let new_node_ni_ref = get_ref_from_refcell!(new_node_ni_refcell);
-            new_node_copied_for_succlist = node_info::get_partial_deepcopy(new_node_ni_ref);
-            new_node_copied_for_pred_info = node_info::get_partial_deepcopy(new_node_ni_ref);
+            //new_node_copied_for_succlist = node_info::get_partial_deepcopy(new_node_ni_ref);
+            new_node_copied_for_succlist = (*new_node_ni_refmut).clone();
+            //new_node_copied_for_pred_info = node_info::get_partial_deepcopy(new_node_ni_ref);
+            new_node_copied_for_pred_info = (*new_node_ni_refmut).clone();
         }
-        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
+        //let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
 
         if first_node {
             //with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
@@ -635,19 +646,32 @@ pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<Cho
 }
 
 /*
-    if first_node:
-        with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
-            # 最初の1ノードの場合
+# ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+self.node_info.address_str = ChordUtil.gen_address_str()
+self.node_info.node_id = ChordUtil.hash_str_to_int(self.node_info.address_str)
 
-            # successorとpredecessorは自身として終了する
-            self.node_info.successor_info_list.append(self.node_info.get_partial_deepcopy())
-            self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+gval.already_born_node_num += 1
+self.node_info.born_id = gval.already_born_node_num
 
-            # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
-            # データの委譲は必要ない
+# シミュレーション時のみ必要なフィールド（実システムでは不要）
+self.is_alive = True
 
-            return
-    else:
-        self.stabilizer.join(node_address)
+# join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
+# 大本から呼び出されないようにするためのフラグ
+self.is_join_op_finished = False
 
-*/    
+if first_node:
+    with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
+        # 最初の1ノードの場合
+
+        # successorとpredecessorは自身として終了する
+        self.node_info.successor_info_list.append(self.node_info.get_partial_deepcopy())
+        self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+
+        # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+        # データの委譲は必要ない
+
+        return
+else:
+    self.stabilizer.join(node_address)
+*/

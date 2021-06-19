@@ -118,10 +118,36 @@ impl Endpoints {
 }
 */
 
+//TODO: (rust) ダミー実装なので対応すること
+pub fn grpc__delegate_my_tantou_data(predecessor: ArRmRs<chord_node::ChordNode>, node_id : i32) -> Vec<chord_util::KeyValue>{
+    return vec![];
+    //return self.existing_node.data_store.delegate_my_tantou_data(node_id)
+}
+/*
+def grpc__delegate_my_tantou_data(self, node_id : int) -> List[KeyValue]:
+    return self.existing_node.data_store.delegate_my_tantou_data(node_id)
+*/
+
+pub fn grpc__pass_successor_list(self_node: ArRmRs<chord_node::ChordNode>) -> Vec<node_info::NodeInfo> {
+    return stabilizer::pass_successor_list(self_node);
+}
+/*
+def grpc__pass_successor_list(self) -> List['NodeInfo']:
+    return self.existing_node.stabilizer.pass_successor_list()
+*/
+
+pub fn grpc__check_predecessor(existing_node : ArRmRs<chord_node::ChordNode>) -> Result<bool, chord_util::GeneralError> {
+    return stabilizer::check_predecessor(existing_node);
+}
+/*
+# TODO: InternalExp at grpc__check_predecessor
+def grpc__check_predecessor(self, node_info : 'NodeInfo') -> PResult[bool]:
+    return self.existing_node.stabilizer.check_predecessor(node_info)
+*/
+
 pub fn grpc__set_routing_infos_force(self_node: ArRmRs<chord_node::ChordNode>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     return stabilizer::set_routing_infos_force(Arc::clone(&self_node), predecessor_info, successor_info_0, ftable_enry_0);
 }
-
 /*        
 def grpc__set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor_info_0 : 'NodeInfo', ftable_enry_0 : 'NodeInfo'):
     return self.existing_node.stabilizer.set_routing_infos_force(predecessor_info, successor_info_0, ftable_enry_0)

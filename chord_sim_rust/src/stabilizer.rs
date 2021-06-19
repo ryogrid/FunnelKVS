@@ -888,15 +888,14 @@ pub fn set_routing_infos_force(self_node: ArRmRs<chord_node::ChordNode>, predece
     
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
 pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &String){
-/*
     //with self.existing_node.node_info.lock_of_pred_info, new_node_ni_refmut.lock_of_succ_infos:
 
     let is_second_node:bool;
-    
 
     // 実装上例外は発生しない.
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
     let tyukai_node = chord_util::get_node_by_address(tyukai_node_address).unwrap();
+    let tyukai_node_refcell: &RefCell<chord_node::ChordNode>;
 
     let new_node_refcell: &RefCell<chord_node::ChordNode>;
     let new_node_refmut: &Ref<chord_node::ChordNode>;
@@ -911,7 +910,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
     let successor_ni_ref: &Ref<node_info::NodeInfo>;
     {
         
-        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
+        tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
         let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
         let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
         let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);        
@@ -984,27 +983,30 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
             // mutableな参照が必要な都合により、後続のコードで残りの処理を行う
         }
     }
-    
-    
 
-    // TODO: x direct access to node_info of tyukai_node at join
     if is_second_node {
-
+        // secondノードの場合の考慮の続き
         endpoints::grpc__set_routing_infos_force(
             tyukai_node,
             (*new_node_ni_refmut).clone(),
             (*new_node_ni_refmut).clone(),
             (*new_node_ni_refmut).clone()
         );
+    }
 
-        // TODO: x direct access to node_info of tyukai_node at join
+    let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
+    let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
+    let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
+
+    if is_second_node {
+        // secondノードの場合の考慮の続き
         chord_util::dprint(&("join_3,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
                             + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str() + ","
                             + chord_util::gen_debug_str_of_node(Some(&new_node_ni_refmut.successor_info_list[0])).as_str()));
     } else {
         // successorと、successorノードの情報だけ適切なものとする
         // TODO: check_predecessor call at join
-        ret2 = successor.endpoints.grpc__check_predecessor(new_node_ni_refmut);
+        ret2 = endpoints::grpc__check_predecessor(successor);
         if ret2.is_ok {
             pass
         } else {  // ret.err_code == ErrorCode.InternalControlFlowException_CODE
@@ -1022,30 +1024,30 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
                 Some(new_node_ni_refmut)).as_str() + ","
                                 + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
             //chord_util::dprint(traceback.format_exc());
-            return PResult.Err(False, cast(int, ret2.err_code));
+            return Err(False, ret2.err_code);
+        }
 
         // successor_info_listを埋めておく
         // TODO: pass_successor_list call at join
-        let succ_list_of_succ = successor.endpoints.grpc__pass_successor_list();
+        let succ_list_of_succ = endpoints::grpc__pass_successor_list(successor);
         let list_len = succ_list_of_succ.len();
         for idx in range(0, gval::SUCCESSOR_LIST_NORMAL_LEN - 1){
             if idx < list_len {
                 new_node_ni_refmut.successor_info_list.append(
                     succ_list_of_succ[idx].get_partial_deepcopy());
             }
-        }
-        
+        }        
     }
 
     // successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
 
     // TODO: delegate_my_tantou_data call at join
-    let tantou_data_list = successor.endpoints.grpc__delegate_my_tantou_data(
-        new_node_ni_refmut.node_id);
+    let tantou_data_list = endpoints::grpc__delegate_my_tantou_data(
+        successor, new_node_ni_refmut.node_id);
 
     //with self.existing_node.node_info.lock_of_datastore:
     for key_value in tantou_data_list {
-        new_node_refmut.data_store.store_new_data(cast(int, key_value.data_id), key_value.value_data);
+        new_node_refmut.data_store.store_new_data(key_value.data_id, key_value.value_data);
     }
 
     // 残りのレプリカに関する処理は stabilize処理のためのスレッドに別途実行させる
@@ -1055,7 +1057,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
     }
 
     //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
-*/
+
 }
 
 /*
@@ -1301,3 +1303,116 @@ def stabilize_finger_table(self, idx) -> PResult[bool]:
         self.existing_node.node_info.lock_of_succ_infos.release()
         self.existing_node.node_info.lock_of_pred_info.release()
 */
+
+// 自ノードの持っている successor_info_listの deep copy を返す
+pub fn pass_successor_list(self_node: ArRmRs<chord_node::ChordNode>) -> Vec<node_info::NodeInfo> {
+    return [ node_info.get_partial_deepcopy() for node_info in self.existing_node.node_info.successor_info_list];
+}
+
+/*
+# 自ノードの持っている successor_info_listの deep copy を返す
+def pass_successor_list(self) -> List['NodeInfo']:
+    return [ node_info.get_partial_deepcopy() for node_info in self.existing_node.node_info.successor_info_list]
+*/
+
+// id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
+// 本メソッドはstabilize処理の中で用いられる
+// Attention: InternalControlFlowException を raiseする場合がある
+// TODO: InternalExp at check_predecessor
+pub fn check_predecessor(existing_node : ArRmRs<chord_node::ChordNode>) -> Result<bool, chord_util::GeneralError> {
+    // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    //     ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+    //                      + "LOCK_ACQUIRE_TIMEOUT")
+    //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+
+    //ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
+
+    if self.existing_node.node_info.predecessor_info == None {
+        // predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
+        self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy();
+        chord_util::dprint("check_predecessor_1," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                            + chord_util::gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]));
+    }
+
+    chord_util::dprint("check_predecessor_2," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+            + chord_util::gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]));
+
+    // この時点で認識している predecessor がノードダウンしていないかチェックする
+    let ret = chord_util::is_node_alive(self.existing_node.node_info.predecessor_info.address_str);
+    if (ret.is_ok){
+        let is_pred_alived : bool = cast(bool, ret.result);
+    } else {  // ret.err_code == ErrorCode.InternalControlFlowException_CODE
+        let is_pred_alived : bool = False;
+    }
+
+    if is_pred_alived {
+        distance_check = chord_util::calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id, node_info.node_id);
+        distance_cur = chord_util::calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id,
+                                                                            self.existing_node.node_info.predecessor_info.node_id);
+
+        // 確認を求められたノードの方が現在の predecessor より predecessorらしければ
+        // 経路表の情報を更新する
+        if distance_check < distance_cur {
+            self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy();
+
+            chord_util::dprint("check_predecessor_3," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    + chord_util::gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
+                    + chord_util::gen_debug_str_of_node(self.existing_node.node_info.predecessor_info));
+        }
+    } else { // predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
+        self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy()
+    }
+
+    return Ok(true)
+}
+
+/*        
+    # id が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
+    # 本メソッドはstabilize処理の中で用いられる
+    # Attention: InternalControlFlowException を raiseする場合がある
+    # TODO: InternalExp at check_predecessor
+    def check_predecessor(self, node_info : 'NodeInfo') -> PResult[bool]:
+        if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+            ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                + "LOCK_ACQUIRE_TIMEOUT")
+            return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+
+        ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
+
+        try:
+            if self.existing_node.node_info.predecessor_info == None:
+                # predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
+                self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy()
+                ChordUtil.dprint("check_predecessor_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                                    + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+
+            ChordUtil.dprint("check_predecessor_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                    + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]))
+
+            # この時点で認識している predecessor がノードダウンしていないかチェックする
+            ret = ChordUtil.is_node_alive(cast('NodeInfo', self.existing_node.node_info.predecessor_info).address_str)
+            if (ret.is_ok):
+                is_pred_alived : bool = cast(bool, ret.result)
+            else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                is_pred_alived : bool = False
+
+            if is_pred_alived:
+                distance_check = ChordUtil.calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id, node_info.node_id)
+                distance_cur = ChordUtil.calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id,
+                                                                                    cast('NodeInfo',self.existing_node.node_info.predecessor_info).node_id)
+
+                # 確認を求められたノードの方が現在の predecessor より predecessorらしければ
+                # 経路表の情報を更新する
+                if distance_check < distance_cur:
+                    self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy()
+
+                    ChordUtil.dprint("check_predecessor_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                            + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
+                            + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info.predecessor_info))
+            else: # predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
+                self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy()
+
+            return PResult.Ok(True)
+        finally:
+            self.existing_node.node_info.lock_of_pred_info.release()
+*/       

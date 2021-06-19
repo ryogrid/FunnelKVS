@@ -858,67 +858,134 @@ impl Stabilizer {
         Stabilizer {}
     }
 
+    // 経路表の情報を他ノードから強制的に設定する.
+    // joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
+    pub fn set_routing_infos_force(&self, self_node: ArRmRs<chord_node::ChordNode>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
+        //with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
+        
+        let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
+        let self_node_ref = get_ref_from_refcell!(self_node_refcell);
+        let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
+        let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
+        
+        self_node_ni_refmut.predecessor_info[0] = predecessor_info;
+        self_node_ni_refmut.successor_info_list[0] = successor_info_0;
+        self_node_ni_refmut.finger_table[0] = Some(ftable_enry_0);
+    }
+
+/*
+    # 経路表の情報を他ノードから強制的に設定する.
+    # joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
+    def set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor_info_0 : 'NodeInfo', ftable_enry_0 : 'NodeInfo'):
+        with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
+            self.existing_node.node_info.predecessor_info = predecessor_info
+            self.existing_node.node_info.successor_info_list[0] = successor_info_0
+            self.existing_node.node_info.finger_table[0] = ftable_enry_0
+*/         
     // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
     pub fn join(&self, new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &String){
         //with self.existing_node.node_info.lock_of_pred_info, new_node_ni_refmut.lock_of_succ_infos:
 
-        // 実装上例外は発生しない.
-        // また実システムでもダウンしているノードの情報が与えられることは想定しない
-        let tyukai_node = chord_util::get_node_by_address(tyukai_node_address).unwrap();
-        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
-        let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
-        let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
-        let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);        
+        let is_second_node:bool;
+        let successor: ArRmRs<chord_node::ChordNode>;
 
-        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-        let new_node_refmut = get_ref_from_refcell!(new_node_refcell);
-        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-        let new_node_ni_refmut = get_ref_from_refcell!(new_node_ni_refcell);
+        let new_node_refcell: &RefCell<chord_node::ChordNode>;
+        let new_node_refmut: &Ref<chord_node::ChordNode>;
+        let new_node_ni_refcell: &RefCell<node_info::NodeInfo>;
+        let new_node_ni_refmut = get_ref_from_refcell!(new_node_ni_refcell);        
 
-        // TODO: x direct access to node_info of tyukai_node at join
-        chord_util::dprint(&("join_1,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
+        let successor_refcell: &RefCell<chord_node::ChordNode>;
+        let successor_ref: &Ref<chord_node::ChordNode>;
+        let successor_ni_refcell: &RefCell<node_info::NodeInfo>;
+        let successor_ni_ref: &Ref<node_info::NodeInfo>;
+        {
+            // 実装上例外は発生しない.
+            // また実システムでもダウンしているノードの情報が与えられることは想定しない
+            let tyukai_node = chord_util::get_node_by_address(tyukai_node_address).unwrap();
+            let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
+            let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
+            let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
+            let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);        
 
-        // 仲介ノードに自身のsuccessorになるべきノードを探してもらう
+            //let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+            new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+            {
+                let new_node_ref = get_ref_from_refcell!(new_node_refcell);
+                let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_ref.node_info);
+                let new_node_ni_ref = get_ref_from_refcell!(new_node_ni_refcell);
 
-        // TODO: find_successor call at join
-        let ret = tyukai_node_ref.endpoints.grpc__find_successor(new_node_ni_refmut.node_id);
-        if ret.is_ok {
-            let successor = ret.result;
-            // リトライは不要なので、本メソッドの呼び出し元がリトライ処理を行うかの判断に用いる
-            // フィールドをリセットしておく
-            
-            //TODO: (rust) リトライ対応は後回し
-            //need_join_retry_node = None;
-        } else {  // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-            // リトライに必要な情報を記録しておく
-            // TODO: (rust) リトライの対応は後回し
-            // need_join_retry_node = self.existing_node;
-            // need_join_retry_tyukai_node = tyukai_node;
+                // TODO: x direct access to node_info of tyukai_node at join
+                chord_util::dprint(&("join_1,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
+                                    + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
 
-            // 自ノードの情報、仲介ノードの情報
-            // TODO: x direct access to node_info of tyukai_node at join
-            chord_util::dprint(
-                &("join_2,RETRY_IS_NEEDED,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
-                + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
-            return
-        }
+                // 仲介ノードに自身のsuccessorになるべきノードを探してもらう
 
-        // TODO: x direct access to node_info of successor at join
-        new_node_ni_refmut.successor_info_list.append(successor.node_info.get_partial_deepcopy());
+                let tyukai_node_endpoints_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.endpoints);
+                let tyukai_node_endpoints_ref = get_ref_from_refcell!(tyukai_node_endpoints_refcell);
 
-        // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        new_node_ni_refmut.finger_table[0] = new_node_ni_refmut.successor_info_list[0].get_partial_deepcopy();
+                // TODO: find_successor call at join
+                successor = match tyukai_node_endpoints_ref.grpc__find_successor(
+                    new_node, new_node_ref, new_node_ni_ref, new_node_ni_ref.node_id) {
+                        Err(_e) => { // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+                            // リトライに必要な情報を記録しておく
+                            // TODO: (rust) リトライの対応は後回し
+                            // need_join_retry_node = self.existing_node;
+                            // need_join_retry_tyukai_node = tyukai_node;
 
-        // TODO: x direct access to node_info of tyukai_node at join
-        if tyukai_node.node_info.node_id == tyukai_node.node_info.successor_info_list[0].node_id {
-            // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+                            // 自ノードの情報、仲介ノードの情報
+                            // TODO: x direct access to node_info of tyukai_node at join
+                            chord_util::dprint(
+                                &("join_2,RETRY_IS_NEEDED,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
+                                + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
+                            return
+                        },
+                        Ok(got_node) => {
+                            //TODO: (rust) リトライ対応は後回し
+                            //need_join_retry_node = None;
+                            got_node
+                        }
+                }
+            }   
 
-            predecessor = tyukai_node;
+            // mutableな参照を借用し直す
+            new_node_refmut = get_ref_from_refcell!(new_node_refcell);
+            new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+            new_node_ni_refmut = get_ref_from_refcell!(new_node_ni_refcell);        
 
-            // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
+            successor_refcell = get_refcell_from_arc_with_locking!(successor);
+            successor_ref = get_ref_from_refcell!(successor_refcell);
+            successor_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
+            successor_ni_ref = get_ref_from_refcell!(successor_refcell);
+
+            // TODO: x direct access to node_info of successor at join
+            let succ_infos_len = new_node_ni_refmut.successor_info_list.len();
+            new_node_ni_refmut.successor_info_list[0] = (*successor_ni_ref).clone();
+
+            // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
+            new_node_ni_refmut.finger_table[0] = Some(new_node_ni_refmut.successor_info_list[0].clone());
+
             // TODO: x direct access to node_info of predecessor at join
-            new_node_ni_refmut.predecessor_info = predecessor.node_info.get_partial_deepcopy();
+            if tyukai_node_ni_ref.node_id == tyukai_node_ni_ref.successor_info_list[0].node_id {
+                // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+
+                //predecessor = tyukai_node;
+
+                // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
+                // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+                is_second_node = true;
+                new_node_ni_refmut.predecessor_info[0] = (*tyukai_node_ni_ref).clone();
+
+                // mutableな参照が必要な都合により、後続のコードで残りの処理を行う
+            }
+        }
+        
+        
+
+        // TODO: x direct access to node_info of tyukai_node at join
+        if is_second_node {
+
+            
+            
 
             tyukai_node.endpoints.grpc__set_routing_infos_force(
                 new_node_ni_refmut.clone(),

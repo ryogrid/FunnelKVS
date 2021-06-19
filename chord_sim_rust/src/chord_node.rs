@@ -535,13 +535,8 @@ pub struct ChordNode {
     pub data_store : ArRmRs<data_store::DataStore>,
     pub tqueue : ArRmRs<taskqueue::TaskQueue>,
 //    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
-//    pub router : ArRmRs<router::Router>,
-//    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
+//    pub router : router::Router,
 //    pub endpoints : ArRmRs<endpoints::Endpoints>,
-    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
-    pub router : router::Router,
-    // TODO: (rust) 結局、endpointsもArRmRs型でラップしないとダメな気がする
-    pub endpoints : endpoints::Endpoints,
     // シミュレーション時のみ必要なフィールド（実システムでは不要）
     pub is_alive : AtomicBool,
     // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
@@ -558,11 +553,10 @@ impl ChordNode {
             data_store: ArRmRs_new!(data_store::DataStore::new()),
 //            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
 //            router: ArRmRs_new!(router::Router::new()),
-            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
-            router: router::Router::new(),
+//            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
+//            router: router::Router::new(),
             tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
 //            endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
-            endpoints: endpoints::Endpoints::new(),
             is_alive: AtomicBool::new(false),
             is_join_op_finished: AtomicBool::new(false)
         }

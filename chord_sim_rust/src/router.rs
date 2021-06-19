@@ -190,6 +190,7 @@ use crate::data_store;
 
 type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
+/*
 #[derive(Debug, Clone)]
 pub struct Router {
 //    pub existing_node : ArRmRs<chord_node::ChordNode>,
@@ -199,70 +200,72 @@ impl Router {
     pub fn new() -> Router {
         Router {}
     }
+}
+*/
 
-    // id（int）で識別されるデータを担当するノードの名前解決を行う
-    // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
-    // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-    pub fn find_successor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {
-        // TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
-        //       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に
-        //       動作せず、パフォーマンスが出ないはず
+// id（int）で識別されるデータを担当するノードの名前解決を行う
+// Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
+// TODO: AppropriateExp, DownedExp, InternalExp at find_successor
+pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {
+    // TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
+    //       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に
+    //       動作せず、パフォーマンスが出ないはず
 
-        // TODO: 実システム化する際か、シミュレータでもノード丸ごとロックしてしまう実装から触るデータを個別にロックする
-        //       作りの検証を行う場合はこの手のコードを復活させる必要がある
-        // if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-        //     # 失敗させる
-        //     ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-        //                      + "LOCK_ACQUIRE_TIMEOUT")
-        //     return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
+    // TODO: 実システム化する際か、シミュレータでもノード丸ごとロックしてしまう実装から触るデータを個別にロックする
+    //       作りの検証を行う場合はこの手のコードを復活させる必要がある
+    // if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+    //     # 失敗させる
+    //     ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+    //                      + "LOCK_ACQUIRE_TIMEOUT")
+    //     return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
 
-        if exnode_ref.is_alive.load(Ordering::Relaxed) == false {
-            // 処理の合間でkillされてしまっていた場合の考慮
-            // 何もしないで終了する
-            chord_util::dprint(&("find_successor_0_5,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                             + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD"));
-            return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_NODE_IS_DOWNED));
-        }
+    if exnode_ref.is_alive.load(Ordering::Relaxed) == false {
+        // 処理の合間でkillされてしまっていた場合の考慮
+        // 何もしないで終了する
+        chord_util::dprint(&("find_successor_0_5,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                            + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD"));
+        return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_NODE_IS_DOWNED));
+    }
 
-        chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                + chord_util::gen_debug_str_of_data(id).as_str()));
+    chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+            + chord_util::gen_debug_str_of_data(id).as_str()));
 
-        let n_dash = exnode_ref.router.find_predecessor(Arc::clone(&existing_node), exnode_ni_ref, id);
-        let n_dash_refcell = get_refcell_from_arc_with_locking!(n_dash);
-        let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
-        let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
-        let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
+    let n_dash = exnode_ref.router.find_predecessor(Arc::clone(&existing_node), exnode_ni_ref, id);
+    let n_dash_refcell = get_refcell_from_arc_with_locking!(n_dash);
+    let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
+    let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
+    let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
 
-        // below comment-outed code has been not needed at porting
-        // if n_dash == None {
-        //     chord_util::dprint(&("find_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-        //                         + chord_util::gen_debug_str_of_data(id).as_str()));
-        //     return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
-        // }
+    // below comment-outed code has been not needed at porting
+    // if n_dash == None {
+    //     chord_util::dprint(&("find_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+    //                         + chord_util::gen_debug_str_of_data(id).as_str()));
+    //     return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
+    // }
 
 
-        // TODO: x direct access to node_info of n_dash at find_successor
-        chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(Some(n_dash_ninfo)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(Some(&exnode_ni_ref.successor_info_list[0])).as_str() + ","
-                            + chord_util::gen_debug_str_of_data(id).as_str()));
+    // TODO: x direct access to node_info of n_dash at find_successor
+    chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(Some(n_dash_ninfo)).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(Some(&exnode_ni_ref.successor_info_list[0])).as_str() + ","
+                        + chord_util::gen_debug_str_of_data(id).as_str()));
 
-        
-        // TODO: direct access to successor_info_list of n_dash at find_successor
-        match chord_util::get_node_by_address(&n_dash_ninfo.successor_info_list[0].address_str) {
-            Err(err_code) => {
-                // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-                // ここでは何も対処しない
-                chord_util::dprint(&("find_successor_4,FOUND_NODE_IS_DOWNED,".to_string()
-                + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                + chord_util::gen_debug_str_of_data(id).as_str()));
-                return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
-            },
-            Ok(got_node) => {                
-                return Ok(got_node);
-            }
+    
+    // TODO: direct access to successor_info_list of n_dash at find_successor
+    match chord_util::get_node_by_address(&n_dash_ninfo.successor_info_list[0].address_str) {
+        Err(err_code) => {
+            // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+            // ここでは何も対処しない
+            chord_util::dprint(&("find_successor_4,FOUND_NODE_IS_DOWNED,".to_string()
+            + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+            + chord_util::gen_debug_str_of_data(id).as_str()));
+            return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
+        },
+        Ok(got_node) => {                
+            return Ok(got_node);
         }
     }
+}
 
 
 /*
@@ -321,7 +324,7 @@ impl Router {
 
 
 // id(int)　の前で一番近い位置に存在するノードを探索する
-pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id: i32) -> ArRmRs<chord_node::ChordNode> {
+pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id: i32) -> ArRmRs<chord_node::ChordNode> {
 /*
     let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
     let exnode_ref = get_ref_from_refcell!(exnode_refcell);
@@ -353,7 +356,9 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exn
         let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
         let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
 
-        let n_dash_found = n_dash_ref.endpoints.grpc__closest_preceding_finger(Arc::clone(&existing_node), n_dash_ref, exnode_ni_ref, id);
+        let n_dash_endpoints_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.endpoints);
+        let n_dash_endpoints_ref = get_ref_from_refcell!(n_dash_endpoints_refcell);
+        let n_dash_found = n_dash_endpoints_ref.grpc__closest_preceding_finger(Arc::clone(&existing_node), n_dash_ref, exnode_ni_ref, id);
 
         let n_dash_found_refcell = get_refcell_from_arc_with_locking!(n_dash_found);
         let n_dash_found_ref = get_ref_from_refcell!(n_dash_found_refcell);
@@ -478,63 +483,63 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exn
         return n_dash
 */
 
-    //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-    // ni_ref -> existing_nodeのもの
-    pub fn closest_preceding_finger(&self, existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> ArRmRs<chord_node::ChordNode> {        
-        // 範囲の広いエントリから探索していく
-        // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
-        // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
-        // 順に見ていくようにする
-        
-        // let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
-        // let exnode_ref = get_ref_from_refcell!(exnode_refcell);
-        // let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
-        // let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
+//  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
+// ni_ref -> existing_nodeのもの
+pub fn closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> ArRmRs<chord_node::ChordNode> {        
+    // 範囲の広いエントリから探索していく
+    // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
+    // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
+    // 順に見ていくようにする
+    
+    // let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
+    // let exnode_ref = get_ref_from_refcell!(exnode_refcell);
+    // let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
+    // let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
 
-        for node_info in exnode_ni_ref.finger_table.iter().rev() {
-            // 注: Noneなエントリも存在し得る
-            let conved_node_info = match node_info {
-                None => {
-                    chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str()));
+    for node_info in exnode_ni_ref.finger_table.iter().rev() {
+        // 注: Noneなエントリも存在し得る
+        let conved_node_info = match node_info {
+            None => {
+                chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str()));
+                continue;
+            },
+            Some(ni) => ni
+        };
+
+        chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+            + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));
+
+        // テーブル内のエントリが保持しているノードのIDが7自身のIDと探索対象のIDの間にあれば
+        // それを返す
+        // (大きな範囲を見た場合、探索対象のIDが自身のIDとエントリが保持しているノードのIDの中に含まれて
+        //  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
+        //  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
+        //  見つけるという処理になっていると思われる）
+        if chord_util::exist_between_two_nodes_right_mawari(exnode_ni_ref.node_id, id, conved_node_info.node_id) {
+
+            chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
+                            + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));
+
+            let gnba_rslt = chord_util::get_node_by_address(&conved_node_info.address_str);
+
+            match gnba_rslt {
+                Ok(node_opt) => { return Arc::clone(&node_opt);},
+                Err(_err) => {
+                    // err.err_code == chord_util::ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM || err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED
+                    // ここでは何も対処しない
                     continue;
-                },
-                Some(ni) => ni
+                }
             };
-
-            chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));
-
-            // テーブル内のエントリが保持しているノードのIDが7自身のIDと探索対象のIDの間にあれば
-            // それを返す
-            // (大きな範囲を見た場合、探索対象のIDが自身のIDとエントリが保持しているノードのIDの中に含まれて
-            //  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
-            //  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
-            //  見つけるという処理になっていると思われる）
-            if chord_util::exist_between_two_nodes_right_mawari(exnode_ni_ref.node_id, id, conved_node_info.node_id) {
-
-                chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                                + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));
-
-                let gnba_rslt = chord_util::get_node_by_address(&conved_node_info.address_str);
-
-                match gnba_rslt {
-                    Ok(node_opt) => { return Arc::clone(&node_opt);},
-                    Err(_err) => {
-                        // err.err_code == chord_util::ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM || err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED
-                        // ここでは何も対処しない
-                        continue;
-                    }
-                };
-            }
         }
-
-        chord_util::dprint(&"closest_preceding_finger_3".to_string());
-
-        // どんなに範囲を狭めても探索対象のIDを超えてしまうノードしか存在しなかった場合
-        // 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という
-        // ことになる
-        return Arc::clone(&existing_node);
     }
+
+    chord_util::dprint(&"closest_preceding_finger_3".to_string());
+
+    // どんなに範囲を狭めても探索対象のIDを超えてしまうノードしか存在しなかった場合
+    // 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という
+    // ことになる
+    return Arc::clone(&existing_node);
+}
 
 
 /*
@@ -581,4 +586,3 @@ pub fn find_predecessor(&self, existing_node: ArRmRs<chord_node::ChordNode>, exn
         # ことになる
         return self.existing_node
 */
-}

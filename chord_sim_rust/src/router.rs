@@ -230,7 +230,7 @@ pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: 
     chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
             + chord_util::gen_debug_str_of_data(id).as_str()));
 
-    let n_dash = exnode_ref.router.find_predecessor(Arc::clone(&existing_node), exnode_ni_ref, id);
+    let n_dash = find_predecessor(Arc::clone(&existing_node), exnode_ni_ref, id);
     let n_dash_refcell = get_refcell_from_arc_with_locking!(n_dash);
     let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
     let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
@@ -356,9 +356,9 @@ pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_
         let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
         let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
 
-        let n_dash_endpoints_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.endpoints);
-        let n_dash_endpoints_ref = get_ref_from_refcell!(n_dash_endpoints_refcell);
-        let n_dash_found = n_dash_endpoints_ref.grpc__closest_preceding_finger(Arc::clone(&existing_node), n_dash_ref, exnode_ni_ref, id);
+        //let n_dash_endpoints_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.endpoints);
+        //let n_dash_endpoints_ref = get_ref_from_refcell!(n_dash_endpoints_refcell);
+        let n_dash_found = endpoints::grpc__closest_preceding_finger(Arc::clone(&existing_node), n_dash_ref, exnode_ni_ref, id);
 
         let n_dash_found_refcell = get_refcell_from_arc_with_locking!(n_dash_found);
         let n_dash_found_ref = get_ref_from_refcell!(n_dash_found_refcell);

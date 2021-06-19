@@ -578,8 +578,6 @@ impl ChordNode {
 //シミュレータの神々が利用するのはコンストラクタではなくこちらのファクトリメソッド
 pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<ChordNode> {
     let new_node = ArRmRs_new!(ChordNode::new());
-    let stabilizer: ArRmRs<stabilizer::Stabilizer>;
-
     {
         unsafe{
             gval::already_born_node_num.fetch_add(1, Ordering::Relaxed);
@@ -627,14 +625,10 @@ pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<Cho
 
             return Arc::clone(&new_node);
         }
-
-        stabilizer = Arc::clone(&new_node_refmut.stabilizer);
     }
 
-    let stabilizer_refcell = get_refcell_from_arc_with_locking!(stabilizer);
-    let stabilizer_ref = get_ref_from_refcell!(stabilizer_refcell);
     // first_node == false の場合
-    stabilizer_ref.join(Arc::clone(&new_node), &tyukai_node_address);
+    stabilizer::join(Arc::clone(&new_node), &tyukai_node_address);
 
     return Arc::clone(&new_node);
 }

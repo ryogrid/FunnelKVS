@@ -119,16 +119,7 @@ impl Endpoints {
 */
 
 pub fn grpc__set_routing_infos_force(self_node: ArRmRs<chord_node::ChordNode>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
-    let stabilizer: ArRmRs<stabilizer::Stabilizer>;
-    {
-        let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
-        let self_node_ref = get_ref_from_refcell!(self_node_refcell);
-        stabilizer = Arc::clone(self_node_ref.stabilizer);
-    }
-    
-    let stabilizer_refcell = get_refcell_from_arc_with_locking!(stabilizer);
-    let stabilizer_ref = get_ref_from_refcell!(stabilizer_refcell);
-    return stabilizer_ref.set_routing_infos_force(Arc::clone(&self_node), predecessor_info, successor_info_0, ftable_enry_0);
+    return stabilizer::set_routing_infos_force(Arc::clone(&self_node), predecessor_info, successor_info_0, ftable_enry_0);
 }
 
 /*        
@@ -140,9 +131,9 @@ def grpc__set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
 pub fn grpc__find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {    
-    return exnode_ref.router.find_successor(existing_node, exnode_ref, exnode_ni_ref, id);
+    return router::find_successor(existing_node, exnode_ref, exnode_ni_ref, id);
 }
 
 pub fn grpc__closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> ArRmRs<chord_node::ChordNode> {
-    return exnode_ref.router.closest_preceding_finger(existing_node, exnode_ni_ref, id);
+    return router::closest_preceding_finger(existing_node, exnode_ni_ref, id);
 }

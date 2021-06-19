@@ -722,7 +722,7 @@ fn ftable_mod_and_search_th(){
             let target_node_ninfo_refcell = get_refcell_from_arc_with_locking!(target_node_ninfo_cloned);
             let target_node_ninfo_ref = get_ref_from_refcell!(target_node_ninfo_refcell);
 
-            let found_node_arc = target_node_ref.router.closest_preceding_finger(Arc::clone(&target_node_arrmrs), target_node_ninfo_ref, chord_util::get_rnd_int_with_limit(gval::ID_MAX));
+            let found_node_arc = router::closest_preceding_finger(Arc::clone(&target_node_arrmrs), target_node_ninfo_ref, chord_util::get_rnd_int_with_limit(gval::ID_MAX));
             let found_node_refcell = get_refcell_from_arc_with_locking!(found_node_arc);
             let found_node_ref = get_ref_from_refcell!(found_node_refcell);
 

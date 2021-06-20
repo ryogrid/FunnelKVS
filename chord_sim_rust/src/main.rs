@@ -1125,7 +1125,7 @@ def stabilize_th():
 */
 fn main() {
     // 最初の1ノードはここで登録する
-    let first_node = chord_node::new_and_join("".to_string(), false);
+    let first_node = chord_node::new_and_join("".to_string(), true);
     let first_node_refcell = get_refcell_from_arc_with_locking!(first_node);
     let first_node_refmut = get_refmut_from_refcell!(first_node_refcell);
     

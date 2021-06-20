@@ -871,7 +871,7 @@ pub fn set_routing_infos_force(self_node: ArRmRs<chord_node::ChordNode>, predece
     let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
     let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
     
-    self_node_ni_refmut.predecessor_info[0] = predecessor_info;
+    self_node_ni_refmut.set_pred_info(predecessor_info);
     self_node_ni_refmut.successor_info_list[0] = successor_info_0;
     self_node_ni_refmut.finger_table[0] = Some(ftable_enry_0);
 }
@@ -970,7 +970,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
             // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
             // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
             is_second_node = true;
-            new_node_ni_refmut.predecessor_info[0] = (*tyukai_node_ni_ref).clone();
+            new_node_ni_refmut.set_pred_info((*tyukai_node_ni_ref).clone());
 
             // mutableな参照が必要な都合により、後続のコードで残りの処理を行う
         }
@@ -1355,7 +1355,7 @@ pub fn check_predecessor(self_node: ArRmRs<chord_node::ChordNode>, caller_node: 
 
     if self_node_ni_refmut.predecessor_info.len() == 0 {
         // predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
-        self_node_ni_refmut.predecessor_info[0] = (*caller_node_ni_ref).clone();
+        self_node_ni_refmut.set_pred_info((*caller_node_ni_ref).clone());
         chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
             + chord_util::gen_debug_str_of_node(Some(caller_node_ni_ref)).as_str() + ","
             + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
@@ -1379,14 +1379,14 @@ pub fn check_predecessor(self_node: ArRmRs<chord_node::ChordNode>, caller_node: 
         // 確認を求められたノードの方が現在の predecessor より predecessorらしければ
         // 経路表の情報を更新する
         if distance_check < distance_cur {
-            self_node_ni_refmut.predecessor_info[0] = (*caller_node_ni_ref).clone();
+            self_node_ni_refmut.set_pred_info( (*caller_node_ni_ref).clone());
 
             chord_util::dprint(&("check_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
                     + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str() + ","
                     + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.predecessor_info[0])).as_str()));
         }
     } else { // predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
-        self_node_ni_refmut.predecessor_info[0] = (*caller_node_ni_ref).clone();
+        self_node_ni_refmut.set_pred_info((*caller_node_ni_ref).clone());
     }
 
     return Ok(true)

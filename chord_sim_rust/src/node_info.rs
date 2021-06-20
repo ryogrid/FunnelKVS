@@ -147,6 +147,14 @@ impl NodeInfo {
             finger_table : vec![None; gval::ID_SPACE_BITS as usize]
         }
     }
+
+    pub fn set_pred_info(&mut self, node_info: NodeInfo){
+        if self.predecessor_info.len() == 0 {
+            self.predecessor_info.push(node_info);
+        }else{
+            self.predecessor_info[0] = node_info;
+        }
+    }
 }
 
 // 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう

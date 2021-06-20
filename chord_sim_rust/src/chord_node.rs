@@ -618,7 +618,8 @@ pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<Cho
             // successorとpredecessorは自身として終了する
             //let succ_list_target_idx = new_node_ni_refmut.successor_info_list.len() - 1;
             new_node_ni_refmut.successor_info_list.push(new_node_copied_for_succlist);
-            new_node_ni_refmut.predecessor_info[0] = new_node_copied_for_pred_info;
+            //new_node_ni_refmut.predecessor_info[0] = new_node_copied_for_pred_info;
+            new_node_ni_refmut.set_pred_info(new_node_copied_for_pred_info);
 
             // 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
             // データの委譲は必要ない

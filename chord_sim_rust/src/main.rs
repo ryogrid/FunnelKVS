@@ -609,10 +609,11 @@ type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
 use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc, thread};
 use std::cell::{RefMut, RefCell, Ref};
-use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
 use std::io::{stdout, stdin};
 use std::sync::{Mutex, mpsc};
 use std::sync::atomic::Ordering;
+
+use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
 
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノード
@@ -1100,6 +1101,36 @@ def do_stabilize_once_at_all_node():
     check_nodes_connectivity()
 */
 
+pub fn node_join_th(){
+    let mut abnn_tmp: i32;
+    unsafe{
+        abnn_tmp = gval::already_born_node_num.load(Ordering::Relaxed) as i32;
+    }
+    
+    while abnn_tmp < gval::NODE_NUM_MAX {
+        if abnn_tmp == gval::KEEP_NODE_NUM {            
+            std::thread::sleep(std::time::Duration::from_millis((60 * 1000) as u64));
+            unsafe{
+                gval::is_network_constructed.store(true, Ordering::Relaxed);
+                gval::JOIN_INTERVAL_SEC.store(120, Ordering::Relaxed); //20.0;
+            }
+            // // TODO: デバッグのために1000ノードに達したらjoinを止める。後で元に戻すこと!
+            // //       at node_join_th
+            // break
+        }
+
+        let jinterval_sec_tmp: i32;
+        unsafe{
+            jinterval_sec_tmp = gval::JOIN_INTERVAL_SEC.load(Ordering::Relaxed) as i32;
+        }
+        add_new_node();
+        std::thread::sleep(std::time::Duration::from_millis((jinterval_sec_tmp * 1000) as u64));
+        unsafe{
+            abnn_tmp = gval::already_born_node_num.load(Ordering::Relaxed) as i32;
+        }        
+    }
+}
+
 /*
 # TODO: 対応する処理を行うスクリプトの類が必要 node_join_th
 def node_join_th():
@@ -1116,6 +1147,14 @@ def node_join_th():
         time.sleep(gval.JOIN_INTERVAL_SEC)
 */
 
+pub fn stabilize_th(){
+    loop{
+        // 内部で適宜ロックを解放することで他のスレッドの処理も行えるようにしつつ
+        // 呼び出し時点でのノードリストを対象に stabilize 処理を行う
+        do_stabilize_once_at_all_node();
+    }
+}
+
 /*        
 def stabilize_th():
     while True:
@@ -1128,12 +1167,21 @@ fn main() {
     let first_node = chord_node::new_and_join("".to_string(), true);
     let first_node_refcell = get_refcell_from_arc_with_locking!(first_node);
     let first_node_refmut = get_refmut_from_refcell!(first_node_refcell);
-    
-    first_node_refmut.is_join_op_finished.store(true, Ordering::Relaxed);
-/*    
-    gval.all_node_dict[first_node.node_info.address_str] = first_node
-    time.sleep(0.5) #次に生成するノードが同一のアドレス文字列を持つことを避けるため
+    let first_node_ni_refcell = get_refcell_from_arc_with_locking!(first_node_refmut.node_info);
+    let first_node_ni_refmut = get_refmut_from_refcell!(first_node_ni_refcell);
 
+    first_node_refmut.is_join_op_finished.store(true, Ordering::Relaxed);
+
+    {
+        let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+        let gd_refmut = get_refmut_from_refcell!(gd_refcell);
+        gd_refmut.all_node_dict.insert(first_node_ni_refmut.address_str.clone(), Arc::clone(&first_node));
+    }    
+
+    // 次に生成するノードが同一のアドレス文字列を持つことを避けるため
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+/*    
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()
 

@@ -119,7 +119,8 @@ pub const ID_SPACE_BITS : u32 = 30; // 160 <- sha1での本来の値
 pub const ID_SPACE_RANGE : i32 = 2i32.pow(ID_SPACE_BITS); // 0を含めての数である点に注意
 
 // paramaters for executing by PyPy3 on my desktop machine
-pub const JOIN_INTERVAL_SEC : f32 = 1.0; //2.0 //0.9 //0.7 //0.5 //1
+//pub const JOIN_INTERVAL_SEC : f32 = 1.0; //2.0 //0.9 //0.7 //0.5 //1
+pub static mut JOIN_INTERVAL_SEC : AtomicIsize = AtomicIsize::new(1);
 pub const PUT_INTERVAL_SEC : f32 = 0.05; //0.5 //0.01 //0.5 # 1
 pub const GET_INTERVAL_SEC : f32 = 0.05; //0.5 //0.01 //0.5 //1
 

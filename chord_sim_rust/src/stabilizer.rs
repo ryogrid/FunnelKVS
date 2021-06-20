@@ -895,32 +895,11 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
     // 実装上例外は発生しない.
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
     let tyukai_node = chord_util::get_node_by_address(tyukai_node_address).unwrap();
-    let tyukai_node_refcell: &RefCell<chord_node::ChordNode>;
-
-    //let new_node_refcell: &RefCell<chord_node::ChordNode>;
-    
-    // let new_node_refmut: &RefMut<chord_node::ChordNode>;
-    // let new_node_ni_refcell: &RefCell<node_info::NodeInfo>;
-    // let new_node_ni_refmut: &RefMut<node_info::NodeInfo>;
 
     let successor: ArRmRs<chord_node::ChordNode>;
 
-    // let successor_refcell: &RefCell<chord_node::ChordNode>;
-    // let successor_ref: &Ref<chord_node::ChordNode>;
-    // let successor_ni_refcell: &RefCell<node_info::NodeInfo>;
-    // let successor_ni_ref: &Ref<node_info::NodeInfo>;
     {
-        //let new_node_refcell: &RefCell<chord_node::ChordNode>;
-        // let new_node_refmut: &RefMut<chord_node::ChordNode>;
-        // let new_node_ni_refcell: &RefCell<node_info::NodeInfo>;
-        // let new_node_ni_refmut: &RefMut<node_info::NodeInfo>;
-
-        let successor_refcell: &RefCell<chord_node::ChordNode>;
-        let successor_ref: &Ref<chord_node::ChordNode>;
-        let successor_ni_refcell: &RefCell<node_info::NodeInfo>;
-        let successor_ni_ref: &Ref<node_info::NodeInfo>;        
-
-        tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
+        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
         let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
         let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
         let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);        
@@ -968,10 +947,10 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
         let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
         let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);        
 
-        successor_refcell = get_refcell_from_arc_with_locking!(successor);
-        successor_ref = get_ref_from_refcell!(successor_refcell);
-        successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
-        successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
+        let successor_refcell = get_refcell_from_arc_with_locking!(successor);
+        let successor_ref = get_ref_from_refcell!(successor_refcell);
+        let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
+        let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
 
         // TODO: x direct access to node_info of successor at join
         //let succ_infos_len = new_node_ni_refmut.successor_info_list.len();
@@ -1011,6 +990,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
         );
     }
 
+    let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
     let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
     let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
     let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);

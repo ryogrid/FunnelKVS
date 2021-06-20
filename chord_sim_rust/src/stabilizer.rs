@@ -939,6 +939,8 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
                         got_node
                     }
             }
+            // grpc__find_successorの呼び出しのために &Ref<NodeInfo>が必要であったが
+            // 後続の処理では mutable な参照が必要となるためここで無効化する
         }   
 
         // mutableな参照を借用し直す

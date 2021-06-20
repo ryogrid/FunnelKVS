@@ -118,7 +118,7 @@ impl Endpoints {
 }
 */
 
-//TODO: (rust) ダミー実装なので対応すること
+//TODO: (rust) ダミー実装なので委譲処理が必要になったタイミングで対応すること
 pub fn grpc__delegate_my_tantou_data(predecessor: ArRmRs<chord_node::ChordNode>, node_id : i32) -> Vec<chord_util::KeyValue>{
     return vec![];
     //return self.existing_node.data_store.delegate_my_tantou_data(node_id)
@@ -136,8 +136,8 @@ def grpc__pass_successor_list(self) -> List['NodeInfo']:
     return self.existing_node.stabilizer.pass_successor_list()
 */
 
-pub fn grpc__check_predecessor(existing_node : ArRmRs<chord_node::ChordNode>) -> Result<bool, chord_util::GeneralError> {
-    return stabilizer::check_predecessor(existing_node);
+pub fn grpc__check_predecessor(self_node: ArRmRs<chord_node::ChordNode>, caller_node: ArRmRs<chord_node::ChordNode>) -> Result<bool, chord_util::GeneralError> {
+    return stabilizer::check_predecessor(self_node, caller_node);
 }
 /*
 # TODO: InternalExp at grpc__check_predecessor

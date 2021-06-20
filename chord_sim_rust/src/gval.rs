@@ -155,7 +155,7 @@ pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10
 
 // stabilize_successorのループの回せる回数の上限
 pub const TRYING_GET_SUCC_TIMES_LIMIT : i32 = SUCCESSOR_LIST_NORMAL_LEN * 5;
-pub const STABILIZE_THREAD_NUM : i32 = 3; //10
+pub const STABILIZE_THREAD_NUM : i32 = 1; //3 //10
 pub const ENABLE_DATA_STORE_OPERATION_DPRINT : bool = false;
 pub const ENABLE_ROUTING_INFO_DPRINT : bool = true;
 pub const GLOBAL_GET_RETRY_CNT_LIMIT_TO_DEBEUG_PRINT : i32 = 30;

@@ -678,8 +678,6 @@ fn ftable_mod_and_search_th(){
                 cloned_new_node_info = new_node_info_mutref.clone();
             }
 
-
-
             let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
             // 新たに生成したChordNodeを node_id を string としたものをキーに
             // all_node_dictに追加する

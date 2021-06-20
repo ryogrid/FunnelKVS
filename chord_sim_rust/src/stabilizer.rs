@@ -974,6 +974,8 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
             // mutableな参照が必要な都合により、後続のコードで残りの処理を行う
         }
+        // 後続の処理の中で呼び出される grpc__set_routing_infos_force で &Mut RefMut<node_info::NodeInfo>の
+        // 借用が行われるため、&Ref<node_info::NodeInfo>と関連する借用した参照はここで無効化する
     }
 
     // mutableな参照を借用し直す

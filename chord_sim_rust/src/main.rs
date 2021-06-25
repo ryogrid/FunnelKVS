@@ -1459,21 +1459,22 @@ def stabilize_th():
         do_stabilize_once_at_all_node()
 */
 fn main() {
-
-    // 最初の1ノードはここで登録する
-    let first_node = chord_node::new_and_join("".to_string(), true);
-    let first_node_refcell = get_refcell_from_arc_with_locking!(first_node);
-    let first_node_refmut = get_refmut_from_refcell!(first_node_refcell);
-    let first_node_ni_refcell = get_refcell_from_arc_with_locking!(first_node_refmut.node_info);
-    let first_node_ni_refmut = get_refmut_from_refcell!(first_node_ni_refcell);
-
-    first_node_refmut.is_join_op_finished.store(true, Ordering::Relaxed);
-
     {
-        let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-        let gd_refmut = get_refmut_from_refcell!(gd_refcell);
-        gd_refmut.all_node_dict.insert(first_node_ni_refmut.address_str.clone(), Arc::clone(&first_node));
-    }    
+        // 最初の1ノードはここで登録する
+        let first_node = chord_node::new_and_join("".to_string(), true);
+        let first_node_refcell = get_refcell_from_arc_with_locking!(first_node);
+        let first_node_refmut = get_refmut_from_refcell!(first_node_refcell);
+        let first_node_ni_refcell = get_refcell_from_arc_with_locking!(first_node_refmut.node_info);
+        let first_node_ni_refmut = get_refmut_from_refcell!(first_node_ni_refcell);
+
+        first_node_refmut.is_join_op_finished.store(true, Ordering::Relaxed);
+
+        {
+            let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+            let gd_refmut = get_refmut_from_refcell!(gd_refcell);
+            gd_refmut.all_node_dict.insert(first_node_ni_refmut.address_str.clone(), Arc::clone(&first_node));
+        }
+    }
 
     // 次に生成するノードが同一のアドレス文字列を持つことを避けるため
     std::thread::sleep(std::time::Duration::from_millis(500));

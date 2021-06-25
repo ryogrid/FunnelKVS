@@ -1478,7 +1478,6 @@ fn main() {
     // 次に生成するノードが同一のアドレス文字列を持つことを避けるため
     std::thread::sleep(std::time::Duration::from_millis(500));
 
-    // 複数のスレッドで GLOBAL_DATAS に触ってみる
     let mut thread_handles = vec![];
     thread_handles.push(std::thread::spawn(node_join_th));
     thread_handles.push(std::thread::spawn(stabilize_th));

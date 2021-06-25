@@ -581,6 +581,7 @@ macro_rules! get_refmut_from_refcell {
     );
 }
 
+
 // IN:  &RefCell<T>
 // OUT: &Ref<T>
 macro_rules! get_ref_from_refcell {
@@ -626,7 +627,7 @@ use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
 fn get_a_random_node() -> ArRmRs<chord_node::ChordNode>{
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
-    let tmp_vec = vec![];
+    let mut tmp_vec = vec![];
     for (k, v) in &gd_ref.borrow().all_node_dict{
         let node_refcell = get_refcell_from_arc_with_locking!(*v);
         let node_ref = get_ref_from_refcell!(node_refcell);
@@ -881,68 +882,114 @@ fn main_old() {
     println!("Hello, world!");
 }
 
+// is_aliveメンバがfalseのノードは含まない
+// また、この関数が返すリストはRustのイテレータの仕様の都合から呼び出しごとに毎回要素の順序は異なる
+fn get_all_network_constructed_nodes() -> Vec<ArRmRs<chord_node::ChordNode>> {
+    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    let gd_ref = get_ref_from_refcell!(gd_refcell);
+
+    let mut node_list: Vec<ArRmRs<chord_node::ChordNode>> = vec![];
+    for node_elem in gd_ref.all_node_dict.values() {
+        // Rustのイテレータは毎回異なる順序で要素を返す
+        let node_refcell = get_refcell_from_arc_with_locking!(*node_elem);
+        let node_ref = get_ref_from_refcell!(node_refcell);
+        if node_ref.is_join_op_finished.load(Ordering::Relaxed) == true && node_ref.is_alive.load(Ordering::Relaxed) == true {
+            node_list.push(Arc::clone(node_elem));
+        }
+    }
+
+    return node_list;
+}
+
 // stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
 // ランダムに選択したノードからsuccessor方向にsuccessorの繋がりでノードを辿って
 // 行って各ノードの情報を出力する
 // また、predecessorの方向にpredecesorの繋がりでもたどって出力する
 pub fn check_nodes_connectivity() {
-    chord_util::dprint("check_nodes_connectivity_1");
-    let mut counter : int = 0;
+    chord_util::dprint(&("check_nodes_connectivity_1".to_string()));
+    let mut counter = 0;
     // まずはsuccessor方向に辿る
-    let cur_node_info : NodeInfo = get_a_random_node().node_info;
-    let start_node_info : NodeInfo = cur_node_info;
+    let cur_node_arrmrs = get_a_random_node();
+    let cur_node_refcell = get_refcell_from_arc_with_locking!(cur_node_arrmrs);
+    let cur_node_ref = get_ref_from_refcell!(cur_node_refcell);
+    let cur_node_ni_refcell = get_refcell_from_arc_with_locking!(cur_node_ref.node_info);
+    let cur_node_info = get_ref_from_refcell!(cur_node_ni_refcell);
+    // let mut cloned_node: ArRmRs<chord_node::ChordNode>;
+    // let mut cur_node_info_succ_0_arrmrs: ArRmRs<node_info::NodeInfo>;
+    // let mut cur_node_info_succ_0_refcell: &RefCell<node_info::NodeInfo>;
+    let mut cur_node_info_succ_0 = (*cur_node_info).clone();
+    let start_node_info = cur_node_info_succ_0.clone();
     // ノードの総数（is_aliveフィールドがFalseのものは除外して算出）
 
     //with gval.lock_of_all_node_dict:
-    let all_node_num = len(list(filter(lambda node: node.is_alive == True ,list(gval.all_node_dict.values()))));
-    chord_util::print_no_lf("check_nodes_connectivity__succ,all_node_num=" + str(all_node_num) + ",already_born_node_num=" + str(gval.already_born_node_num));
+
+    let all_active_nodes = get_all_network_constructed_nodes();
+    let all_node_num = all_active_nodes.len() as i32;
+
+    let abnn_str: String;
+    unsafe {
+        abnn_str = gval::already_born_node_num.load(Ordering::Relaxed).to_string();
+    }
+    print!("{}","check_nodes_connectivity__succ,all_node_num=".to_string() + all_node_num.to_string().as_str() + ",already_born_node_num=" + abnn_str.as_str());
+
 
     while counter < all_node_num {
-        chord_util::print_no_lf(str(cur_node_info.born_id) + "," + chord_util::conv_id_to_ratio_str(cur_node_info.node_id) + " -> ");
+        print!("{}", cur_node_info_succ_0.born_id.to_string() + "," + chord_util::conv_id_to_ratio_str(cur_node_info_succ_0.node_id).as_str() + " -> ");
 
         // 各ノードはsuccessorの情報を保持しているが、successorのsuccessorは保持しないようになって
         // いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         // 得ることに対応する形とする
 
-        let ret = chord_util::get_node_by_address(cur_node_info.address_str);
-        if ret.is_ok {
-            cur_node_info : 'NodeInfo' = cast('ChordNode', ret.result).node_info.successor_info_list[0];
-        } else {  // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-            if cast(int, ret.err_code) == ErrorCode.NodeIsDownedException_CODE {
-                print("");
-                chord_util::dprint("check_nodes_connectivity__succ,NODE_IS_DOWNED");
-                return;
-            } else { //cast(int, ret.err_code) == ErrorCode.InternalControlFlowException_CODE
-                // join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-                // TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
-                println("");
-                chord_util::dprint("check_nodes_connectivity__succ,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED");
-                return;
+        match chord_util::get_node_by_address(&cur_node_info_succ_0.address_str) {
+            Err(err) => { // ErrorCode.InternalControlFlowException_CODE || ErrorCode.NodeIsDownedException_CODE
+                if err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED {
+                    println!("");
+                    chord_util::dprint(&("check_nodes_connectivity__succ,NODE_IS_DOWNED".to_string()));
+                    return;
+                } else { //chord_util::ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM
+                    println!("");
+                    chord_util::dprint(&("check_nodes_connectivity__succ,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED".to_string()));
+                    return;
+                }
+            },
+            Ok(node) => {
+                let cloned_node = Arc::clone(&node);
+                let cur_node_refcell = get_refcell_from_arc_with_locking!(cloned_node);
+                let cur_node_ref = get_ref_from_refcell!(cur_node_refcell);
+                let cur_node_ni_refcell = get_refcell_from_arc_with_locking!(cur_node_ref.node_info);
+                let cur_node_info = get_ref_from_refcell!(cur_node_ni_refcell);                
+                if cur_node_info.successor_info_list.len() < 1 {
+                    println!("");
+                    print!("no successor having node was detected!");
+                }else{
+                    // let cur_node_info_succ_0_arrmrs = ArRmRs_new!(cur_node_info.successor_info_list[0].clone());
+                    // let cur_node_info_succ_0_refcell = get_refcell_from_arc_with_locking!(cur_node_info_succ_0_arrmrs);
+                    // let cur_node_info_succ_0_ref  = get_ref_from_refcell!(cur_node_info_succ_0_refcell);
+                    cur_node_info_succ_0 = (*cur_node_info).clone();
+                }
             }
-        }
-        if cur_node_info == None{
-            print("", flush=True, end="");
-            print("no successor having node was detected!");
-            //raise Exception("no successor having node was detected!")
+            //cur_node_info : 'NodeInfo' = cast('ChordNode', ret.result).node_info.successor_info_list[0];
+        
+
         }
         counter += 1;
     }
-    println("");
+    println!("");
 
     // 2ノード目が参加して以降をチェック対象とする
     // successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
     // チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
-    if all_node_num >=2 && cur_node_info.node_id != start_node_info.node_id {
-        chord_util::dprint("check_nodes_connectivity_succ_err,chain does not includes all node. all_node_num = "
-                         + str(all_node_num) + ","
-                         + chord_util::gen_debug_str_of_node(start_node_info) + ","
-                         + chord_util::gen_debug_str_of_node(cur_node_info));
+    if all_node_num >=2 && cur_node_info_succ_0.node_id != start_node_info.node_id {
+        chord_util::dprint(&("check_nodes_connectivity_succ_err,chain does not includes all node. all_node_num = ".to_string()
+                         + all_node_num.to_string().as_str() + ","
+                         + chord_util::gen_debug_str_of_node(Some(&start_node_info)).as_str() + ","
+                         + chord_util::gen_debug_str_of_node(Some(&cur_node_info_succ_0)).as_str()));
         // raise exception("SUCCESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
     } else {
-        chord_util::dprint("check_nodes_connectivity_succ_success,chain includes all node. all_node_num = "
-                         + str(all_node_num) + ","
-                         + chord_util::gen_debug_str_of_node(start_node_info) + ","
-                         + chord_util::gen_debug_str_of_node(cur_node_info));
+        chord_util::dprint(&("check_nodes_connectivity_succ_success,chain includes all node. all_node_num = ".to_string()
+                         + all_node_num.to_string().as_str() + ","
+                         + chord_util::gen_debug_str_of_node(Some(&start_node_info)).as_str() + ","
+                         + chord_util::gen_debug_str_of_node(Some(&cur_node_info_succ_0)).as_str()));
     }
 
 // TODO: predecessor方向のチェックは後回し
@@ -1111,7 +1158,7 @@ def check_nodes_connectivity():
 
 pub fn add_new_node(){
     // ロックの取得
-    // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドでのアクセスはブロックされる
+    // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
 
     // gval.lock_of_all_data.acquire()
@@ -1146,7 +1193,7 @@ pub fn add_new_node(){
         let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
         tyukai_node_addr = tyukai_node_ni_ref.address_str.clone();
     }
-    let new_node = chord_node::new_and_join(tyukai_node_addr, false);
+    let new_node = chord_node::new_and_join(tyukai_node_addr.clone(), false);
 
     // TODO: (rust) ひとまずjoin処理が成功していようがいまいが all_node_dictに追加してしまう
     //              後で要修正
@@ -1234,18 +1281,25 @@ def do_stabilize_ftable_th(node_list : List[ChordNode]):
 */
 
 pub fn do_stabilize_once_at_all_node_ftable_without_new_th(node_list : Vec<ArRmRs<chord_node::ChordNode>>){
-    for times in range(0, gval.STABILIZE_FTABLE_BATCH_TIMES) {
-        for table_idx in range(0, gval.ID_SPACE_BITS) {
-            for node in node_list {
-                let ret = stabilizer::stabilize_finger_table(node, table_idx);
-                if ret.is_ok {
-                    //do nothing
-                } else {  // ret.err_code == ErrorCode.InternalControlFlowException_CODE
-                    // join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-                    // InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
-                    chord_util::dprint(
-                        &("do_stabilize_ftable_th,".to_string() + chord_util::gen_debug_str_of_node(node.node_info).as_str()
-                        + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED"));
+    for times in 0..gval::STABILIZE_FTABLE_BATCH_TIMES {
+        for table_idx in 0..gval::ID_SPACE_BITS {
+            for node in &node_list {
+                let node_refcell = get_refcell_from_arc_with_locking!(node);
+                let node_ref = get_ref_from_refcell!(node_refcell);
+                
+                match stabilizer::stabilize_finger_table(Arc::clone(node), node_ref, table_idx as i32) {
+                    Err(_err) => { // err_code == ErrorCode.InternalControlFlowException_CODE
+                        // join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                        // InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+                        let node_ni_refcell = get_refcell_from_arc_with_locking!(node_ref.node_info);
+                        let node_ni_ref = get_ref_from_refcell!(node_ni_refcell);
+                        chord_util::dprint(
+                            &("do_stabilize_ftable_th,".to_string() + chord_util::gen_debug_str_of_node(Some(node_ni_ref)).as_str()
+                            + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED"));                        
+                    },
+                    Ok(_dummy_bool) => {
+                        //do nothing
+                    }
                 }
             }
         }
@@ -1276,21 +1330,23 @@ def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]) -> List[T
 // all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 pub fn do_stabilize_once_at_all_node(){
     // ロックの取得
-    // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドでのアクセスはブロックされる
+    // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
 
     chord_util::dprint(&("do_stabilize_once_at_all_node_0,START".to_string()));
     //with gval.lock_of_all_node_dict:
-    let shuffled_node_list: Vec<ArRmRs<chord_node::ChordNode>> = vec![];
-    for node_elem in gd_ref.all_node_dict.values() {
-        // Rustのイテレータは毎回異なる順序で要素を返すため自身でシャッフルする必要はない
-        let node_refcell = get_refcell_from_arc_with_locking!(*node_elem);
-        let node_ref = get_ref_from_refcell!(node_refcell);
-        if node_ref.is_join_op_finished.load(Ordering::Relaxed) == true && node_ref.is_alive.load(Ordering::Relaxed) == true {
-            shuffled_node_list.push(Arc::clone(node_elem));
-        }
-    }
+
+    // let shuffled_node_list: Vec<ArRmRs<chord_node::ChordNode>> = vec![];
+    // for node_elem in gd_ref.all_node_dict.values() {
+    //     // Rustのイテレータは毎回異なる順序で要素を返すため自身でシャッフルする必要はない
+    //     let node_refcell = get_refcell_from_arc_with_locking!(*node_elem);
+    //     let node_ref = get_ref_from_refcell!(node_refcell);
+    //     if node_ref.is_join_op_finished.load(Ordering::Relaxed) == true && node_ref.is_alive.load(Ordering::Relaxed) == true {
+    //         shuffled_node_list.push(Arc::clone(node_elem));
+    //     }
+    // }
+    let shuffled_node_list = get_all_network_constructed_nodes();
 
     //let shuffled_node_list: Vec<chord_node::ChordNode> = random.sample(node_list, len(node_list));
 
@@ -1403,6 +1459,7 @@ def stabilize_th():
         do_stabilize_once_at_all_node()
 */
 fn main() {
+
     // 最初の1ノードはここで登録する
     let first_node = chord_node::new_and_join("".to_string(), true);
     let first_node_refcell = get_refcell_from_arc_with_locking!(first_node);
@@ -1432,6 +1489,7 @@ fn main() {
     for handle in thread_handles {
         handle.join().unwrap();
     }
+
 /*    
     node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
     node_join_th_handle.start()

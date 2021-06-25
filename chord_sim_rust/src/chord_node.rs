@@ -597,7 +597,7 @@ pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<Cho
         }
 
         // シミュレーション時のみ必要なフィールド（実システムでは不要）
-        new_node_refmut.is_alive.store(false, Ordering::Relaxed);
+        new_node_refmut.is_alive.store(true, Ordering::Relaxed);
         // TODO: (rust) 実際にKVSとしてデータのput、getを行うようになったらこのフラグは
         //              falseで初期化し、適切な箇所でtrueに変更すること
         new_node_refmut.is_join_op_finished.store(true, Ordering::Relaxed);

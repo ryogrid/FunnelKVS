@@ -626,11 +626,11 @@ use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
 fn get_a_random_node() -> ArRmRs<chord_node::ChordNode>{
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
-    let mut tmp_vec = vec![];
+    let tmp_vec = vec![];
     for (k, v) in &gd_ref.borrow().all_node_dict{
         let node_refcell = get_refcell_from_arc_with_locking!(*v);
-        let node_refmut = get_ref_from_refcell!(node_refcell);
-        if node_refmut.is_join_op_finished.load(Ordering::Relaxed) == true && node_refmut.is_join_op_finished.load(Ordering::Relaxed) == true {
+        let node_ref = get_ref_from_refcell!(node_refcell);
+        if node_ref.is_join_op_finished.load(Ordering::Relaxed) == true && node_ref.is_alive.load(Ordering::Relaxed) == true {
             tmp_vec.push(v);
         }
     }
@@ -1137,14 +1137,25 @@ pub fn add_new_node(){
     }
 */
 
-    let tyukai_node = get_a_random_node();
-    let new_node = chord_node::ChordNode(tyukai_node.node_info.address_str);
+    let tyukai_node_addr: String;
+    {
+        let tyukai_node = get_a_random_node();
+        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
+        let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
+        let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
+        let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
+        tyukai_node_addr = tyukai_node_ni_ref.address_str.clone();
+    }
+    let new_node = chord_node::new_and_join(tyukai_node_addr, false);
 
     // TODO: (rust) ひとまずjoin処理が成功していようがいまいが all_node_dictに追加してしまう
     //              後で要修正
-    gval::all_node_dict[new_node.node_info.address_str] = new_node;
+    {
+        let gd_refmut = get_refmut_from_refcell!(gd_refcell);
+        gd_refmut.all_node_dict.insert(tyukai_node_addr.clone(), Arc::clone(&new_node));
+    }
 
-// TODO: join処理が成功したか否かで処理を変えるルートは後回し。また、レプリカ関連の処理も後回し
+// TODO: (rust) join処理が成功したか否かで処理を変えるルートは後回し。また、レプリカ関連の処理も後回し
 /*
     if stabilizer::need_join_retry_node == None {
         // join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
@@ -1222,7 +1233,7 @@ def do_stabilize_ftable_th(node_list : List[ChordNode]):
                         + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
 */
 
-pub fn do_stabilize_once_at_all_node_ftable_without_new_th(node_list : Vec<chord_node::ChordNode>){
+pub fn do_stabilize_once_at_all_node_ftable_without_new_th(node_list : Vec<ArRmRs<chord_node::ChordNode>>){
     for times in range(0, gval.STABILIZE_FTABLE_BATCH_TIMES) {
         for table_idx in range(0, gval.ID_SPACE_BITS) {
             for node in node_list {
@@ -1267,14 +1278,25 @@ pub fn do_stabilize_once_at_all_node(){
     // ロックの取得
     // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドでのアクセスはブロックされる
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    let gd_ref = get_ref_from_refcell!(gd_refcell);
 
     chord_util::dprint(&("do_stabilize_once_at_all_node_0,START".to_string()));
     //with gval.lock_of_all_node_dict:
-    let node_list = list(gval.all_node_dict.values());
-    let shuffled_node_list : List[ChordNode] = random.sample(node_list, len(node_list));
+    let shuffled_node_list: Vec<ArRmRs<chord_node::ChordNode>> = vec![];
+    for node_elem in gd_ref.all_node_dict.values() {
+        // Rustのイテレータは毎回異なる順序で要素を返すため自身でシャッフルする必要はない
+        let node_refcell = get_refcell_from_arc_with_locking!(*node_elem);
+        let node_ref = get_ref_from_refcell!(node_refcell);
+        if node_ref.is_join_op_finished.load(Ordering::Relaxed) == true && node_ref.is_alive.load(Ordering::Relaxed) == true {
+            shuffled_node_list.push(Arc::clone(node_elem));
+        }
+    }
+
+    //let shuffled_node_list: Vec<chord_node::ChordNode> = random.sample(node_list, len(node_list));
 
     // TODO: (rust) 暫定実装としてスレッドを新たに立ち上げず全てのノードについて処理をする
-    //              後で複数スレッドで行う形に戻すこと（必要だろうか・・・）
+    //              後で複数スレッドで行う形に戻すこと. その際は各スレッドが並列に動作しなければ
+    //              意味が無いためこの関数の先頭でロックをとってはいけない
     do_stabilize_once_at_all_node_ftable_without_new_th(shuffled_node_list);
 
     // TODO: (rust) successorのstabilizeは後回し
@@ -1404,6 +1426,8 @@ fn main() {
     thread_handles.push(std::thread::spawn(node_join_th));
     thread_handles.push(std::thread::spawn(stabilize_th));
 
+    chord_util::dprint(&("main: Start waiting thread exit!".to_string()));
+
     // スレッド終了の待ち合わせ（終了してくるスレッドは基本的に無い）
     for handle in thread_handles {
         handle.join().unwrap();
@@ -1425,7 +1449,7 @@ fn main() {
     // node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
     // node_kill_th_handle.start()
 
-    println!("Hello, world!");
+
 /*
     while True:
         time.sleep(1)

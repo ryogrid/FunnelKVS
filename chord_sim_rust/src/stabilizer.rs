@@ -919,7 +919,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
             // TODO: find_successor call at join
             successor = match endpoints::grpc__find_successor(
-                Arc::clone(&new_node), new_node_ref, new_node_ni_ref, new_node_ni_ref.node_id) {
+                Arc::clone(&tyukai_node), tyukai_node_ref, tyukai_node_ni_ref, new_node_ni_ref.node_id) {
                     Err(_e) => { // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
                         // リトライに必要な情報を記録しておく
                         // TODO: (rust) リトライの対応は後回し
@@ -956,7 +956,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
         // TODO: x direct access to node_info of successor at join
         //let succ_infos_len = new_node_ni_refmut.successor_info_list.len();
-        new_node_ni_refmut.successor_info_list[0] = (*successor_ni_ref).clone();
+        new_node_ni_refmut.successor_info_list.push((*successor_ni_ref).clone());
 
         // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
         new_node_ni_refmut.finger_table[0] = Some(new_node_ni_refmut.successor_info_list[0].clone());

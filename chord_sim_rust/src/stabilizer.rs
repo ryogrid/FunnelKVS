@@ -955,12 +955,12 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
         let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
         let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
 
-        // TODO: x direct access to node_info of successor at join
-        //let succ_infos_len = new_node_ni_refmut.successor_info_list.len();
-        new_node_ni_refmut.successor_info_list.push((*successor_ni_ref).clone());
-
-        // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        new_node_ni_refmut.finger_table[0] = Some(new_node_ni_refmut.successor_info_list[0].clone());
+        // TODO: (rust) for debug
+        if new_node_ni_refmut.node_id == successor_ni_ref.node_id {
+            chord_util::dprint(&("join_2_5,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
+                            + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str() + ","
+                            + chord_util::gen_debug_str_of_node(Some(&new_node_ni_refmut.successor_info_list[0])).as_str() + ",FOUND_NODE_IS_SAME_WITH_SELF_NODE!!!"));
+        }
 
         // TODO: x direct access to node_info of predecessor at join
         if tyukai_node_ni_ref.node_id == tyukai_node_ni_ref.successor_info_list[0].node_id {
@@ -971,10 +971,19 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
             // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
             // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
             is_second_node = true;
+            new_node_ni_refmut.successor_info_list.push((*tyukai_node_ni_ref).clone());
             new_node_ni_refmut.set_pred_info((*tyukai_node_ni_ref).clone());
 
             // mutableな参照が必要な都合により、後続のコードで残りの処理を行う
+        }else{
+            // TODO: x direct access to node_info of successor at join
+            //let succ_infos_len = new_node_ni_refmut.successor_info_list.len();
+            new_node_ni_refmut.successor_info_list.push((*successor_ni_ref).clone());
         }
+
+        // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
+        new_node_ni_refmut.finger_table[0] = Some(new_node_ni_refmut.successor_info_list[0].clone());
+
         // 後続の処理の中で呼び出される grpc__set_routing_infos_force で &Mut RefMut<node_info::NodeInfo>の
         // 借用が行われるため、&Ref<node_info::NodeInfo>と関連する借用した参照はここで無効化する
     }
@@ -1050,7 +1059,19 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
                 return
             },
             Ok(_dummy_bool) => {
-                //do nothing
+                let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+                let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
+                let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+                let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
+        
+                let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
+                let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
+                let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
+                let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
+                
+                chord_util::dprint(&("join_4,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
+                + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str() + ","
+                + chord_util::gen_debug_str_of_node(Some(&new_node_ni_refmut.successor_info_list[0])).as_str()));                
             },
         }
 

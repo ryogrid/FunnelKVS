@@ -917,8 +917,9 @@ pub fn check_nodes_connectivity() {
     // let mut cloned_node: ArRmRs<chord_node::ChordNode>;
     // let mut cur_node_info_succ_0_arrmrs: ArRmRs<node_info::NodeInfo>;
     // let mut cur_node_info_succ_0_refcell: &RefCell<node_info::NodeInfo>;
-    let mut cur_node_info_succ_0 = (*cur_node_info).clone();
-    let start_node_info = cur_node_info_succ_0.clone();
+    let cur_node_info_succ_0 = cur_node_info;
+    let mut cur_node_info_succ_0_addr = cur_node_info.address_str.clone();
+    let start_node_info = (*cur_node_info_succ_0).clone();
     // ノードの総数（is_aliveフィールドがFalseのものは除外して算出）
 
     //with gval.lock_of_all_node_dict:
@@ -930,17 +931,18 @@ pub fn check_nodes_connectivity() {
     unsafe {
         abnn_str = gval::already_born_node_num.load(Ordering::Relaxed).to_string();
     }
+
     println!("{}","check_nodes_connectivity__succ,all_node_num=".to_string() + "," + all_node_num.to_string().as_str() + ",already_born_node_num=" + abnn_str.as_str());
-
-
+    print!("{}", cur_node_info_succ_0.born_id.to_string() + "," + chord_util::conv_id_to_ratio_str(cur_node_info_succ_0.node_id).as_str() + " -> ");
     while counter < all_node_num {
-        print!("{}", cur_node_info_succ_0.born_id.to_string() + "," + chord_util::conv_id_to_ratio_str(cur_node_info_succ_0.node_id).as_str() + " -> ");
+        
 
         // 各ノードはsuccessorの情報を保持しているが、successorのsuccessorは保持しないようになって
         // いるため、単純にsuccessorのチェーンを辿ることはできないため、各ノードから最新の情報を
         // 得ることに対応する形とする
 
-        match chord_util::get_node_by_address(&cur_node_info_succ_0.address_str) {
+        //match chord_util::get_node_by_address(&cur_node_info_succ_0.successor_info_list[0].address_str) {
+        match chord_util::get_node_by_address(&cur_node_info_succ_0_addr) {            
             Err(err) => { // ErrorCode.InternalControlFlowException_CODE || ErrorCode.NodeIsDownedException_CODE
                 if err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED {
                     println!("");
@@ -962,10 +964,11 @@ pub fn check_nodes_connectivity() {
                     println!("");
                     print!("no successor having node was detected!");
                 }else{
-                    // let cur_node_info_succ_0_arrmrs = ArRmRs_new!(cur_node_info.successor_info_list[0].clone());
-                    // let cur_node_info_succ_0_refcell = get_refcell_from_arc_with_locking!(cur_node_info_succ_0_arrmrs);
-                    // let cur_node_info_succ_0_ref  = get_ref_from_refcell!(cur_node_info_succ_0_refcell);
-                    cur_node_info_succ_0 = (*cur_node_info).clone();
+                    print!("{}", cur_node_info.born_id.to_string() + "," + chord_util::conv_id_to_ratio_str(cur_node_info.node_id).as_str() + " -> ");
+                    let cur_node_info_succ_0_arrmrs = ArRmRs_new!(cur_node_info.successor_info_list[0].clone());
+                    let cur_node_info_succ_0_refcell = get_refcell_from_arc_with_locking!(cur_node_info_succ_0_arrmrs);
+                    let cur_node_info_succ_0_ref  = get_ref_from_refcell!(cur_node_info_succ_0_refcell);
+                    cur_node_info_succ_0_addr = cur_node_info_succ_0_ref.address_str.clone();
                 }
             }
             //cur_node_info : 'NodeInfo' = cast('ChordNode', ret.result).node_info.successor_info_list[0];

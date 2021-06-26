@@ -1245,7 +1245,6 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
                 found_node_ni_cloned = (*found_node_ni_ref).clone();
             }
 
-            //見つかったノードが自分自身でなければ
             //exnode_ni_refmut.finger_table[idx as usize] = Some(node_info::get_partial_deepcopy(found_node_ni_ref));
             let exnode_ni_refmut = get_refmut_from_refcell!(exnode_ni_refcell);
             exnode_ni_refmut.finger_table[idx as usize] = Some(found_node_ni_cloned.clone());

@@ -325,40 +325,32 @@ pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: 
 
 // id(int)　の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id: i32) -> ArRmRs<chord_node::ChordNode> {
-/*
-    let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
-    let exnode_ref = get_ref_from_refcell!(exnode_refcell);
+    let mut n_dash = Arc::clone(&existing_node);
+    let mut n_dash_found = Arc::clone(&n_dash);
 
-    let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
-    let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
-
-    let exnode_ft_refcell = get_refcell_from_arc_with_locking!(exnode_ni_ref.finger_table);
-    let exnode_ft_ref = get_ref_from_refcell!(exnode_ft_refcell);
-
-    let exnode_succ_list_refcell = get_refcell_from_arc_with_locking!(exnode_ni_ref.successor_info_list);
-    let exnode_succ_list_ref = get_ref_from_refcell!(exnode_succ_list_refcell);
-*/
-    let n_dash = Arc::clone(&existing_node);
-    let n_dash_ninfo = exnode_ni_ref;
     chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str()));
-
+    
     // n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
     // TODO: direct access to node_id and successor_info_list of n_dash at find_predecessor
-    while !chord_util::exist_between_two_nodes_right_mawari(n_dash_ninfo.node_id, n_dash_ninfo.successor_info_list[0].node_id, id) {
+    loop {
+        // 1周目でも実質的に同じ値が入るようになっているので問題ない
+        n_dash = Arc::clone(&n_dash_found);
+
+        let n_dash_refcell = get_refcell_from_arc_with_locking!(n_dash);
+        let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
+        let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
+        let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
+
+        //while文の書き換えの形でできたif文
+        if chord_util::exist_between_two_nodes_right_mawari(n_dash_ninfo.node_id, n_dash_ninfo.successor_info_list[0].node_id, id) {
+            break;
+        }
         // TODO: x direct access to node_info of n_dash at find_predecessor
         chord_util::dprint(&("find_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
                             + chord_util::gen_debug_str_of_node(Some(n_dash_ninfo)).as_str()));
         // TODO: closest_preceding_finger call at find_predecessor
 
-        let n_dash_refcell = get_refcell_from_arc_with_locking!(n_dash);
-        let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
-    
-        let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
-        let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
-
-        //let n_dash_endpoints_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.endpoints);
-        //let n_dash_endpoints_ref = get_ref_from_refcell!(n_dash_endpoints_refcell);
-        let n_dash_found = endpoints::grpc__closest_preceding_finger(Arc::clone(&existing_node), n_dash_ref, exnode_ni_ref, id);
+        n_dash_found = endpoints::grpc__closest_preceding_finger(Arc::clone(&n_dash), n_dash_ref, n_dash_ninfo, id);
 
         let n_dash_found_refcell = get_refcell_from_arc_with_locking!(n_dash_found);
         let n_dash_found_ref = get_ref_from_refcell!(n_dash_found_refcell);
@@ -406,9 +398,7 @@ pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_
                             + chord_util::gen_debug_str_of_node(Some(n_dash_found_ni_ref)).as_str()));
 
         // チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
-        // ノード情報 n_dash_foundに置き換える
-
-        let n_dash = Arc::clone(&n_dash_found);
+        // ノード情報は次周のループの先頭でn_dash_foundに置き換えられる
     }
 
     return Arc::clone(&n_dash);

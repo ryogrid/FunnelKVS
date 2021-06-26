@@ -1193,13 +1193,25 @@ pub fn add_new_node(){
         let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
         tyukai_node_addr = tyukai_node_ni_ref.address_str.clone();
     }
+    println!("add_new_node_th {:?}", tyukai_node_addr);
     let new_node = chord_node::new_and_join(tyukai_node_addr.clone(), false);
 
     // TODO: (rust) ひとまずjoin処理が成功していようがいまいが all_node_dictに追加してしまう
     //              後で要修正
     {
         let gd_refmut = get_refmut_from_refcell!(gd_refcell);
-        gd_refmut.all_node_dict.insert(tyukai_node_addr.clone(), Arc::clone(&new_node));
+        
+        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+        let new_node_ref = get_ref_from_refcell!(new_node_refcell);
+        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_ref.node_info);
+        let new_node_ni_ref = get_ref_from_refcell!(new_node_ni_refcell);
+
+        gd_refmut.all_node_dict.insert( new_node_ni_ref.address_str.clone(), Arc::clone(&new_node));
+        
+        //// new_and_joinメソッドの中でインクリメントしているため不要
+        // unsafe{
+        //     gval::already_born_node_num.fetch_add(1, Ordering::Relaxed);
+        // }
     }
 
 // TODO: (rust) join処理が成功したか否かで処理を変えるルートは後回し。また、レプリカ関連の処理も後回し
@@ -1473,6 +1485,7 @@ fn main() {
             let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
             let gd_refmut = get_refmut_from_refcell!(gd_refcell);
             gd_refmut.all_node_dict.insert(first_node_ni_refmut.address_str.clone(), Arc::clone(&first_node));
+            println!("{:?}", gd_refmut.all_node_dict);
         }
     }
 

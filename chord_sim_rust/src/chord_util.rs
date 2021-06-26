@@ -654,6 +654,7 @@ pub fn get_node_by_address(address : &String) -> Result<ArRmRs<chord_node::Chord
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
 
+    println!("get_node_by_address {:?}", address);
     let get_result = gd_ref.all_node_dict.get(address);
     let ret_val_cloned = 
         match get_result {

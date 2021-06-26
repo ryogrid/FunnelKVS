@@ -892,6 +892,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
     let mut is_second_node:bool = false;
 
+    println!("join {:?}", tyukai_node_address);
     // 実装上例外は発生しない.
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
     let tyukai_node = chord_util::get_node_by_address(tyukai_node_address).unwrap();

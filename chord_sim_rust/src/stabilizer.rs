@@ -1188,8 +1188,13 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
     //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
     let find_rslt: Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError>;
     let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
+
+    let exnode_id: i32;
+
     {
         let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
+
+        exnode_id = exnode_ni_ref.node_id;
 
         if exnode_ref.is_alive.load(Ordering::Relaxed) == false {
             // 処理の合間でkillされてしまっていた場合の考慮
@@ -1208,8 +1213,7 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
         let update_id = chord_util::overflow_check_and_conv(exnode_ni_ref.node_id + 2i32.pow(idx as u32));
         find_rslt = router::find_successor(existing_node, exnode_ref, exnode_ni_ref, update_id);
     }
-
-    let exnode_ni_refmut = get_refmut_from_refcell!(exnode_ni_refcell);        
+    
     match find_rslt {
         Err(err_code) => {
             // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_Code || ret.err_code == ErrorCode.InternalControlFlowException_CODE
@@ -1218,6 +1222,7 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
             // 適切な担当ノードを得ることができなかった
             // 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
             // ことであるので、更新対象のエントリには None を設定しておく
+            let exnode_ni_refmut = get_refmut_from_refcell!(exnode_ni_refcell);
             exnode_ni_refmut.finger_table[idx as usize] = None;
             chord_util::dprint(&("stabilize_finger_table_2_5,NODE_IS_DOWNED,".to_string()
                 + chord_util::gen_debug_str_of_node(Some(exnode_ni_refmut)).as_str()));
@@ -1227,19 +1232,27 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
         Ok(found_node_arrmrs) => {
             // TODO: x direct access to node_info of found_node at stabilize_finger_table
 
-            let found_node_refcell = get_refcell_from_arc_with_locking!(found_node_arrmrs);
-            let found_node_ref = get_ref_from_refcell!(found_node_refcell);
-        
-            let found_node_ni_refcell = get_refcell_from_arc_with_locking!(found_node_ref.node_info);
-            let found_node_ni_ref = get_ref_from_refcell!(found_node_ni_refcell);
+            //見つかったノードが自分自身であった場合に借用の競合を避けるため回りくどいことをする
+            let found_node_ni_cloned: node_info::NodeInfo;
+            {
+                let found_node_refcell = get_refcell_from_arc_with_locking!(found_node_arrmrs);
+                let found_node_ref = get_ref_from_refcell!(found_node_refcell);
+            
+                let found_node_ni_refcell = get_refcell_from_arc_with_locking!(found_node_ref.node_info);
+                let found_node_ni_ref = get_ref_from_refcell!(found_node_ni_refcell);
 
+                found_node_ni_cloned = (*found_node_ni_ref).clone();
+            }
+
+            //見つかったノードが自分自身でなければ
             //exnode_ni_refmut.finger_table[idx as usize] = Some(node_info::get_partial_deepcopy(found_node_ni_ref));
-            exnode_ni_refmut.finger_table[idx as usize] = Some((*found_node_ni_ref).clone());
+            let exnode_ni_refmut = get_refmut_from_refcell!(exnode_ni_refcell);
+            exnode_ni_refmut.finger_table[idx as usize] = Some(found_node_ni_cloned.clone());
 
             // TODO: x direct access to node_info of found_node at stabilize_finger_table
             chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
                     + chord_util::gen_debug_str_of_node(Some(exnode_ni_refmut)).as_str() + ","
-                    + chord_util::gen_debug_str_of_node(Some(found_node_ni_ref)).as_str()));
+                    + chord_util::gen_debug_str_of_node(Some(&found_node_ni_cloned)).as_str()));
 
             return Ok(true);
         }

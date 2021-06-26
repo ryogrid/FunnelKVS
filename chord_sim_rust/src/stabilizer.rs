@@ -892,7 +892,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
     let mut is_second_node:bool = false;
 
-    println!("join {:?}", tyukai_node_address);
+    //println!("join {:?}", tyukai_node_address);
     // 実装上例外は発生しない.
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
     let tyukai_node = chord_util::get_node_by_address(tyukai_node_address).unwrap();
@@ -979,28 +979,40 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
         // 借用が行われるため、&Ref<node_info::NodeInfo>と関連する借用した参照はここで無効化する
     }
 
-    // mutableな参照を借用し直す
-    let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-    let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-    let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-    let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
+    {
+        // mutableな参照を借用し直す
+        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+        let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
+        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
 
-    if is_second_node {
-        // secondノードの場合の考慮の続き
-        endpoints::grpc__set_routing_infos_force(
-            Arc::clone(&tyukai_node),
-            (*new_node_ni_refmut).clone(),
-            (*new_node_ni_refmut).clone(),
-            (*new_node_ni_refmut).clone()
-        );
+        if is_second_node {
+            // secondノードの場合の考慮の続き
+            endpoints::grpc__set_routing_infos_force(
+                Arc::clone(&tyukai_node),
+                (*new_node_ni_refmut).clone(),
+                (*new_node_ni_refmut).clone(),
+                (*new_node_ni_refmut).clone()
+            );
+        }
+
+        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
+        let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
+        let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
+        let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
     }
 
-    let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
-    let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
-    let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
-    let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
-
     if is_second_node {
+        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+        let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
+        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
+
+        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
+        let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
+        let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
+        let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
+
         // secondノードの場合の考慮の続き
         chord_util::dprint(&("join_3,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
                             + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str() + ","
@@ -1015,6 +1027,16 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
                 //need_join_retry_node = self.existing_node;
                 //need_join_retry_tyukai_node = tyukai_node;
 
+                let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+                let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
+                let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+                let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
+        
+                let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
+                let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
+                let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
+                let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
+                
                 // 既に値を設定してしまっている場合にリトライ時に問題が生じることを考慮し、
                 // 内容をリセットしておく
                 new_node_ni_refmut.successor_info_list = vec![];
@@ -1032,6 +1054,11 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
             },
         }
 
+        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+        let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
+        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
+
         // successor_info_listを埋めておく
         // TODO: pass_successor_list call at join
         let succ_list_of_succ = endpoints::grpc__pass_successor_list(Arc::clone(&successor));
@@ -1046,9 +1073,10 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
     // successorから自身が担当することになるID範囲のデータの委譲を受け、格納する
 
-    // TODO: delegate_my_tantou_data call at join
-    let tantou_data_list = endpoints::grpc__delegate_my_tantou_data(
-        Arc::clone(&successor), new_node_ni_refmut.node_id);
+    // TODO: (rust) put, getのコードがまだ存在しないので、KVSで保持しているデータの委譲のコードは後回し
+    // // TODO: delegate_my_tantou_data call at join
+    // let tantou_data_list = endpoints::grpc__delegate_my_tantou_data(
+    //     Arc::clone(&successor), new_node_ni_refmut.node_id);
 
     //with self.existing_node.node_info.lock_of_datastore:
 

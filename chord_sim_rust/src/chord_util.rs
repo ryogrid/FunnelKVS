@@ -476,7 +476,7 @@ def overflow_check_and_conv(cls, id : int) -> int:
 */
 
 pub fn conv_id_to_ratio_str(id : i32) -> String {
-    let ratio = (id / gval::ID_MAX) as f32 * 100.0;
+    let ratio = (id as f64 / gval::ID_MAX as f64) * 100.0;
     return format!("{:.4}", ratio);
 }
 /*
@@ -654,7 +654,7 @@ pub fn get_node_by_address(address : &String) -> Result<ArRmRs<chord_node::Chord
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
 
-    println!("get_node_by_address {:?}", address);
+    //println!("get_node_by_address {:?}", address);
     let get_result = gd_ref.all_node_dict.get(address);
     let ret_val_cloned = 
         match get_result {

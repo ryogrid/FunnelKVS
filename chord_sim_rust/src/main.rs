@@ -930,7 +930,7 @@ pub fn check_nodes_connectivity() {
     unsafe {
         abnn_str = gval::already_born_node_num.load(Ordering::Relaxed).to_string();
     }
-    print!("{}","check_nodes_connectivity__succ,all_node_num=".to_string() + all_node_num.to_string().as_str() + ",already_born_node_num=" + abnn_str.as_str());
+    println!("{}","check_nodes_connectivity__succ,all_node_num=".to_string() + "," + all_node_num.to_string().as_str() + ",already_born_node_num=" + abnn_str.as_str());
 
 
     while counter < all_node_num {
@@ -1193,7 +1193,7 @@ pub fn add_new_node(){
         let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
         tyukai_node_addr = tyukai_node_ni_ref.address_str.clone();
     }
-    println!("add_new_node_th {:?}", tyukai_node_addr);
+    //println!("add_new_node_th {:?}", tyukai_node_addr);
     let new_node = chord_node::new_and_join(tyukai_node_addr.clone(), false);
 
     // TODO: (rust) ひとまずjoin処理が成功していようがいまいが all_node_dictに追加してしまう

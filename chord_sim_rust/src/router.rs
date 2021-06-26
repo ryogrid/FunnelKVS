@@ -480,11 +480,6 @@ pub fn closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, ex
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
     // 順に見ていくようにする
-    
-    // let exnode_refcell = get_refcell_from_arc_with_locking!(existing_node);
-    // let exnode_ref = get_ref_from_refcell!(exnode_refcell);
-    // let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
-    // let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
 
     for node_info in exnode_ni_ref.finger_table.iter().rev() {
         // 注: Noneなエントリも存在し得る

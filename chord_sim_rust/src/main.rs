@@ -569,7 +569,7 @@ extern crate rocket;
 // OUT: &RefCell<T>
 macro_rules! get_refcell_from_arc_with_locking {
     ($arc:expr) => (
-        &*(($arc.as_ref()).borrow().lock());
+        &*(($arc.as_ref()).borrow().lock())//;
     );
 }
 
@@ -577,7 +577,7 @@ macro_rules! get_refcell_from_arc_with_locking {
 // OUT: &mut RefMut<T>
 macro_rules! get_refmut_from_refcell {
     ($refcell:expr) => (
-        &mut ($refcell).borrow_mut();
+        &mut ($refcell).borrow_mut()//;
     );
 }
 
@@ -586,7 +586,7 @@ macro_rules! get_refmut_from_refcell {
 // OUT: &Ref<T>
 macro_rules! get_ref_from_refcell {
     ($refcell:expr) => (
-        &($refcell).borrow();
+        &($refcell).borrow()//;
     );
 }
 

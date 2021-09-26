@@ -1261,8 +1261,69 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
             ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 */
 
+// node_info が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
+// 本メソッドはstabilize処理の中で用いられる
 // TODO: (rust) need implement check_predecessor func
-pub fn check_predeessor() {
+pub fn check_predeessor(self_node:ArRmRs<chord_node::ChordNode>, node_info:ArRmRs<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
+/*
+    if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
+        ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+                         + "LOCK_ACQUIRE_TIMEOUT")
+        return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+*/
+
+    //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
+
+/*    
+    //try:
+    if self.existing_node.node_info.predecessor_info == None {
+        // predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
+        self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy();
+        chord_util::dprint("check_predecessor_1," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                            + chord_util::gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]));
+    }
+
+    chord_util::dprint("check_predecessor_2," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+            + chord_util::gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]));
+*/
+
+// TODO: (rust)故障ノードを考慮した処理は後回し
+/*            
+    // この時点で認識している predecessor がノードダウンしていないかチェックする
+    let ret = chord_util::is_node_alive(cast('NodeInfo', self.existing_node.node_info.predecessor_info).address_str);
+    if ret.is_ok {
+        is_pred_alived : bool = cast(bool, ret.result);
+    }else{  // ret.err_code == ErrorCode.InternalControlFlowException_CODE
+        is_pred_alived : bool = False;
+    }
+
+    if is_pred_alived {
+*/
+/*
+    const distance_check:u32 = chord_util::calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id, node_info.node_id)
+    const distance_cur:u32 = chord_util::calc_distance_between_nodes_left_mawari(self.existing_node.node_info.node_id,
+                                                                        cast('NodeInfo',self.existing_node.node_info.predecessor_info).node_id)
+
+    // 確認を求められたノードの方が現在の predecessor より predecessorらしければ
+    // 経路表の情報を更新する
+    if distance_check < distance_cur {
+        self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy();
+
+        chord_util::dprint("check_predecessor_3," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
+                + chord_util::gen_debug_str_of_node(self.existing_node.node_info.successor_info_list[0]) + ","
+                + chord_util::gen_debug_str_of_node(self.existing_node.node_info.predecessor_info));
+    }
+*/
+// TODO: (rust)故障ノードを考慮した処理は後回し
+/*
+    }else{ // predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
+        self.existing_node.node_info.predecessor_info = node_info.get_partial_deepcopy();
+    }
+*/
+
+    return Ok(true);
+    //finally:
+        //self.existing_node.node_info.lock_of_pred_info.release()    
 }
 
 /*
@@ -1748,7 +1809,7 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
     let find_rslt: Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError>;
     let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
 
-    let exnode_id: i32;
+    let exnode_id: u32;
 
     {
         let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
@@ -1769,7 +1830,7 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
 
         // FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
         // 担当するノードに最も近いノードが格納される
-        let update_id = chord_util::overflow_check_and_conv(exnode_ni_ref.node_id + 2i32.pow(idx as u32));
+        let update_id = chord_util::overflow_check_and_conv((exnode_ni_ref.node_id as u64) + (2i32.pow(idx as u32) as u64));
         find_rslt = router::find_successor(existing_node, exnode_ref, exnode_ni_ref, update_id);
     }
     

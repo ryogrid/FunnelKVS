@@ -206,7 +206,7 @@ impl Router {
 // id（int）で識別されるデータを担当するノードの名前解決を行う
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {
+pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {
     // TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
     //       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に
     //       動作せず、パフォーマンスが出ないはず
@@ -324,7 +324,7 @@ pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: 
 
 
 // id(int)　の前で一番近い位置に存在するノードを探索する
-pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id: i32) -> ArRmRs<chord_node::ChordNode> {
+pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id: u32) -> ArRmRs<chord_node::ChordNode> {
     let mut n_dash = Arc::clone(&existing_node);
     let mut n_dash_found = Arc::clone(&n_dash);
 
@@ -475,7 +475,7 @@ pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_
 
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
 // ni_ref -> existing_nodeのもの
-pub fn closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> ArRmRs<chord_node::ChordNode> {        
+pub fn closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> ArRmRs<chord_node::ChordNode> {        
     // 範囲の広いエントリから探索していく
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ

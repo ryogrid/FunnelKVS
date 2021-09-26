@@ -105,7 +105,7 @@ type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 #[derive(Debug)]
 pub struct NodeInfo {
 //    pub existing_node : ArRmRs<chord_node::ChordNode>,
-    pub node_id : i32,
+    pub node_id : u32,
     pub address_str: String,
     // デバッグ用のID
     // 何ノード目として生成されたかの値
@@ -139,7 +139,7 @@ pub struct NodeInfo {
 impl NodeInfo {
     pub fn new() -> NodeInfo {
         NodeInfo {
-            node_id : -1,
+            node_id : 0, //TODO: node_idの初期値を-1から0に変更したので注意
             address_str: "".to_string(),
             born_id : -1,
             successor_info_list : Vec::new(),

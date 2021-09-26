@@ -119,7 +119,7 @@ impl Endpoints {
 */
 
 //TODO: (rust) ダミー実装なので委譲処理が必要になったタイミングで対応すること
-pub fn grpc__delegate_my_tantou_data(predecessor: ArRmRs<chord_node::ChordNode>, node_id : i32) -> Vec<chord_util::KeyValue>{
+pub fn grpc__delegate_my_tantou_data(predecessor: ArRmRs<chord_node::ChordNode>, node_id : u32) -> Vec<chord_util::KeyValue>{
     return vec![];
     //return self.existing_node.data_store.delegate_my_tantou_data(node_id)
 }
@@ -156,10 +156,10 @@ def grpc__set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor
 // id（int）で識別されるデータを担当するノードの名前解決を行う
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-pub fn grpc__find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {    
+pub fn grpc__find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {    
     return router::find_successor(existing_node, exnode_ref, exnode_ni_ref, id);
 }
 
-pub fn grpc__closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : i32) -> ArRmRs<chord_node::ChordNode> {
+pub fn grpc__closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> ArRmRs<chord_node::ChordNode> {
     return router::closest_preceding_finger(existing_node, exnode_ni_ref, id);
 }

@@ -116,7 +116,7 @@ use crate::chord_util;
 type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
 pub const ID_SPACE_BITS : u32 = 30; // 160 <- sha1での本来の値
-pub const ID_SPACE_RANGE : i32 = 2i32.pow(ID_SPACE_BITS); // 0を含めての数である点に注意
+pub const ID_SPACE_RANGE : u32 = 2i32.pow(ID_SPACE_BITS) as u32; // 0を含めての数である点に注意
 
 // paramaters for executing by PyPy3 on my desktop machine
 //pub const JOIN_INTERVAL_SEC : f32 = 1.0; //2.0 //0.9 //0.7 //0.5 //1
@@ -148,7 +148,7 @@ pub const SUCCESSOR_LIST_NORMAL_LEN : i32 = 3;
 // Chordネットワーク上のID空間の上限
 // TODO: 検証時の実行時間短縮のためにハッシュ関数で求めた値の代わりに乱数
 //       を用いているため bit数 を少なくしている
-pub const ID_MAX : i32 = ID_SPACE_RANGE - 1;
+pub const ID_MAX : u32 = ID_SPACE_RANGE - 1;
 pub const KEEP_NODE_NUM : i32 = 50; //100
 pub const NODE_NUM_MAX : i32 = 10000;
 pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10

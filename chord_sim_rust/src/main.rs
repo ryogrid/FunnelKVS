@@ -635,7 +635,7 @@ fn get_a_random_node() -> ArRmRs<chord_node::ChordNode>{
             tmp_vec.push(v);
         }
     }
-    let rand_val = chord_util::get_rnd_int_with_limit(tmp_vec.len() as i32);
+    let rand_val = chord_util::get_rnd_int_with_limit(tmp_vec.len() as u32);
     let node_arc = tmp_vec.get(rand_val as usize);
     let ret = Arc::clone(*(node_arc.unwrap()));
 
@@ -709,7 +709,7 @@ fn ftable_mod_and_search_th(){
                     // target_node の fingerテーブルの適当な要素を更新
                     let ftable_len = ninfo_mutref.finger_table.len() as i32;// ftable_refmut.len() as i32;
 
-                    ninfo_mutref.finger_table[chord_util::get_rnd_int_with_limit(ftable_len) as usize] = Some(cloned_new_node_info);
+                    ninfo_mutref.finger_table[chord_util::get_rnd_int_with_limit(ftable_len as u32) as usize] = Some(cloned_new_node_info);
 
                     // ftable_refmutを有効なままにすると、後続の処理の内容によってはborrowの際にpanicを生じさせてしまうため
                     // ここで無効にする

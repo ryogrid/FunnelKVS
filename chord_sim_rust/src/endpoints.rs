@@ -163,3 +163,7 @@ pub fn grpc__find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode
 pub fn grpc__closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> ArRmRs<chord_node::ChordNode> {
     return router::closest_preceding_finger(existing_node, exnode_ni_ref, id);
 }
+
+pub fn grpc__stabilize_successor_inner(self_node: ArRmRs<chord_node::ChordNode>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{
+    return stabilizer::stabilize_successor_inner(self_node);
+}

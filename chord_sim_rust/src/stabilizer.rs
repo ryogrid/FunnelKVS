@@ -1585,7 +1585,7 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
     if successor_info.predecessor_info.len() == 0 {
         // successor が predecessor を未設定であった場合は自身を predecessor として保持させて
         // 処理を終了する
-        successor_info.predecessor_info.append(//self_nodeの実体のclone);
+        successor_info.predecessor_info.insert(0, node_info::partial_clone_from_ref());
 
         chord_util::dprint("stabilize_successor_2," + chord_util::gen_debug_str_of_node(self.node_info) + ","
                          + chord_util::gen_debug_str_of_node(self.node_info.successor_info));

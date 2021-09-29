@@ -182,6 +182,19 @@ impl Clone for NodeInfo {
     }  
 }
 
+// 上のClone trait 実装の参照から作れる版
+pub fn partial_clone_from_ref(node_info_ref: &NodeInfo) -> NodeInfo {
+    let mut ret_node_info = NodeInfo::new();
+
+    ret_node_info.node_id = node_info_ref.node_id;
+    ret_node_info.address_str = node_info_ref.address_str.clone();
+    ret_node_info.born_id = node_info_ref.born_id;
+    ret_node_info.successor_info_list = vec![];
+    ret_node_info.predecessor_info = vec![];
+
+    return ret_node_info;    
+}
+
 /*
 pub fn get_partial_deepcopy(orig_node_info: &Ref<NodeInfo>) -> NodeInfo {
     let mut ret_node_info = NodeInfo::new();

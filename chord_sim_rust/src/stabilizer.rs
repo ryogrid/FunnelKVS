@@ -1591,14 +1591,13 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
         if successor_info.predecessor_info.len() == 0 {
             is_successor_has_no_pred = true;
 
-/*            
+
             if self_node_ni_refmut.node_id == successor_info.node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
                 //抜けないと多重borrowでpanicしてしまうので
                 chord_util::dprint(&("WARN!!!".to_string()));
                 return Ok(true);
             }
-*/
 
             // 下のif文内で本来出力すべきだが、こちらに書いた方がラクなのでここにおいておく
             chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
@@ -1647,14 +1646,14 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
         // 情報を更新してもらう
         // 事前チェックによって避けられるかもしれないが、常に実行する
         let successor_obj = chord_util::get_node_by_address(&successor_info_addr).unwrap();
-/*
-        if self_node_ni_refmut.node_id == successor_info.node_id {
+
+        if self_node_ni_refmut.address_str == successor_info_addr {
             //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
             //抜けないと多重borrowでpanicしてしまうので
             chord_util::dprint(&("WARN!!!".to_string()));
             return Ok(true);
         }
-*/
+
         check_predecessor(Arc::clone(&successor_obj), Arc::clone(&self_node));
 
         let successor_obj_refcell = get_refcell_from_arc_with_locking!(successor_obj);
@@ -1674,6 +1673,12 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
             let new_successor_obj = chord_util::get_node_by_address(&self_node_ni_refmut.successor_info_list[0].address_str).unwrap();
+            if self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
+                //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
+                //抜けないと多重borrowでpanicしてしまうので
+                chord_util::dprint(&("WARN!!!".to_string()));
+                return Ok(true);
+            }            
             check_predecessor(Arc::clone(&new_successor_obj), Arc::clone(&self_node));
 
             let new_successor_obj_refcell = get_refcell_from_arc_with_locking!(new_successor_obj);

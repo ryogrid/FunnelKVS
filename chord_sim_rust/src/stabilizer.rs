@@ -1023,9 +1023,6 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
         // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
         new_node_ni_refmut.finger_table[0] = Some(new_node_ni_refmut.successor_info_list[0].clone());
-
-        // 後続の処理の中で呼び出される grpc__set_routing_infos_force で &Mut RefMut<node_info::NodeInfo>の
-        // 借用が行われるため、&Ref<node_info::NodeInfo>と関連する借用した参照はここで無効化する
     }
 
     {
@@ -1539,7 +1536,7 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
     let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
     let self_node_ref = get_ref_from_refcell!(self_node_refcell);
     let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
-    let self_node_ni_ref = get_ref_from_refcell!(self_node_ni_refcell);
+    let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
 
     // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     //     chord_util::dprint("stabilize_successor_0_0," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
@@ -1551,28 +1548,34 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
     //                      + "LOCK_ACQUIRE_TIMEOUT")
     //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
 
-    // TODO: (rust) successorが1ノードだけだった際と同様の処理を書く必要あり (stabilize_successor)
-    chord_util::dprint("stabilize_successor_1," + chord_util::gen_debug_str_of_node(self.node_info) + ","
-          + chord_util::gen_debug_str_of_node(self.node_info.successor_info));
+    chord_util::dprint(&("stabilize_successor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
+          + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
 
-    // firstノードに対する考慮（ノード作成時に自身をsuccesorに設定しているために自身だけ
-    // でsuccessorチェーンのループを作ったままになってしまうことを回避する）
-    if self_node_ni_ref.predecessor_info.len() != 0 && self_node_ni_ref.node_id == self_node_ni_ref.node_id {
-        chord_util::dprint("stabilize_successor_1_5," + chord_util::gen_debug_str_of_node(Some(self_node_ni_ref)) + ","
-                         + chord_util::gen_debug_str_of_node(Some(&self_node_ni_ref.successor_info_list[0])));
+    // firstノードだけが存在する状況で、firstノードがself_nodeであった場合に対する考慮
+    // TODO: (rust) このifブロックの処理が現在の実装と整合するものか要注意
+    if self_node_ni_refmut.predecessor_info.len() == 0 && self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
+        chord_util::dprint(&("stabilize_successor_1_5,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
+                         + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
+
+        // secondノードがjoinしてきた際にチェーン構造は2ノードで適切に構成されるように
+        // なっているため、ここでは何もせずに終了する
+
+        return Ok(true);
+/*
         // secondノードがjoin済みであれば、当該ノードのstabilize_successorによって
         // secondノードがpredecessorとして設定されているはずなので、succesorをそちら
         // に張り替える
         self_node_ni_ref.successor_info_list[0] = self_node_ni_ref.predecessor_info[0].clone();
         // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
         self_node_ni_ref.finger_table[0] = Some(self_node_ni_ref.successor_info_list[0].clone());
+*/
     }
 
     // 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
     // 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない
     // 場合があるため、successorのChordNodeオブジェクトを引いて、そこから最新のnode_info
     // の参照を得る
-    let ret = chord_util::get_node_by_address(&self_node_ni_ref.successor_info_list[0].address_str);
+    let ret = chord_util::get_node_by_address(&self_node_ni_refmut.successor_info_list[0].address_str);
     // TODO: 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
     let successor = ret.unwrap();
     let successor_refcell = get_refcell_from_arc_with_locking!(successor);
@@ -1584,24 +1587,25 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
     // successor_info = self.node_info.successor_info
     if successor_info.predecessor_info.len() == 0 {
         // successor が predecessor を未設定であった場合は自身を predecessor として保持させて
-        // 処理を終了する
-        successor_info.predecessor_info.insert(0, node_info::partial_clone_from_ref());
+        // 処理を終了する(check_predecessor関数により行う)
+        //successor_info.predecessor_info.insert(0, (*self_node_ni_ref).clone()); //node_info::partial_clone_from_ref());
+        check_predecessor(Arc::clone(&successor),  Arc::clone(&self_node));
 
-        chord_util::dprint("stabilize_successor_2," + chord_util::gen_debug_str_of_node(self.node_info) + ","
-                         + chord_util::gen_debug_str_of_node(self.node_info.successor_info));
+        chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
+                         + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
         return Ok(true);
     }
 
-    chord_util::dprint("stabilize_successor_3," + chord_util::gen_debug_str_of_node(self.node_info) + ","
-                     + chord_util::gen_debug_str_of_node(self.node_info.successor_info));
+    chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
+                     + chord_util::gen_debug_str_of_node(Some(&successor_info.successor_info_list[0])).as_str()));
 
     let pred_id_of_successor = successor_info.predecessor_info[0].node_id;
 
-    chord_util::dprint("stabilize_successor_3_5," + hex(pred_id_of_successor));
+    chord_util::dprint(&("stabilize_successor_3_5,".to_string() + &format!("{:X}", pred_id_of_successor)));
 
     // 下のパターン1から3という記述は以下の資料による説明に基づく
     // https://www.slideshare.net/did2/chorddht
-    if pred_id_of_successor == self_node_ni_ref.node_id {
+    if pred_id_of_successor == self_node_ni_refmut.node_id {
         // パターン1
         // 特に訂正は不要なので処理を終了する
         return Ok(true);
@@ -1611,31 +1615,42 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
         // 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
         // 情報を更新してもらう
         // 事前チェックによって避けられるかもしれないが、常に実行する
-        let successor_obj = chord_util::get_node_by_address(&successor_info.address_str);
-        check_predecessor(successor_obj.unwrap(), self_node);
+        let successor_obj = chord_util::get_node_by_address(&successor_info.address_str).unwrap();
+        check_predecessor(Arc::clone(&successor_obj), Arc::clone(&self_node));
 
-        let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_obj.node_info.node_id, pred_id_of_successor);
-        let distance_me = chord_util::calc_distance_between_nodes_left_mawari(successor_obj.node_info.node_id, self.node_info.node_id);
+        let successor_obj_refcell = get_refcell_from_arc_with_locking!(successor_obj);
+        let successor_obj_ref = get_ref_from_refcell!(successor_obj_refcell);
+        let successor_obj_ni_refcell = get_refcell_from_arc_with_locking!(successor_obj_ref.node_info);
+        let successor_obj_ni_ref = get_ref_from_refcell!(successor_obj_ni_refcell);
+
+        let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_obj_ni_ref.node_id, pred_id_of_successor);
+        let distance_me = chord_util::calc_distance_between_nodes_left_mawari(successor_obj_ni_ref.node_id, self_node_ni_refmut.node_id);
         if distance_unknown < distance_me {
             // successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
             // successorから自身に対して前方向にたどった場合の経路中に存在する場合
             // 自身の認識するsuccessorの情報を更新する
 
-            self_node_ni_ref.successor_info_list[0] = successor_obj.node_info.predecessor_info.get_partial_deepcopy();
+            self_node_ni_refmut.successor_info_list[0] = successor_obj_ni_ref.predecessor_info[0].clone();
 
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
-            let new_successor_obj = chord_util::get_node_by_address(&self_node_ni_ref.successor_info_list[0].address_str);
-            check_predecessor(new_successor_obj.unwrap(), self_node);
+            let new_successor_obj = chord_util::get_node_by_address(&self_node_ni_refmut.successor_info_list[0].address_str).unwrap();
+            check_predecessor(Arc::clone(&new_successor_obj), Arc::clone(&self_node));
 
-            chord_util::dprint("stabilize_successor_4," + chord_util::gen_debug_str_of_node(self.node_info) + ","
-                             + chord_util::gen_debug_str_of_node(self.node_info.successor_info) + ","
-                             + chord_util::gen_debug_str_of_node(new_successor_obj.node_info));
+            let new_successor_obj_refcell = get_refcell_from_arc_with_locking!(new_successor_obj);
+            let new_successor_obj_ref = get_ref_from_refcell!(new_successor_obj_refcell);
+            let new_successor_obj_ni_refcell = get_refcell_from_arc_with_locking!(new_successor_obj_ref.node_info);
+            let new_successor_obj_ni_ref = get_ref_from_refcell!(new_successor_obj_ni_refcell);
+
+            chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut)).as_str() + ","
+                             + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str() + ","
+                             + chord_util::gen_debug_str_of_node(Some(&new_successor_obj_ni_ref)).as_str()));
 
             return Ok(true);
         }
     }
 
+    return Ok(true);
     // finally:
     //     self.existing_node.node_info.lock_of_succ_infos.release()
     //     self.existing_node.node_info.lock_of_pred_info.release()    

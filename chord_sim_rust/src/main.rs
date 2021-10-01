@@ -552,6 +552,7 @@ if __name__ == '__main__':
 #![allow(unused_assignments)]
 #![allow(dead_code)]
 #![allow(non_snake_case)]
+#![allow(unused_must_use)]
 
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]

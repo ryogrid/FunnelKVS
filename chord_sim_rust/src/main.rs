@@ -1263,38 +1263,6 @@ def add_new_node():
     # gval.lock_of_all_data.release()
 */
 
-/*
-def do_stabilize_successor_th(node_list : List[ChordNode]):
-    for times in range(0, gval.STABILIZE_SUCCESSOR_BATCH_TIMES):
-        for node in node_list:
-            # try:
-                #node.stabilizer.stabilize_successor()
-            ret = node.stabilizer.stabilize_successor()
-            if (ret.is_ok):
-                pass
-            else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
-                # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-                # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
-                ChordUtil.dprint(
-                    "do_stabilize_successor_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
-                    + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
-*/
-
-/*
-def do_stabilize_ftable_th(node_list : List[ChordNode]):
-    for times in range(0, gval.STABILIZE_FTABLE_BATCH_TIMES):
-        for table_idx in range(0, gval.ID_SPACE_BITS):
-            for node in node_list:
-                ret = node.stabilizer.stabilize_finger_table(table_idx)
-                if (ret.is_ok):
-                    pass
-                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
-                    # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-                    # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
-                    ChordUtil.dprint(
-                        "do_stabilize_ftable_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
-                        + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
-*/
 
 pub fn do_stabilize_once_at_all_node_ftable_without_new_th(node_list : Vec<ArRmRs<chord_node::ChordNode>>){
     for times in 0..gval::STABILIZE_FTABLE_BATCH_TIMES {
@@ -1323,6 +1291,22 @@ pub fn do_stabilize_once_at_all_node_ftable_without_new_th(node_list : Vec<ArRmR
 }
 
 /*
+def do_stabilize_ftable_th(node_list : List[ChordNode]):
+    for times in range(0, gval.STABILIZE_FTABLE_BATCH_TIMES):
+        for table_idx in range(0, gval.ID_SPACE_BITS):
+            for node in node_list:
+                ret = node.stabilizer.stabilize_finger_table(table_idx)
+                if (ret.is_ok):
+                    pass
+                else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                    # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                    # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+                    ChordUtil.dprint(
+                        "do_stabilize_ftable_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
+                        + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
+*/
+
+/*
 def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]) -> List[Thread]:
     list_len = len(node_list)
     range_start = 0
@@ -1343,6 +1327,49 @@ def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]) -> List[T
     return thread_list
 */
 
+pub fn do_stabilize_once_at_all_node_successor_without_new_th(node_list : Vec<ArRmRs<chord_node::ChordNode>>){
+    for times in 0..gval::STABILIZE_SUCCESSOR_BATCH_TIMES {
+        for node in &node_list {
+            let node_refcell = get_refcell_from_arc_with_locking!(node);
+            let node_ref = get_ref_from_refcell!(node_refcell);
+            
+            match stabilizer::stabilize_successor(Arc::clone(node)) {
+                Err(_err) => { // err_code == ErrorCode.InternalControlFlowException_CODE
+                    // join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                    // InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+                    let node_ni_refcell = get_refcell_from_arc_with_locking!(node_ref.node_info);
+                    let node_ni_ref = get_ref_from_refcell!(node_ni_refcell);
+                    chord_util::dprint(
+                        &("do_stabilize_once_at_all_node_successor_without_new_th,".to_string() + chord_util::gen_debug_str_of_node(Some(node_ni_ref)).as_str()
+                        + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED"));                        
+                },
+                Ok(_dummy_bool) => {
+                    //do nothing
+                }
+            }
+        }
+    }
+}
+
+/*
+def do_stabilize_successor_th(node_list : List[ChordNode]):
+    for times in range(0, gval.STABILIZE_SUCCESSOR_BATCH_TIMES):
+        for node in node_list:
+            # try:
+                #node.stabilizer.stabilize_successor()
+            ret = node.stabilizer.stabilize_successor()
+            if (ret.is_ok):
+                pass
+            else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE
+                # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
+                # InternalCtronlFlowExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_finger_tableはあきらめる
+                ChordUtil.dprint(
+                    "do_stabilize_successor_th," + ChordUtil.gen_debug_str_of_node(node.node_info)
+                    + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
+*/
+
+
+
 // all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 pub fn do_stabilize_once_at_all_node(){
     // ロックの取得
@@ -1362,7 +1389,7 @@ pub fn do_stabilize_once_at_all_node(){
     //         shuffled_node_list.push(Arc::clone(node_elem));
     //     }
     // }
-    let shuffled_node_list = get_all_network_constructed_nodes();
+    let mut shuffled_node_list = get_all_network_constructed_nodes();
 
     //let shuffled_node_list: Vec<chord_node::ChordNode> = random.sample(node_list, len(node_list));
 
@@ -1370,6 +1397,13 @@ pub fn do_stabilize_once_at_all_node(){
     //              後で複数スレッドで行う形に戻すこと. その際は各スレッドが並列に動作しなければ
     //              意味が無いためこの関数の先頭でロックをとってはいけない
     do_stabilize_once_at_all_node_ftable_without_new_th(shuffled_node_list);
+
+    shuffled_node_list = get_all_network_constructed_nodes();
+    
+    // TODO: (rust) 暫定実装としてスレッドを新たに立ち上げず全てのノードについて処理をする
+    //              後で複数スレッドで行う形に戻すこと. その際は各スレッドが並列に動作しなければ
+    //              意味が無いためこの関数の先頭でロックをとってはいけない
+    do_stabilize_once_at_all_node_successor_without_new_th(shuffled_node_list);
 
     // TODO: (rust) successorのstabilizeは後回し
     //thread_list_succ : List[Thread] = do_stabilize_onace_at_all_node_successor(shuffled_node_list)

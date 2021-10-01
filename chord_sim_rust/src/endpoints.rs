@@ -136,8 +136,8 @@ def grpc__pass_successor_list(self) -> List['NodeInfo']:
     return self.existing_node.stabilizer.pass_successor_list()
 */
 
-pub fn grpc__check_predecessor(self_node: ArRmRs<chord_node::ChordNode>, caller_node: ArRmRs<chord_node::ChordNode>) -> Result<bool, chord_util::GeneralError> {
-    return stabilizer::check_predecessor(self_node, caller_node);
+pub fn grpc__check_predecessor(self_node: ArRmRs<chord_node::ChordNode>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+    return stabilizer::check_predecessor(self_node, caller_node_ni);
 }
 /*
 # TODO: InternalExp at grpc__check_predecessor

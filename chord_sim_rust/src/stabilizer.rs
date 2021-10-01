@@ -1575,26 +1575,43 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
     // 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない
     // 場合があるため、successorのChordNodeオブジェクトを引いて、そこから最新のnode_info
     // の参照を得る
-    let ret = chord_util::get_node_by_address(&self_node_ni_refmut.successor_info_list[0].address_str);
-    // TODO: 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
-    let successor = ret.unwrap();
-    let successor_refcell = get_refcell_from_arc_with_locking!(successor);
-    let successor_ref = get_ref_from_refcell!(successor_refcell);
-    let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
-    let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
+    let mut is_successor_has_no_pred = false;
+    let successor;
 
-    let successor_info = successor_ni_ref;
+    let ret = chord_util::get_node_by_address(&self_node_ni_refmut.successor_info_list[0].address_str);
+    {
+        // TODO: 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
+        successor = ret.unwrap();
+        let successor_refcell = get_refcell_from_arc_with_locking!(successor);
+        let successor_ref = get_ref_from_refcell!(successor_refcell);
+        let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
+        let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
+        let successor_info = successor_ni_ref;
+
+        if successor_info.predecessor_info.len() == 0 {
+            is_successor_has_no_pred = true;
+
+            // 下のif文内で本来出力すべきだが、こちらに書いた方がラクなのでここにおいておく
+            chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
+            + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
+        }
+    }
+
     // successor_info = self.node_info.successor_info
-    if successor_info.predecessor_info.len() == 0 {
+    if is_successor_has_no_pred {
         // successor が predecessor を未設定であった場合は自身を predecessor として保持させて
         // 処理を終了する(check_predecessor関数により行う)
         //successor_info.predecessor_info.insert(0, (*self_node_ni_ref).clone()); //node_info::partial_clone_from_ref());
         check_predecessor(Arc::clone(&successor),  Arc::clone(&self_node));
 
-        chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-                         + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
         return Ok(true);
     }
+
+    let successor_refcell = get_refcell_from_arc_with_locking!(successor);
+    let successor_ref = get_ref_from_refcell!(successor_refcell);
+    let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
+    let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
+    let successor_info = successor_ni_ref;
 
     chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
                      + chord_util::gen_debug_str_of_node(Some(&successor_info.successor_info_list[0])).as_str()));

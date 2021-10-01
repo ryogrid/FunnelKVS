@@ -1066,12 +1066,17 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
     } else {
         // successorと、successorノードの情報だけ適切なものとする
         // TODO: check_predecessor call at join
-        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-        let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-        let new_node_ni_ref = get_refmut_from_refcell!(new_node_ni_refcell);
 
-        match endpoints::grpc__check_predecessor(Arc::clone(&successor), (*new_node_ni_ref).clone()){
+        let new_node_ni;
+        {
+            let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+            let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
+            let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+            let new_node_ni_ref = get_refmut_from_refcell!(new_node_ni_refcell);
+            new_node_ni = (*new_node_ni_ref).clone();
+        }
+
+        match endpoints::grpc__check_predecessor(Arc::clone(&successor), new_node_ni){
             Err(_e) => {  // ret.err_code == ErrorCode.InternalControlFlowException_CODE
                 // リトライに必要な情報を記録しておく
                 // TODO: (rust) リトライの対応は後回し

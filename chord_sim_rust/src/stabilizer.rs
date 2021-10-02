@@ -1562,7 +1562,6 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
           + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
 
     // firstノードだけが存在する状況で、firstノードがself_nodeであった場合に対する考慮
-    // TODO: (rust) このifブロックの処理が現在の実装と整合するものか要注意
     if self_node_ni_refmut.predecessor_info.len() == 0 && self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
         chord_util::dprint(&("stabilize_successor_1_5,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
                          + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
@@ -1597,6 +1596,18 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
         let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
         let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
         let successor_info = successor_ni_ref;
+
+        // 2ノードで環が構成されている場合に、お互いがstabilize_successorを呼び出した場合にデッドロック
+        // してしまうケースを避けるための考慮
+        if self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
+            // predecessor と successorが同一であり、firstノードの場合は上の方で既に抜けているので
+            // 2ノードの場合
+
+            chord_util::dprint(&("stabilize_successor_1_7,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
+            + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
+
+            return Ok(true);
+        }
 
         if successor_info.predecessor_info.len() == 0 {
             is_successor_has_no_pred = true;

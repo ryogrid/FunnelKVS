@@ -1547,7 +1547,7 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
     let self_node_ref = get_ref_from_refcell!(self_node_refcell);
     let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
     let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
-
+    
     // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     //     chord_util::dprint("stabilize_successor_0_0," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
     //                      + "LOCK_ACQUIRE_TIMEOUT")

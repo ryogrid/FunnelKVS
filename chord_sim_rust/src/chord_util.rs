@@ -681,6 +681,48 @@ pub fn get_node_by_address(address : &String) -> Result<ArRmRs<chord_node::Chord
     return Ok(ret_val_cloned);
 }
 
+pub fn get_lock_obj(kind : &str, address : &String) -> ArRmRs<bool> {
+    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    let gd_refmut = get_refmut_from_refcell!(gd_refcell);
+
+    //println!("get_node_by_address {:?}", address);
+    let get_result;
+    if kind == "ninfo" {
+        get_result = gd_refmut.ninfo_lock_dict.get(address);
+    }else if kind == "dstore" {
+        get_result = gd_refmut.dstore_lock_dict.get(address);
+    }else if kind == "tqueue" {
+        get_result = gd_refmut.tqueue_lock_dict.get(address);
+    }else{
+        panic!("unknown kind is passed at get_lock_obj");
+    }
+    
+    let ret_val_cloned: ArRmRs<bool> = 
+        match get_result {
+            None => {
+                // まだ存在しなかった
+                if kind == "ninfo" {
+                    let new_lock_obj = ArRmRs_new!(false);
+                    gd_refmut.ninfo_lock_dict.insert(address.to_string(), Arc::clone(&new_lock_obj));
+                    new_lock_obj 
+                }else if kind == "dstore" {
+                    let new_lock_obj = ArRmRs_new!(false);
+                    gd_refmut.dstore_lock_dict.insert(address.to_string(), Arc::clone(&new_lock_obj));
+                    new_lock_obj
+                }else if kind == "tqueue" {
+                    let new_lock_obj = ArRmRs_new!(false);
+                    gd_refmut.tqueue_lock_dict.insert(address.to_string(), Arc::clone(&new_lock_obj));
+                    new_lock_obj
+                }else{
+                    panic!("unknown kind is passed at get_lock_obj");                    
+                }                
+            },
+            Some(arc_val) => Arc::clone(arc_val),
+        };
+
+    return ret_val_cloned;
+}
+
 /*
     # TODO: InteernalExp, DownedeExp at get_node_by_address
 

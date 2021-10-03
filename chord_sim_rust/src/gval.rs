@@ -181,20 +181,36 @@ pub struct GlobalDatas {
 // アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
 // IPアドレスが分かれば、対応するノードと通信できることと対応している
     pub all_node_dict : HashMap<String, ArRmRs<chord_node::ChordNode>>,
-// DHT上で保持されている全てのデータが保持されているリスト
-// KeyValueオブジェクトを要素として持つ
-// 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
-// getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
-// に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
-// 照らし合わせられるようにする
-    pub all_data_list : Vec<ArRmRs<chord_util::KeyValue>>
+    // DHT上で保持されている全てのデータが保持されているリスト
+    // KeyValueオブジェクトを要素として持つ
+    // 全てのノードはputの際はDHTにデータをputするのとは別にこのリストにデータを追加し、
+    // getする際はDHTに対してgetを発行するためのデータをこのリストからランダム
+    // に選び、そのkeyを用いて探索を行う. また value も保持しておき、取得できた内容と
+    // 照らし合わせられるようにする
+    pub all_data_list : Vec<ArRmRs<chord_util::KeyValue>>,
+    // 以下のxxx_lock_dictは各ノードのaddress_strをキーに ArRmRs<bool>をダミーの
+    // ミューテックスとして保持する
+    // 各々のdictは各ChordNodeオブジェクトのフィールドに対応しており、あるノード
+    // の対応するフィールドの値への参照の取得と関係なしに排他を行うために用いる
+    // Rustのロック機構の設計では、柔軟にクリティカルセクションを設定することが
+    // 困難であるため導入した
+    // クリティカルセクションに入りたいスレッドは、まずHashMapに対応するロック用
+    // オブジェクトが格納されているか確認し、存在すれば既に格納されていたものを取得する.
+    // 存在しなければ生成し追加する.
+    // その後、ロック用オブジェクトのロックを獲得し、排他が必要な処理を行う
+    pub ninfo_lock_dict: HashMap<String, ArRmRs<bool>>,
+    pub dstore_lock_dict: HashMap<String, ArRmRs<bool>>,
+    pub tqueue_lock_dict: HashMap<String, ArRmRs<bool>>
 }
 
 impl GlobalDatas {
     pub fn new() -> GlobalDatas {
         GlobalDatas {
             all_node_dict : HashMap::new(),
-            all_data_list : Vec::new()
+            all_data_list : Vec::new(),
+            ninfo_lock_dict : HashMap::new(),
+            dstore_lock_dict : HashMap::new(),
+            tqueue_lock_dict : HashMap::new()
         }
     }
 }

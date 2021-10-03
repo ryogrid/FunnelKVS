@@ -965,7 +965,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
             new_node_ni_lock = chord_util::get_lock_obj("ninfo", &new_node_ni_ref.address_str);
             new_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(new_node_ni_lock);
 
-            // TODO: x direct access to node_info of tyukai_node at join
+            // TODO: (rust) x direct access to node_info of tyukai_node at join
             chord_util::dprint(&("join_1,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_ref)).as_str() + ","
                                 + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
 
@@ -981,7 +981,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
                         // need_join_retry_tyukai_node = tyukai_node;
 
                         // 自ノードの情報、仲介ノードの情報
-                        // TODO: x direct access to node_info of tyukai_node at join
+                        // TODO: (rust) x direct access to node_info of tyukai_node at join
                         chord_util::dprint(
                             &("join_2,RETRY_IS_NEEDED,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_ref)).as_str() + ","
                             + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
@@ -1019,7 +1019,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
                             + chord_util::gen_debug_str_of_node(Some(&new_node_ni_refmut.successor_info_list[0])).as_str() + ",FOUND_NODE_IS_SAME_WITH_SELF_NODE!!!"));
         }
 
-        // TODO: x direct access to node_info of predecessor at join
+        // TODO: (rust) x direct access to node_info of predecessor at join
         if tyukai_node_ni_ref.node_id == tyukai_node_ni_ref.successor_info_list[0].node_id {
             // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
 
@@ -1033,7 +1033,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
             // mutableな参照が必要な都合により、後続のコードで残りの処理を行う
         }else{
-            // TODO: x direct access to node_info of successor at join
+            // TODO: (rust) x direct access to node_info of successor at join
             //let succ_infos_len = new_node_ni_refmut.successor_info_list.len();
             new_node_ni_refmut.successor_info_list.push((*successor_ni_ref).clone());
         }
@@ -1115,7 +1115,7 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
                 new_node_ni_refmut.successor_info_list = vec![];
 
                 // 自ノードの情報、仲介ノードの情報
-                // TODO: x direct access to node_info of tyukai_node at join
+                // TODO: (rust) x direct access to node_info of tyukai_node at join
                 chord_util::dprint(&("join_3,RETRY_IS_NEEDED,".to_string() + chord_util::gen_debug_str_of_node(
                     Some(new_node_ni_refmut)).as_str() + ","
                                     + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
@@ -2237,7 +2237,7 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
             return Ok(true);
         },
         Ok(found_node_arrmrs) => {
-            // TODO: x direct access to node_info of found_node at stabilize_finger_table
+            // TODO: (rust) x direct access to node_info of found_node at stabilize_finger_table
 
             //見つかったノードが自分自身であった場合に借用の競合を避けるため回りくどいことをする
             let found_node_ni_cloned: node_info::NodeInfo;
@@ -2259,7 +2259,7 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
             let exnode_ni_refmut = get_refmut_from_refcell!(exnode_ni_refcell);
             exnode_ni_refmut.finger_table[idx as usize] = Some(found_node_ni_cloned.clone());
 
-            // TODO: x direct access to node_info of found_node at stabilize_finger_table
+            // TODO: (rust) x direct access to node_info of found_node at stabilize_finger_table
             chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
                     + chord_util::gen_debug_str_of_node(Some(exnode_ni_refmut)).as_str() + ","
                     + chord_util::gen_debug_str_of_node(Some(&found_node_ni_cloned)).as_str()));

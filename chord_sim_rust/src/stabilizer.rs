@@ -939,6 +939,15 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
 
     let successor: ArRmRs<chord_node::ChordNode>;
 
+    // new_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
+    let new_node_ni_lock;
+    let new_node_ni_lock_keeper;
+
+    // TODO: (rust) 実システムに照らして考えると、successorのロックをとっているのはおかしいのでどうにかする必要あり
+    // successorのNodeInfoオブジェクトのクリティカルセクションを開始する
+    let successor_ni_lock;
+    let successor_ni_lock_keeper;
+
     {
         let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
         let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
@@ -951,6 +960,10 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
             let new_node_ref = get_ref_from_refcell!(new_node_refcell);
             let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_ref.node_info);
             let new_node_ni_ref = get_ref_from_refcell!(new_node_ni_refcell);
+
+            // new_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
+            new_node_ni_lock = chord_util::get_lock_obj("ninfo", &new_node_ni_ref.address_str);
+            new_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(new_node_ni_lock);
 
             // TODO: x direct access to node_info of tyukai_node at join
             chord_util::dprint(&("join_1,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_ref)).as_str() + ","
@@ -994,6 +1007,10 @@ pub fn join(new_node: ArRmRs<chord_node::ChordNode>, tyukai_node_address: &Strin
         let successor_ref = get_ref_from_refcell!(successor_refcell);
         let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
         let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
+
+        // successorのNodeInfoオブジェクトのクリティカルセクションを開始する
+        successor_ni_lock = chord_util::get_lock_obj("ninfo", &successor_ni_ref.address_str);
+        successor_ni_lock_keeper = get_refcell_from_arc_with_locking!(successor_ni_lock);
 
         // TODO: (rust) for debug
         if new_node_ni_refmut.node_id == successor_ni_ref.node_id {
@@ -1547,7 +1564,14 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
     let self_node_ref = get_ref_from_refcell!(self_node_refcell);
     let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
     let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
+
+    // self_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
+    let self_node_ni_lock = chord_util::get_lock_obj("ninfo", &self_node_ni_refmut.address_str);
+    let self_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(self_node_ni_lock);
     
+    let successor_ni_lock;
+    let successor_ni_lock_keeper;
+
     // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     //     chord_util::dprint("stabilize_successor_0_0," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
     //                      + "LOCK_ACQUIRE_TIMEOUT")
@@ -1596,6 +1620,10 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
         let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
         let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
         let successor_info = successor_ni_ref;
+
+        // successorのNodeInfoオブジェクトのクリティカルセクションを開始する
+        successor_ni_lock = chord_util::get_lock_obj("ninfo", &successor_ni_ref.address_str);
+        successor_ni_lock_keeper = get_refcell_from_arc_with_locking!(successor_ni_lock);
 
         // 2ノードで環が構成されている場合に、お互いがstabilize_successorを呼び出した場合にデッドロック
         // してしまうケースを避けるための考慮
@@ -1706,7 +1734,7 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
             let new_successor_obj_ref = get_ref_from_refcell!(new_successor_obj_refcell);
             let new_successor_obj_ni_refcell = get_refcell_from_arc_with_locking!(new_successor_obj_ref.node_info);
             let new_successor_obj_ni_ref = get_ref_from_refcell!(new_successor_obj_ni_refcell);
-
+           
             chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut)).as_str() + ","
                              + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str() + ","
                              + chord_util::gen_debug_str_of_node(Some(&new_successor_obj_ni_ref)).as_str()));
@@ -2150,9 +2178,19 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
     let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
 
     let exnode_id: u32;
+    
+    let exnode_ni_lock;
+    let exnode_ni_lock_keeper;
+
+    let found_node_ni_lock;
+    let found_node_ni_lock_keeper;
 
     {
         let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
+
+        // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する        
+        exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
+        exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
 
         exnode_id = exnode_ni_ref.node_id;
 
@@ -2200,6 +2238,10 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
             
                 let found_node_ni_refcell = get_refcell_from_arc_with_locking!(found_node_ref.node_info);
                 let found_node_ni_ref = get_ref_from_refcell!(found_node_ni_refcell);
+
+                // found_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
+                found_node_ni_lock = chord_util::get_lock_obj("ninfo", &found_node_ni_ref.address_str);
+                found_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);                
 
                 found_node_ni_cloned = (*found_node_ni_ref).clone();
             }
@@ -2319,6 +2361,14 @@ pub fn check_predecessor(self_node: ArRmRs<chord_node::ChordNode>, caller_node_n
     let self_node_ref = get_ref_from_refcell!(self_node_refcell);
     let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
     let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
+
+    // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する        
+    let self_node_ni_lock = chord_util::get_lock_obj("ninfo", &self_node_ni_refmut.address_str);
+    let self_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(self_node_ni_lock);
+
+    // caller_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する        
+    let caller_node_ni_lock = chord_util::get_lock_obj("ninfo", &caller_node_ni.address_str);
+    let caller_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(caller_node_ni_lock);
 
     // let caller_node_refcell = get_refcell_from_arc_with_locking!(caller_node);
     // let caller_node_ref = get_ref_from_refcell!(caller_node_refcell);

@@ -219,6 +219,10 @@ pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: 
     //                      + "LOCK_ACQUIRE_TIMEOUT")
     //     return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
 
+    // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する        
+    let exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
+    let exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
+
     if exnode_ref.is_alive.load(Ordering::Relaxed) == false {
         // 処理の合間でkillされてしまっていた場合の考慮
         // 何もしないで終了する
@@ -235,6 +239,10 @@ pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: 
     let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
     let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
     let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
+
+    // n_dashのNodeInfoオブジェクトのクリティカルセクションを開始する   
+    let n_dash_ni_lock = chord_util::get_lock_obj("ninfo", &n_dash_ninfo.address_str);
+    let n_dash_ni_lock_keeper = get_refcell_from_arc_with_locking!(n_dash_ni_lock);
 
     // below comment-outed code has been not needed at porting
     // if n_dash == None {
@@ -325,6 +333,10 @@ pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: 
 
 // id(int)　の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id: u32) -> ArRmRs<chord_node::ChordNode> {
+    // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する   
+    let exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
+    let exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
+
     let mut n_dash = Arc::clone(&existing_node);
     let mut n_dash_found = Arc::clone(&n_dash);
 
@@ -340,6 +352,10 @@ pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_
         let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
         let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
         let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
+
+        // n_dashのNodeInfoオブジェクトのクリティカルセクションを開始する
+        let n_dash_ni_lock = chord_util::get_lock_obj("ninfo", &n_dash_ninfo.address_str);
+        let n_dash_ni_lock_keeper = get_refcell_from_arc_with_locking!(n_dash_ni_lock);
 
         //while文の書き換えの形でできたif文
         if chord_util::exist_between_two_nodes_right_mawari(n_dash_ninfo.node_id, n_dash_ninfo.successor_info_list[0].node_id, id) {
@@ -357,6 +373,10 @@ pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_
     
         let n_dash_found_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_found_ref.node_info);
         let n_dash_found_ni_ref = get_ref_from_refcell!(n_dash_found_ni_refcell);
+
+        // n_dash_foundのNodeInfoオブジェクトのクリティカルセクションを開始する
+        let n_dash_found_ni_lock = chord_util::get_lock_obj("ninfo", &n_dash_found_ni_ref.address_str);
+        let n_dash_found_ni_lock_keeper = get_refcell_from_arc_with_locking!(n_dash_found_ni_lock);
 
         // TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
         if n_dash_found_ni_ref.node_id == n_dash_ninfo.node_id {
@@ -481,6 +501,10 @@ pub fn closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, ex
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
     // 順に見ていくようにする
 
+    // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する
+    let exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
+    let exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
+
     for node_info in exnode_ni_ref.finger_table.iter().rev() {
         // 注: Noneなエントリも存在し得る
         let conved_node_info = match node_info {
@@ -490,6 +514,10 @@ pub fn closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, ex
             },
             Some(ni) => ni
         };
+
+        // conved_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
+        let conved_node_ni_lock = chord_util::get_lock_obj("ninfo", &conved_node_info.address_str);
+        let conved_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(conved_node_ni_lock);
 
         chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
             + chord_util::gen_debug_str_of_node(Some(&conved_node_info)).as_str()));

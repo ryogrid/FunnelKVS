@@ -198,6 +198,8 @@ pub struct GlobalDatas {
     // オブジェクトが格納されているか確認し、存在すれば既に格納されていたものを取得する.
     // 存在しなければ生成し追加する.
     // その後、ロック用オブジェクトのロックを獲得し、排他が必要な処理を行う
+    // アドレス文字列でノードを特定しているため、排他を行う対象のオブジェクトの実体は
+    // 大本でもコピーされたものでも関係はない
     pub ninfo_lock_dict: HashMap<String, ArRmRs<bool>>,
     pub dstore_lock_dict: HashMap<String, ArRmRs<bool>>,
     pub tqueue_lock_dict: HashMap<String, ArRmRs<bool>>

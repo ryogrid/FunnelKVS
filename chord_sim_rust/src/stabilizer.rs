@@ -2241,7 +2241,7 @@ pub fn stabilize_finger_table(existing_node: ArRmRs<chord_node::ChordNode>, exno
 
                 // found_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
                 found_node_ni_lock = chord_util::get_lock_obj("ninfo", &found_node_ni_ref.address_str);
-                found_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);                
+                found_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(found_node_ni_lock);                
 
                 found_node_ni_cloned = (*found_node_ni_ref).clone();
             }

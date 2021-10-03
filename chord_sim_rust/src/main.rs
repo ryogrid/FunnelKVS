@@ -1161,11 +1161,11 @@ def check_nodes_connectivity():
 */
 
 pub fn add_new_node(){
-
+/*
     // ロックの取得
     // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-
+*/
 
     // gval.lock_of_all_data.acquire()
 
@@ -1206,10 +1206,10 @@ pub fn add_new_node(){
     //              失敗であれば、all_node_dictには追加しないようにする（その回のjoinは無かったことにする）
     //              現状は無条件に追加してしまっている
     {
-/*
+
         // 全データロックのための gd_refcell 取得をコメントアウトした場合に必要なコード
         let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-*/
+
         let gd_refmut = get_refmut_from_refcell!(gd_refcell);
         
         let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
@@ -1379,12 +1379,12 @@ def do_stabilize_successor_th(node_list : List[ChordNode]):
 
 // all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 pub fn do_stabilize_once_at_all_node(){
-
+/*
     // ロックの取得
     // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_ref = get_ref_from_refcell!(gd_refcell);
-
+*/
     chord_util::dprint(&("do_stabilize_once_at_all_node_0,START".to_string()));
     //with gval.lock_of_all_node_dict:
 
@@ -1505,7 +1505,18 @@ pub fn stabilize_th(){
     loop{
         // 内部で適宜ロックを解放することで他のスレッドの処理も行えるようにしつつ
         // 呼び出し時点でのノードリストを対象に stabilize 処理を行う
-        do_stabilize_once_at_all_node();
+        let abnn_tmp: i32;
+        unsafe{
+            abnn_tmp = gval::already_born_node_num.load(Ordering::Relaxed) as i32;
+        }
+
+        //5ノード以上joinしたらstabilizeを開始する
+        if abnn_tmp > 5 {
+            do_stabilize_once_at_all_node();
+        }else{
+            std::thread::sleep(std::time::Duration::from_millis(100 as u64));
+        }
+        
     }
 }
 

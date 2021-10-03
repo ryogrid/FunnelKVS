@@ -703,15 +703,15 @@ pub fn get_lock_obj(kind : &str, address : &String) -> ArRmRs<bool> {
                 // まだ存在しなかった
                 if kind == "ninfo" {
                     let new_lock_obj = ArRmRs_new!(false);
-                    gd_refmut.ninfo_lock_dict.insert(address.to_string(), Arc::clone(&new_lock_obj));
+                    gd_refmut.ninfo_lock_dict.insert(address.clone(), Arc::clone(&new_lock_obj));
                     new_lock_obj 
                 }else if kind == "dstore" {
                     let new_lock_obj = ArRmRs_new!(false);
-                    gd_refmut.dstore_lock_dict.insert(address.to_string(), Arc::clone(&new_lock_obj));
+                    gd_refmut.dstore_lock_dict.insert(address.clone(), Arc::clone(&new_lock_obj));
                     new_lock_obj
                 }else if kind == "tqueue" {
                     let new_lock_obj = ArRmRs_new!(false);
-                    gd_refmut.tqueue_lock_dict.insert(address.to_string(), Arc::clone(&new_lock_obj));
+                    gd_refmut.tqueue_lock_dict.insert(address.clone(), Arc::clone(&new_lock_obj));
                     new_lock_obj
                 }else{
                     panic!("unknown kind is passed at get_lock_obj");                    

@@ -1572,6 +1572,10 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
     let successor_ni_lock;
     let successor_ni_lock_keeper;
 
+    // new_successor_objのNodeInfoオブジェクトのクリティカルセクションを開始する
+    let new_successor_obj_ni_lock: ArRmRs<bool>;
+    let new_successor_obj_lock_keeper: &RefCell<bool>;
+
     // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     //     chord_util::dprint("stabilize_successor_0_0," + chord_util::gen_debug_str_of_node(self.existing_node.node_info) + ","
     //                      + "LOCK_ACQUIRE_TIMEOUT")
@@ -1728,13 +1732,18 @@ pub fn stabilize_successor(self_node: ArRmRs<chord_node::ChordNode>) -> Result<b
                 chord_util::dprint(&("WARN!!!".to_string()));
                 return Ok(true);
             }            
-            check_predecessor(Arc::clone(&new_successor_obj), (*self_node_ni_refmut).clone());
-
+            
             let new_successor_obj_refcell = get_refcell_from_arc_with_locking!(new_successor_obj);
             let new_successor_obj_ref = get_ref_from_refcell!(new_successor_obj_refcell);
             let new_successor_obj_ni_refcell = get_refcell_from_arc_with_locking!(new_successor_obj_ref.node_info);
             let new_successor_obj_ni_ref = get_ref_from_refcell!(new_successor_obj_ni_refcell);
-           
+
+            // new_successor_objのNodeInfoオブジェクトのクリティカルセクションを開始する
+            let new_successor_obj_ni_lock = chord_util::get_lock_obj("ninfo", &new_successor_obj_ni_ref.address_str);
+            let new_successor_obj_lock_keeper = get_refcell_from_arc_with_locking!(new_successor_obj_ni_lock);
+
+            check_predecessor(Arc::clone(&new_successor_obj), (*self_node_ni_refmut).clone());
+
             chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut)).as_str() + ","
                              + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str() + ","
                              + chord_util::gen_debug_str_of_node(Some(&new_successor_obj_ni_ref)).as_str()));

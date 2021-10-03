@@ -1,24 +1,27 @@
 # Rust implementation of distributed key-value store which has REST interfaces
 
-## Distributed KVS (**almost not implemented yet...**)
+- TODO list (Japanese, includes finished tasks)
+  - https://gist.github.com/ryogrid/9b1f340babfbb6cdc9d03e57b7834e71
+
+## Distributed KVS (**currently I'm working on**)
 - Architecture (Japanese)
   - https://github.com/ryogrid/rust_dkvs/blob/master/ARCHITECTURE.md
 - Referenced site (about REST API implementation. first one is Japanese) 
   - https://qiita.com/yukinarit/items/c5128e67d168b4f39983  
   - https://rocket.rs/v0.4/guide/getting-started/
 
-- Program execution needed to use Rocket at project directory
+- this can be executed like below (**currently development stage is almost same as simulator yet**)
+  - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
   - $ rustup override set nightly
   - $ rustup update && cargo update
+  - $ cargo run
   
 ## Simulator of distributed KVS (chord_sim dir)
 - design verification with simulator wrote by **Python** (**verification is finished**)
   - you can simulate distributed kvs working  behavior. on the simulation put, get, stabilize, join operations are issued continuously under node down occuring condition.
-- TODO list (Japanese, includes finished tasks)
-  - https://gist.github.com/ryogrid/9b1f340babfbb6cdc9d03e57b7834e71
 
 ## Simulator of distributed KVS (chord_sim_rust dir)
-- design verification with simulator wrote by **Rust** (**I'm working on porting from python implementation now**)
+- design verification with simulator wrote by **Rust** (**verification is finished**)
 - Rust implemantation of chord simulator can be executed like below 
   - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
   - $ rustup override set nightly

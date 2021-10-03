@@ -1,11 +1,16 @@
 [package]
-name = "rust_kvs"
+name = "rust_dkvs"
 version = "0.1.0"
 authors = ["Ryo Kanbayashi <ryo.contact@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = "0.4.5"
-rocket_contrib = { version = "0.4.5", features = ["json"] }
+#rocket = "0.4.5"
+#rocket_contrib = { version = "0.4.5", features = ["json"] }
+lazy_static = "1.4.0"
+parking_lot = "0.11"
+clippy = { version = "*", optional = true }
+rand = "0.8.3"
+chrono = "0.4"

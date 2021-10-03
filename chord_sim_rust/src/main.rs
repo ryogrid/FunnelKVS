@@ -1375,7 +1375,54 @@ def do_stabilize_successor_th(node_list : List[ChordNode]):
                     + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
 */
 
+// all_node_id辞書のvaluesリスト内から重複なく選択したノードに successor の stabilize のアクションをとらせていく
+pub fn do_stabilize_once_succ_at_all_node(){
+    /*
+        // ロックの取得
+        // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
+        let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+        let gd_ref = get_ref_from_refcell!(gd_refcell);
+    */
+        chord_util::dprint(&("do_stabilize_once_succ_at_all_node_0,START".to_string()));
 
+        let shuffled_node_list = get_all_network_constructed_nodes();
+    
+        // TODO: (rust) 暫定実装としてスレッドを新たに立ち上げず全てのノードについて処理をする
+        //              後で複数スレッドで行う形に戻すこと. その際は各スレッドが並列に動作しなければ
+        //              意味が無いためこの関数の先頭でロックをとってはいけない
+        do_stabilize_once_at_all_node_successor_without_new_th(shuffled_node_list);
+    
+        // TODO: (rust) successorのstabilizeは後回し
+        //thread_list_succ : List[Thread] = do_stabilize_onace_at_all_node_successor(shuffled_node_list)
+    
+        // TODO: (rust) 複数スレッドでの stabilizeも後回し
+        //let thread_list_ftable : List[Thread] = do_stabilize_onace_at_all_node_ftable(shuffled_node_list)
+        check_nodes_connectivity();        
+}
+
+// all_node_id辞書のvaluesリスト内から重複なく選択したノードに ftable の stabilize のアクションをとらせていく
+pub fn do_stabilize_once_ftable_at_all_node(){
+    /*
+        // ロックの取得
+        // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
+        let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+        let gd_ref = get_ref_from_refcell!(gd_refcell);
+    */
+        chord_util::dprint(&("do_stabilize_once_ftable_at_all_node_0,START".to_string()));
+
+        let shuffled_node_list = get_all_network_constructed_nodes();
+    
+        // TODO: (rust) 暫定実装としてスレッドを新たに立ち上げず全てのノードについて処理をする
+        //              後で複数スレッドで行う形に戻すこと. その際は各スレッドが並列に動作しなければ
+        //              意味が無いためこの関数の先頭でロックをとってはいけない
+        do_stabilize_once_at_all_node_ftable_without_new_th(shuffled_node_list);
+    
+        // TODO: (rust) successorのstabilizeは後回し
+        //thread_list_succ : List[Thread] = do_stabilize_onace_at_all_node_successor(shuffled_node_list)
+    
+        // TODO: (rust) 複数スレッドでの stabilizeも後回し
+        //let thread_list_ftable : List[Thread] = do_stabilize_onace_at_all_node_ftable(shuffled_node_list)
+}
 
 // all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 pub fn do_stabilize_once_at_all_node(){
@@ -1501,7 +1548,7 @@ def node_join_th():
         time.sleep(gval.JOIN_INTERVAL_SEC)
 */
 
-pub fn stabilize_th(){
+pub fn stabilize_succ_th(){
     loop{
         // 内部で適宜ロックを解放することで他のスレッドの処理も行えるようにしつつ
         // 呼び出し時点でのノードリストを対象に stabilize 処理を行う
@@ -1516,11 +1563,33 @@ pub fn stabilize_th(){
                 // まだjoin処理中かもしれないので5秒待つ
                 std::thread::sleep(std::time::Duration::from_millis(5000 as u64));                
             }
-            do_stabilize_once_at_all_node();
+            do_stabilize_once_succ_at_all_node();
         }else{
             std::thread::sleep(std::time::Duration::from_millis(100 as u64));
         }
         
+    }
+}
+
+pub fn stabilize_ftable_th(){
+    loop{
+        // 内部で適宜ロックを解放することで他のスレッドの処理も行えるようにしつつ
+        // 呼び出し時点でのノードリストを対象に stabilize 処理を行う
+        let abnn_tmp: i32;
+        unsafe{
+            abnn_tmp = gval::already_born_node_num.load(Ordering::Relaxed) as i32;
+        }
+
+        //5ノード以上joinしたらstabilizeを開始する
+        if abnn_tmp >= 50 {
+            if abnn_tmp == 50 {
+                // まだjoin処理中かもしれないので5秒待つ
+                std::thread::sleep(std::time::Duration::from_millis(5000 as u64));                
+            }
+            do_stabilize_once_ftable_at_all_node();
+        }else{
+            std::thread::sleep(std::time::Duration::from_millis(100 as u64));
+        }       
     }
 }
 
@@ -1555,7 +1624,8 @@ fn main() {
 
     let mut thread_handles = vec![];
     thread_handles.push(std::thread::spawn(node_join_th));
-    thread_handles.push(std::thread::spawn(stabilize_th));
+    thread_handles.push(std::thread::spawn(stabilize_succ_th));
+    thread_handles.push(std::thread::spawn(stabilize_ftable_th));
 
     chord_util::dprint(&("main: Start waiting thread exit!".to_string()));
 

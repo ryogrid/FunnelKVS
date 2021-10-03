@@ -1161,9 +1161,11 @@ def check_nodes_connectivity():
 */
 
 pub fn add_new_node(){
+
     // ロックの取得
     // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+
 
     // gval.lock_of_all_data.acquire()
 
@@ -1200,9 +1202,14 @@ pub fn add_new_node(){
     //println!("add_new_node_th {:?}", tyukai_node_addr);
     let new_node = chord_node::new_and_join(tyukai_node_addr.clone(), false);
 
-    // TODO: (rust) ひとまずjoin処理が成功していようがいまいが all_node_dictに追加してしまう
-    //              後で要修正
+    // TODO: (rust) ひとまずリトライは行わないので、new_and_joinを返り値が成功か失敗かを返すように修正し、
+    //              失敗であれば、all_node_dictには追加しないようにする（その回のjoinは無かったことにする）
+    //              現状は無条件に追加してしまっている
     {
+/*
+        // 全データロックのための gd_refcell 取得をコメントアウトした場合に必要なコード
+        let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+*/
         let gd_refmut = get_refmut_from_refcell!(gd_refcell);
         
         let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
@@ -1372,6 +1379,7 @@ def do_stabilize_successor_th(node_list : List[ChordNode]):
 
 // all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 pub fn do_stabilize_once_at_all_node(){
+
     // ロックの取得
     // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
@@ -1399,7 +1407,7 @@ pub fn do_stabilize_once_at_all_node(){
     do_stabilize_once_at_all_node_ftable_without_new_th(shuffled_node_list);
 
     shuffled_node_list = get_all_network_constructed_nodes();
-    
+
     // TODO: (rust) 暫定実装としてスレッドを新たに立ち上げず全てのノードについて処理をする
     //              後で複数スレッドで行う形に戻すこと. その際は各スレッドが並列に動作しなければ
     //              意味が無いためこの関数の先頭でロックをとってはいけない

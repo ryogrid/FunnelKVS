@@ -150,7 +150,7 @@ pub const SUCCESSOR_LIST_NORMAL_LEN : i32 = 3;
 //       を用いているため bit数 を少なくしている
 pub const ID_MAX : u32 = ID_SPACE_RANGE - 1;
 pub const KEEP_NODE_NUM : i32 = 50; //100
-pub const NODE_NUM_MAX : i32 = 10000;
+pub const NODE_NUM_MAX : i32 = 50;//10000;
 pub const LOCK_ACQUIRE_TIMEOUT : i32 = 3; //10
 
 // stabilize_successorのループの回せる回数の上限

@@ -1511,7 +1511,11 @@ pub fn stabilize_th(){
         }
 
         //5ノード以上joinしたらstabilizeを開始する
-        if abnn_tmp > 5 {
+        if abnn_tmp >= 50 {
+            if abnn_tmp == 50 {
+                // まだjoin処理中かもしれないので5秒待つ
+                std::thread::sleep(std::time::Duration::from_millis(5000 as u64));                
+            }
             do_stabilize_once_at_all_node();
         }else{
             std::thread::sleep(std::time::Duration::from_millis(100 as u64));

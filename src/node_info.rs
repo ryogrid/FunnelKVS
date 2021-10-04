@@ -95,7 +95,6 @@ use crate::gval;
 use crate::chord_node;
 use crate::chord_util;
 use crate::stabilizer;
-use crate::taskqueue;
 use crate::endpoints;
 use crate::data_store;
 use crate::router;

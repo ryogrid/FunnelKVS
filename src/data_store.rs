@@ -1,14 +1,5 @@
 /*
-# coding:utf-8
-
-from .chord_util import ChordUtil, KeyValue, DataIdAndValue, PResult, ErrorCode
-
 class DataStore:
-
-    DELETED_ENTRY_MARKING_STR = "THIS_KEY_IS_DELETED"
-    DATA_STORE_OP_DIRECT_STORE = "DIRECT_STORE"
-    DATA_STORE_OP_DIRECT_REMOVE = "DIRECT_REMOVE"
-
     def __init__(self, existing_node : 'ChordNode'):
         self.existing_node : 'ChordNode' = existing_node
 
@@ -212,7 +203,6 @@ use crate::node_info;
 use crate::chord_util;
 use crate::stabilizer;
 use crate::router;
-use crate::taskqueue;
 use crate::endpoints;
 
 pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";

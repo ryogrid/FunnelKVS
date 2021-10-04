@@ -617,6 +617,7 @@ use std::sync::atomic::Ordering;
 
 use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
 
+/*
 // ネットワークに存在するノードから1ノードをランダムに取得する
 // is_aliveフィールドがFalseとなっているダウン状態となっているノード
 // および、is_join_op_finishedフィールドがFalseでjoin処理が完全に完了していない
@@ -807,6 +808,7 @@ fn main_old() {
     }
 
     //let gd_ref = get_ref_from_arc!(gval::global_datas, gd_refcell, let gd_refcell:&RefCell<gval::GlobalDatas>, gd_tmp, let gd_tmp:&ReentrantMutexGuard<RefCell<gval::GlobalDatas>>);
+*/
 
 /*
     // HashMapを操作している処理のブロック
@@ -880,9 +882,12 @@ fn main_old() {
     }
 */
 
+/*
     println!("Hello, world!");
 }
+*/
 
+/*
 // is_aliveメンバがfalseのノードは含まない
 // また、この関数が返すリストはRustのイテレータの仕様の都合から呼び出しごとに毎回要素の順序は異なる
 fn get_all_network_constructed_nodes() -> Vec<ArRmRs<chord_node::ChordNode>> {
@@ -901,6 +906,7 @@ fn get_all_network_constructed_nodes() -> Vec<ArRmRs<chord_node::ChordNode>> {
 
     return node_list;
 }
+*/
 
 // stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
 // ランダムに選択したノードからsuccessor方向にsuccessorの繋がりでノードを辿って
@@ -1160,35 +1166,34 @@ def check_nodes_connectivity():
                          + ChordUtil.gen_debug_str_of_node(cur_node_info))
 */
 
-pub fn add_new_node(){
 /*
-    // ロックの取得
-    // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
-    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-*/
+pub fn add_new_node(){
+    // // ロックの取得
+    // // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
+    // let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+
 
     // gval.lock_of_all_data.acquire()
 
-// TODO: (rust) リトライ関連の処理は後回し
-/*
-    if stabilizer::need_join_retry_node != None {
-        // 前回の呼び出しが失敗していた場合はリトライを行う
-        let tyukai_node = stabilizer::need_join_retry_tyukai_node;
-        let new_node = stabilizer::need_join_retry_node;
-        stabilizer::join(new_node, tyukai_node.node_info.address_str);
-        if stabilizer::need_join_retry_node == None {
-            // リトライ情報が再設定されていないためリトライに成功したと判断
-            chord_util::dprint(
-                "add_new_node_1,retry of join is succeeded," + chord_util::gen_debug_str_of_node(new_node.node_info));
-        } else {
-            chord_util::dprint(
-                "add_new_node_2,retry of join is failed," + chord_util::gen_debug_str_of_node(new_node.node_info));
-        }
-    } else {
-        let tyukai_node = get_a_random_node();
-        let new_node = chord_node::ChordNode(tyukai_node.node_info.address_str);
-    }
-*/
+    // // TODO: (rust) リトライ関連の処理は後回し
+    // if stabilizer::need_join_retry_node != None {
+    //     // 前回の呼び出しが失敗していた場合はリトライを行う
+    //     let tyukai_node = stabilizer::need_join_retry_tyukai_node;
+    //     let new_node = stabilizer::need_join_retry_node;
+    //     stabilizer::join(new_node, tyukai_node.node_info.address_str);
+    //     if stabilizer::need_join_retry_node == None {
+    //         // リトライ情報が再設定されていないためリトライに成功したと判断
+    //         chord_util::dprint(
+    //             "add_new_node_1,retry of join is succeeded," + chord_util::gen_debug_str_of_node(new_node.node_info));
+    //     } else {
+    //         chord_util::dprint(
+    //             "add_new_node_2,retry of join is failed," + chord_util::gen_debug_str_of_node(new_node.node_info));
+    //     }
+    // } else {
+    //     let tyukai_node = get_a_random_node();
+    //     let new_node = chord_node::ChordNode(tyukai_node.node_info.address_str);
+    // }
+
 
     let tyukai_node_addr: String;
     {
@@ -1225,17 +1230,18 @@ pub fn add_new_node(){
         // }
     }
 
-// TODO: (rust) join処理が成功したか否かで処理を変えるルートは後回し。また、レプリカ関連の処理も後回し
-/*
-    if stabilizer::need_join_retry_node == None {
-        // join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
-        gval::all_node_dict[new_node.node_info.address_str] = new_node;
-        // join処理のうち、ネットワーク参加時に必ずしも完了していなくてもデータの整合性やネットワークの安定性に
-        // に問題を生じさせないような処理をここで行う（当該処理がノード内のタスクキューに入っているのでそれを実行する形にする）
-        new_node.tqueue.exec_first();
-    }
-*/
+
+    // // TODO: (rust) join処理が成功したか否かで処理を変えるルートは後回し。また、レプリカ関連の処理も後回し
+    // if stabilizer::need_join_retry_node == None {
+    //     // join処理(リトライ時以外はChordNodeクラスのコンストラクタ内で行われる)が成功していれば
+    //     gval::all_node_dict[new_node.node_info.address_str] = new_node;
+    //     // join処理のうち、ネットワーク参加時に必ずしも完了していなくてもデータの整合性やネットワークの安定性に
+    //     // に問題を生じさせないような処理をここで行う（当該処理がノード内のタスクキューに入っているのでそれを実行する形にする）
+    //     new_node.tqueue.exec_first();
+    // }
+
 }
+*/
 
 /*
 # ランダムに仲介ノードを選択し、そのノードに仲介してもらう形でネットワークに参加させる
@@ -1270,7 +1276,7 @@ def add_new_node():
     # gval.lock_of_all_data.release()
 */
 
-
+/*
 pub fn do_stabilize_once_at_all_node_ftable_without_new_th(node_list : Vec<ArRmRs<chord_node::ChordNode>>){
     for times in 0..gval::STABILIZE_FTABLE_BATCH_TIMES {
         for table_idx in 0..gval::ID_SPACE_BITS {
@@ -1296,6 +1302,7 @@ pub fn do_stabilize_once_at_all_node_ftable_without_new_th(node_list : Vec<ArRmR
         }
     }
 }
+*/
 
 /*
 def do_stabilize_ftable_th(node_list : List[ChordNode]):
@@ -1334,6 +1341,7 @@ def do_stabilize_onace_at_all_node_ftable(node_list : List[ChordNode]) -> List[T
     return thread_list
 */
 
+/*
 pub fn do_stabilize_once_at_all_node_successor_without_new_th(node_list : Vec<ArRmRs<chord_node::ChordNode>>){
     for times in 0..gval::STABILIZE_SUCCESSOR_BATCH_TIMES {
         for node in &node_list {
@@ -1357,6 +1365,7 @@ pub fn do_stabilize_once_at_all_node_successor_without_new_th(node_list : Vec<Ar
         }
     }
 }
+*/
 
 /*
 def do_stabilize_successor_th(node_list : List[ChordNode]):
@@ -1375,14 +1384,14 @@ def do_stabilize_successor_th(node_list : List[ChordNode]):
                     + ",STABILIZE_FAILED_DUE_TO_INTERNAL_CONTROL_FLOW_EXCEPTION_RAISED")
 */
 
+/*
 // all_node_id辞書のvaluesリスト内から重複なく選択したノードに successor の stabilize のアクションをとらせていく
 pub fn do_stabilize_once_succ_at_all_node(){
-    /*
-        // ロックの取得
-        // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
-        let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-        let gd_ref = get_ref_from_refcell!(gd_refcell);
-    */
+        // // ロックの取得
+        // // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
+        // let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+        // let gd_ref = get_ref_from_refcell!(gd_refcell);
+
         chord_util::dprint(&("do_stabilize_once_succ_at_all_node_0,START".to_string()));
 
         let shuffled_node_list = get_all_network_constructed_nodes();
@@ -1402,12 +1411,11 @@ pub fn do_stabilize_once_succ_at_all_node(){
 
 // all_node_id辞書のvaluesリスト内から重複なく選択したノードに ftable の stabilize のアクションをとらせていく
 pub fn do_stabilize_once_ftable_at_all_node(){
-    /*
-        // ロックの取得
-        // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
-        let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-        let gd_ref = get_ref_from_refcell!(gd_refcell);
-    */
+        // // ロックの取得
+        // // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
+        // let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+        // let gd_ref = get_ref_from_refcell!(gd_refcell);
+
         chord_util::dprint(&("do_stabilize_once_ftable_at_all_node_0,START".to_string()));
 
         let shuffled_node_list = get_all_network_constructed_nodes();
@@ -1424,14 +1432,14 @@ pub fn do_stabilize_once_ftable_at_all_node(){
         //let thread_list_ftable : List[Thread] = do_stabilize_onace_at_all_node_ftable(shuffled_node_list)
 }
 
+
 // all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
 pub fn do_stabilize_once_at_all_node(){
-/*
-    // ロックの取得
-    // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
-    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-    let gd_ref = get_ref_from_refcell!(gd_refcell);
-*/
+    // // ロックの取得
+    // // ここで取得した値が無効とならない限り gval::global_datasへの別スレッドからのアクセスはブロックされる
+    // let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    // let gd_ref = get_ref_from_refcell!(gd_refcell);
+
     chord_util::dprint(&("do_stabilize_once_at_all_node_0,START".to_string()));
     //with gval.lock_of_all_node_dict:
 
@@ -1469,17 +1477,15 @@ pub fn do_stabilize_once_at_all_node(){
     // 全てのスレッドが終了するまで待つ
     // 一つの呼び出しごとにブロックするが、その間に別にスレッドが終了しても
     // スレッドの処理が終了していることは担保できるため問題ない
-/*
-    for thread in thread_list_succ:
-        thread.join()
-*/
-/*
-    for thread in thread_list_ftable:
-        thread.join();
-*/
+
+    // for thread in thread_list_succ:
+    //     thread.join()
+    // for thread in thread_list_ftable:
+    //     thread.join();
 
     check_nodes_connectivity();
 }
+*/
 
 /*
 # all_node_id辞書のvaluesリスト内から重複なく選択したノードに stabilize のアクションをとらせていく
@@ -1502,6 +1508,7 @@ def do_stabilize_once_at_all_node():
     check_nodes_connectivity()
 */
 
+/*
 pub fn node_join_th(){
     let mut abnn_tmp: i32;
     unsafe{
@@ -1531,6 +1538,7 @@ pub fn node_join_th(){
         }        
     }
 }
+*/
 
 /*
 # TODO: 対応する処理を行うスクリプトの類が必要 node_join_th
@@ -1548,6 +1556,7 @@ def node_join_th():
         time.sleep(gval.JOIN_INTERVAL_SEC)
 */
 
+/*
 pub fn stabilize_succ_th(){
     loop{
         // 内部で適宜ロックを解放することで他のスレッドの処理も行えるようにしつつ
@@ -1592,6 +1601,7 @@ pub fn stabilize_ftable_th(){
         }       
     }
 }
+*/
 
 /*        
 def stabilize_th():
@@ -1601,6 +1611,7 @@ def stabilize_th():
         do_stabilize_once_at_all_node()
 */
 fn main() {
+/*    
     {
         // 最初の1ノードはここで登録する
         let first_node = chord_node::new_and_join("".to_string(), true);
@@ -1633,29 +1644,36 @@ fn main() {
     for handle in thread_handles {
         handle.join().unwrap();
     }
-
-/*    
-    node_join_th_handle = threading.Thread(target=node_join_th, daemon=True)
-    node_join_th_handle.start()
-
-    stabilize_th_handle = threading.Thread(target=stabilize_th, daemon=True)
-    stabilize_th_handle.start()
 */
 
-    // data_put_th_handle = threading.Thread(target=data_put_th, daemon=True)
-    // data_put_th_handle.start()
+    let node_info = ArRmRs_new!(node_info::NodeInfo::new());
+    let data_store = ArRmRs_new!(data_store::DataStore::new());
 
-    // data_get_th_handle = threading.Thread(target=data_get_th, daemon=True)
-    // data_get_th_handle.start()
+    let node_info_succ_th = Arc::clone(&node_info);
+    let data_store_succ_th = Arc::clone(&data_store);
 
-    // node_kill_th_handle = threading.Thread(target=node_kill_th, daemon=True)
-    // node_kill_th_handle.start()
+    let node_info_ftable_th = Arc::clone(&node_info);
+    let data_store_ftable_th = Arc::clone(&data_store);    
 
 
-/*
-    while True:
-        time.sleep(1)
-*/
+    let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
+
+    });
+
+    let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
+        
+    });    
+
+    let mut thread_handles = vec![];    
+    thread_handles.push(/* APIのハンドリングをするスレッド？*/ );
+    thread_handles.push(stabilize_succ_th_handle);
+    thread_handles.push(stabilize_ftable_th_handle);
+    
+
+    // スレッド終了の待ち合わせ（終了してくるスレッドは基本的に無い）
+    for handle in thread_handles {
+        handle.join().unwrap();
+    }    
 }
 /*    
     # 再現性のため乱数シードを固定

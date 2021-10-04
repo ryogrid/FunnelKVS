@@ -496,6 +496,7 @@ pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FI
 // レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
 pub const GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES : i32 = 5;
 
+/*
 // global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
 // なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
 pub static mut need_getting_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
@@ -504,9 +505,6 @@ lazy_static! {
     pub static ref need_getting_retry_node : ArRmRs<Option<ChordNode>> 
         = Arc::new(const_reentrant_mutex(RefCell::new(None)));
 }
-/*
-need_getting_retry_node : Optional['ChordNode'] = None
-*/
 
 // global_put が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
 // なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
@@ -516,32 +514,26 @@ lazy_static! {
     pub static ref need_put_retry_data_value : ArRmRs<String> 
         = Arc::new(const_reentrant_mutex(RefCell::new("".to_string())));
 }
-/*
-need_put_retry_data_value : str = ""
-*/
-
 
 lazy_static! {
     pub static ref need_put_retry_node : ArRmRs<Option<ChordNode>> 
         = Arc::new(const_reentrant_mutex(RefCell::new(None)));
 }
-/*
-need_put_retry_node : Optional['ChordNode'] = None
 */
 
 #[derive(Debug)]
 pub struct ChordNode {
     pub node_info : ArRmRs<node_info::NodeInfo>,
     pub data_store : ArRmRs<data_store::DataStore>,
-    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
+//    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
 //    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
 //    pub router : router::Router,
 //    pub endpoints : ArRmRs<endpoints::Endpoints>,
     // シミュレーション時のみ必要なフィールド（実システムでは不要）
-    pub is_alive : AtomicBool,
+    //pub is_alive : AtomicBool,
     // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
     // 大本から呼び出されないようにするためのフラグ
-    pub is_join_op_finished : AtomicBool
+    //pub is_join_op_finished : AtomicBool
 }
 
 
@@ -555,10 +547,10 @@ impl ChordNode {
 //            router: ArRmRs_new!(router::Router::new()),
 //            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
 //            router: router::Router::new(),
-            tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
+//            tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
 //            endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
-            is_alive: AtomicBool::new(false),
-            is_join_op_finished: AtomicBool::new(false)
+//            is_alive: AtomicBool::new(false),
+//            is_join_op_finished: AtomicBool::new(false)
         }
     }
 
@@ -575,6 +567,7 @@ impl ChordNode {
 */        
 }
 
+/*
 //シミュレータの神々が利用するのはコンストラクタではなくこちらのファクトリメソッド
 pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<ChordNode> {
     let new_node = ArRmRs_new!(ChordNode::new());
@@ -635,6 +628,7 @@ pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<Cho
 
     return Arc::clone(&new_node);
 }
+*/
 
 /*
 # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する

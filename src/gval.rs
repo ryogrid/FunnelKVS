@@ -118,6 +118,7 @@ type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 pub const ID_SPACE_BITS : u32 = 30; // 160 <- sha1での本来の値
 pub const ID_SPACE_RANGE : u32 = 2i32.pow(ID_SPACE_BITS) as u32; // 0を含めての数である点に注意
 
+/*
 // paramaters for executing by PyPy3 on my desktop machine
 //pub const JOIN_INTERVAL_SEC : f32 = 1.0; //2.0 //0.9 //0.7 //0.5 //1
 pub static mut JOIN_INTERVAL_SEC : AtomicIsize = AtomicIsize::new(1);
@@ -136,6 +137,7 @@ pub const STABILIZE_SUCCESSOR_BATCH_TIMES : u32 = 20; //10 //20
 // することを1バッチとした際に、stabilize処理担当のスレッドにより呼び出されるstabilize処理
 // を行わせるメソッドの一回の呼び出しで何バッチが実行されるか
 pub const STABILIZE_FTABLE_BATCH_TIMES : i32 = 2; //1
+*/
 
 // 一時的にこれより短くなる場合もある
 pub const SUCCESSOR_LIST_NORMAL_LEN : i32 = 3;
@@ -176,6 +178,7 @@ pub static mut already_issued_put_cnt : AtomicIsize = AtomicIsize::new(0);
 // join と partial_join_op の間で、該当ノードがkillされることを避けるために用いる
 pub static mut is_waiting_partial_join_op_exists : AtomicBool = AtomicBool::new(false);
 
+/*
 //TODO: ジェネリクスで指定している型を適切なものに変更する. GlobalDatas at gval 
 pub struct GlobalDatas {
 // アドレス文字列をキーとしてとり、対応するノードのChordNodeオブジェクトを返すハッシュ
@@ -220,6 +223,7 @@ impl GlobalDatas {
 lazy_static! {
     pub static ref global_datas : ArRmRs<GlobalDatas> = ArRmRs_new!(GlobalDatas::new());
 }
+*/
 
 /*
 // マスターデータとレプリカの区別なく、データIDをKeyに、当該IDに対応するデータを

@@ -87,7 +87,7 @@ class NodeInfo:
         return ChordUtil.gen_debug_str_of_node(self)
 */
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
@@ -99,7 +99,8 @@ use crate::endpoints;
 use crate::data_store;
 use crate::router;
 
-type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+type ArMu<T> = Arc<Mutex<T>>;
 
 #[derive(Debug)]
 pub struct NodeInfo {

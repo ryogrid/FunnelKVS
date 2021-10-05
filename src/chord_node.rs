@@ -340,7 +340,7 @@ class ChordNode:
 */
 
 use std::sync::atomic::{AtomicIsize, AtomicBool};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
 use std::borrow::Borrow;
 use std::sync::atomic::Ordering;
@@ -355,7 +355,8 @@ use crate::router;
 use crate::data_store;
 use crate::endpoints;
 
-type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+type ArMu<T> = Arc<Mutex<T>>;
 
 pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
 pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL";
@@ -389,6 +390,7 @@ lazy_static! {
 }
 */
 
+/*
 #[derive(Debug)]
 pub struct ChordNode {
     pub node_info : ArRmRs<node_info::NodeInfo>,
@@ -421,6 +423,7 @@ impl ChordNode {
 //            is_join_op_finished: AtomicBool::new(false)
         }
     }
+*/
 
 /*    
     # join処理もコンストラクタで行ってしまう
@@ -432,8 +435,8 @@ impl ChordNode {
         self.router : Router = Router(self)
         self.tqueue : TaskQueue = TaskQueue(self)
         self.endpoints : Endpoints = Endpoints(self)
-*/        
 }
+*/
 
 /*
 //シミュレータの神々が利用するのはコンストラクタではなくこちらのファクトリメソッド

@@ -566,6 +566,7 @@ extern crate rocket;
 
 // utility macros
 
+/*
 // IN:  Arc<ReentrandMutex<RefCell<T>>>
 // OUT: &RefCell<T>
 macro_rules! get_refcell_from_arc_with_locking {
@@ -590,8 +591,17 @@ macro_rules! get_ref_from_refcell {
         &($refcell).borrow()//;
     );
 }
+*/
 
+/*
 macro_rules! ArRmRs_new {
+    ($wrapped:expr) => (
+        Arc::new(const_reentrant_mutex(RefCell::new($wrapped)))
+    );    
+}
+*/
+
+macro_rules! ArMu_new {
     ($wrapped:expr) => (
         Arc::new(const_reentrant_mutex(RefCell::new($wrapped)))
     );    
@@ -604,10 +614,11 @@ pub mod chord_util;
 pub mod stabilizer;
 pub mod router;
 pub mod data_store;
-pub mod taskqueue;
+//pub mod taskqueue;
 pub mod endpoints;
 
-type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+type ArMu<T> = Arc<Mutex<T>>;
 
 use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc, thread};
 use std::cell::{RefMut, RefCell, Ref};
@@ -972,7 +983,7 @@ pub fn check_nodes_connectivity() {
                     print!("no successor having node was detected!");
                 }else{
                     print!("{}", cur_node_info.born_id.to_string() + "," + chord_util::conv_id_to_ratio_str(cur_node_info.node_id).as_str() + " -> ");
-                    let cur_node_info_succ_0_arrmrs = ArRmRs_new!(cur_node_info.successor_info_list[0].clone());
+                    let cur_node_info_succ_0_arrmrs = ArMu_new!(cur_node_info.successor_info_list[0].clone());
                     let cur_node_info_succ_0_refcell = get_refcell_from_arc_with_locking!(cur_node_info_succ_0_arrmrs);
                     let cur_node_info_succ_0_ref  = get_ref_from_refcell!(cur_node_info_succ_0_refcell);
                     cur_node_info_succ_0_addr = cur_node_info_succ_0_ref.address_str.clone();
@@ -1646,14 +1657,14 @@ fn main() {
     }
 */
 
-    let node_info = ArRmRs_new!(node_info::NodeInfo::new());
-    let data_store = ArRmRs_new!(data_store::DataStore::new());
+    let node_info = ArMu_new!(node_info::NodeInfo::new());
+    let data_store = ArMu_new!(data_store::DataStore::new());
 
-    let node_info_succ_th = Arc::clone(&node_info);
-    let data_store_succ_th = Arc::clone(&data_store);
+    let node_info_arc_succ_th = Arc::clone(&node_info);
+    let data_store_arc_succ_th = Arc::clone(&data_store);
 
-    let node_info_ftable_th = Arc::clone(&node_info);
-    let data_store_ftable_th = Arc::clone(&data_store);    
+    let node_info_arc_ftable_th = Arc::clone(&node_info);
+    let data_store_arc_ftable_th = Arc::clone(&data_store);    
 
 
     let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
@@ -1665,7 +1676,7 @@ fn main() {
     });    
 
     let mut thread_handles = vec![];    
-    thread_handles.push(/* APIのハンドリングをするスレッド？*/ );
+    //thread_handles.push(/* APIのハンドリングをするスレッド？*/ );
     thread_handles.push(stabilize_succ_th_handle);
     thread_handles.push(stabilize_ftable_th_handle);
     

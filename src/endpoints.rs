@@ -101,7 +101,7 @@ use crate::chord_util;
 use crate::data_store;
 use crate::router;
 use crate::stabilizer;
-use crate::taskqueue;
+//use crate::taskqueue;
 
 type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
@@ -118,19 +118,25 @@ impl Endpoints {
 }
 */
 
+/*
 //TODO: (rust) ダミー実装なので委譲処理が必要になったタイミングで対応すること
 pub fn grpc__delegate_my_tantou_data(predecessor: ArRmRs<chord_node::ChordNode>, node_id : u32) -> Vec<chord_util::KeyValue>{
     return vec![];
     //return self.existing_node.data_store.delegate_my_tantou_data(node_id)
 }
+*/
+
 /*
 def grpc__delegate_my_tantou_data(self, node_id : int) -> List[KeyValue]:
     return self.existing_node.data_store.delegate_my_tantou_data(node_id)
 */
 
+/*
 pub fn grpc__pass_successor_list(self_node: ArRmRs<chord_node::ChordNode>) -> Vec<node_info::NodeInfo> {
     return stabilizer::pass_successor_list(self_node);
 }
+*/
+
 /*
 def grpc__pass_successor_list(self) -> List['NodeInfo']:
     return self.existing_node.stabilizer.pass_successor_list()

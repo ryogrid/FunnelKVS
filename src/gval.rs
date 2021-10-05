@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicIsize, AtomicBool};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
@@ -12,7 +12,8 @@ use crate::endpoints;
 use crate::data_store;
 use crate::chord_util;
 
-type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+type ArMu<T> = Arc<Mutex<T>>;
 
 pub const ID_SPACE_BITS : u32 = 30; // 160 <- sha1での本来の値
 pub const ID_SPACE_RANGE : u32 = 2i32.pow(ID_SPACE_BITS) as u32; // 0を含めての数である点に注意

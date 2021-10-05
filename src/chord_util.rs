@@ -21,6 +21,7 @@ use crate::data_store;
 
 type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 
+/*
 // all_data_listグローバル変数に格納される形式としてのみ用いる
 #[derive(Debug, Clone)]
 pub struct KeyValue {
@@ -38,6 +39,7 @@ impl KeyValue {
         KeyValue {key : Some(key.unwrap()), value_data : value, data_id : tmp_data_id}
     }
 }
+*/
 /*
     def __eq__(self, other):
         if not isinstance(other, KeyValue):
@@ -313,8 +315,8 @@ pub fn gen_debug_str_of_data(data_id : u32) -> String {
 // TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
 //       ChordNodeオブジェクトを返す get_node_by_address
 pub fn get_node_by_address(address : &String) -> Result<ArRmRs<chord_node::ChordNode>, GeneralError> {
-    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-    let gd_ref = get_ref_from_refcell!(gd_refcell);
+    // let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
+    // let gd_ref = get_ref_from_refcell!(gd_refcell);
 
     //println!("get_node_by_address {:?}", address);
     let get_result = gd_ref.all_node_dict.get(address);
@@ -342,6 +344,7 @@ pub fn get_node_by_address(address : &String) -> Result<ArRmRs<chord_node::Chord
     return Ok(ret_val_cloned);
 }
 
+/*
 pub fn get_lock_obj(kind : &str, address : &String) -> ArRmRs<bool> {
     let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
     let gd_refmut = get_refmut_from_refcell!(gd_refcell);
@@ -383,6 +386,7 @@ pub fn get_lock_obj(kind : &str, address : &String) -> ArRmRs<bool> {
 
     return ret_val_cloned;
 }
+*/
 
 /*
     # TODO: InteernalExp, DownedeExp at get_node_by_address

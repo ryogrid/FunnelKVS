@@ -193,7 +193,7 @@ class DataStore:
                              + ChordUtil.gen_debug_str_of_node(succ_info))
 */
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
@@ -209,8 +209,8 @@ pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";
 pub const DATA_STORE_OP_DIRECT_STORE : &str = "DIRECT_STORE";
 pub const DATA_STORE_OP_DIRECT_REMOVE : &str = "DIRECT_REMOVE";
 
-type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
-
+//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+type ArMu<T> = Arc<Mutex<T>>;
 
 #[derive(Debug, Clone)]
 pub struct DataStore {

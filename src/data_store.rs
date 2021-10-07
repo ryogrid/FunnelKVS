@@ -225,3 +225,6 @@ impl DataStore {
         DataStore {stored_data : sd}
     }
 }
+
+// TODO: (rustr) 引数にArMu型でラップされたDataStoreオブジェクトをとる形で
+//               stored_dataを引数を操作するよう、なんちゃってカプセル化する

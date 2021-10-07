@@ -93,7 +93,7 @@ def check_successor_list_length(self) -> PResult[bool]:
 
 // 経路表の情報を他ノードから強制的に設定する.
 // joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
-pub fn set_routing_infos_force(self_node: ArMu<chord_node::ChordNode>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
+pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     //with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
     
     let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
@@ -117,7 +117,7 @@ pub fn set_routing_infos_force(self_node: ArMu<chord_node::ChordNode>, predecess
 */
     
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
-pub fn join(new_node: ArMu<chord_node::ChordNode>, tyukai_node_address: &String){
+pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
     //with self.existing_node.node_info.lock_of_pred_info, new_node_ni_refmut.lock_of_succ_infos:
 
     let mut is_second_node:bool = false;
@@ -127,7 +127,7 @@ pub fn join(new_node: ArMu<chord_node::ChordNode>, tyukai_node_address: &String)
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
     let tyukai_node = chord_util::get_node_by_address(tyukai_node_address).unwrap();
 
-    let successor: ArMu<chord_node::ChordNode>;
+    let successor: ArMu<node_info::NodeInfo>;
 
 /*    
     // new_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
@@ -539,7 +539,7 @@ def stabilize_successor_inner_fill_succ_list(self) -> PResult[bool]:
 */
 
 // TODO: (rust) need implement stabilize_successor_inner_fix_chain func
-pub fn stabilize_successor_inner_fix_chain(self_node: ArMu<chord_node::ChordNode>, successor: ArMu<chord_node::ChordNode>) -> Result<bool, chord_util::GeneralError> {
+pub fn stabilize_successor_inner_fix_chain(self_node: ArMu<node_info::NodeInfo>, successor: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError> {
     //故障ノードが発生しない前提であれば、check_predecessorの呼び出しに置き換えて構わない、はず
     return Ok(true);
 }
@@ -686,7 +686,7 @@ def stabilize_successor_inner_fix_chain(self, successor : 'ChordNode') -> PResul
 */
 
 // TODO: (rust) need implement stabilize_successor_inner func
-pub fn stabilize_successor_inner(self_node: ArMu<chord_node::ChordNode>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{
+pub fn stabilize_successor_inner(self_node: ArMu<node_info::NodeInfo>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{
     return Ok(None);
 }
 
@@ -755,7 +755,7 @@ def stabilize_successor_inner(self) -> PResult[Optional['NodeInfo']]:
 */
 
 // TODO: (rust) need implement stabilize_successor func
-pub fn stabilize_successor(self_node: ArMu<chord_node::ChordNode>) -> Result<bool, chord_util::GeneralError>{
+pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
     let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
     let self_node_ref = get_ref_from_refcell!(self_node_refcell);
     let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
@@ -1372,7 +1372,7 @@ def stabilize_successor(self) -> PResult[bool]:
 // FingerTableのエントリはこの呼び出しによって埋まっていく
 // TODO: InternalExp at stabilize_finger_table
 // TODO: 注 -> (rust) このメソッドの呼び出し時はexisting_nodeのnode_infoの参照は存在しない状態としておくこと
-pub fn stabilize_finger_table(existing_node: ArMu<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, idx: i32) -> Result<bool, chord_util::GeneralError> {
+pub fn stabilize_finger_table(existing_node: ArMu<node_info::NodeInfo>, exnode_ref: &Ref<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {
     // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     //     ChordUtil.dprint("stabilize_finger_table_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
     //                      + "LOCK_ACQUIRE_TIMEOUT")
@@ -1382,7 +1382,7 @@ pub fn stabilize_finger_table(existing_node: ArMu<chord_node::ChordNode>, exnode
     //     ChordUtil.dprint("stabilize_finger_table_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
     //                      + "LOCK_ACQUIRE_TIMEOUT")
     //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
-    let find_rslt: Result<ArMu<chord_node::ChordNode>, chord_util::GeneralError>;
+    let find_rslt: Result<ArMu<node_info::NodeInfo>, chord_util::GeneralError>;
     let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
 
     let exnode_id: u32;
@@ -1566,7 +1566,7 @@ def pass_successor_list(self) -> List['NodeInfo']:
 // 本メソッドはstabilize処理の中で用いられる
 // Attention: InternalControlFlowException を raiseする場合がある
 // TODO: InternalExp at check_predecessor
-pub fn check_predecessor(self_node: ArMu<chord_node::ChordNode>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     //     ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
     //                      + "LOCK_ACQUIRE_TIMEOUT")

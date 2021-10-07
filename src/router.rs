@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::{RefMut, RefCell, Ref};
 use std::sync::atomic::Ordering;
@@ -7,14 +7,15 @@ use std::time::Duration;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
-use crate::chord_node::{self, ChordNode};
+//use crate::chord_node::ChordNode;
 use crate::node_info;
 use crate::chord_util;
 use crate::stabilizer;
 use crate::endpoints;
 use crate::data_store;
 
-type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+type ArMu<T> = Arc<Mutex<T>>;
 
 /*
 #[derive(Debug, Clone)]
@@ -32,7 +33,7 @@ impl Router {
 // id（int）で識別されるデータを担当するノードの名前解決を行う
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {
+pub fn find_successor(existing_node: ArMu<node_info::NodeInfo>, exnode_ref: &Ref<node_info::NodeInfo>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> Result<ArMu<node_info::NodeInfo>, chord_util::GeneralError> {
     // TODO: ここでのロックをはじめとしてRust実装ではロック対象を更新するか否かでRWロックを使い分けるようにする. at find_successor
     //       そうでないと、少なくともglobal_xxxの呼び出しを同一ノードもしくは、いくつかのノードに行うような運用でクエリが並列に
     //       動作せず、パフォーマンスが出ないはず
@@ -158,7 +159,7 @@ pub fn find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: 
 
 
 // id(int)　の前で一番近い位置に存在するノードを探索する
-pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id: u32) -> ArRmRs<chord_node::ChordNode> {
+pub fn find_predecessor(existing_node: ArMu<node_info::NodeInfo>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id: u32) -> ArMu<node_info::NodeInfo> {
     // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する   
     let exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
     let exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
@@ -321,7 +322,7 @@ pub fn find_predecessor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_
 
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
 // ni_ref -> existing_nodeのもの
-pub fn closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> ArRmRs<chord_node::ChordNode> {        
+pub fn closest_preceding_finger(existing_node: ArMu<node_info::NodeInfo>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> ArMu<node_info::NodeInfo> {
     // 範囲の広いエントリから探索していく
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ

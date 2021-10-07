@@ -148,6 +148,7 @@ impl NodeInfo {
         }
     }
 
+    // TODO: (rustr) モジュール自体に定義を移し、ArMu型でラップした形で第一引数を受ける形にする
     pub fn set_pred_info(&mut self, node_info: NodeInfo){
         if self.predecessor_info.len() == 0 {
             self.predecessor_info.push(node_info);

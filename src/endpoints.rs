@@ -90,7 +90,7 @@ class Endpoints:
             ret_info.predecessor_info = cast('NodeInfo', self.existing_node.node_info.predecessor_info).get_partial_deepcopy()
         return ret_info
 */
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::cell::{RefCell, Ref, RefMut};
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
@@ -103,7 +103,9 @@ use crate::router;
 use crate::stabilizer;
 //use crate::taskqueue;
 
-type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+type ArMu<T> = Arc<Mutex<T>>;
+
 
 /*
 #[derive(Debug, Clone)]
@@ -142,7 +144,7 @@ def grpc__pass_successor_list(self) -> List['NodeInfo']:
     return self.existing_node.stabilizer.pass_successor_list()
 */
 
-pub fn grpc__check_predecessor(self_node: ArRmRs<chord_node::ChordNode>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+pub fn grpc__check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     return stabilizer::check_predecessor(self_node, caller_node_ni);
 }
 /*
@@ -151,7 +153,7 @@ def grpc__check_predecessor(self, node_info : 'NodeInfo') -> PResult[bool]:
     return self.existing_node.stabilizer.check_predecessor(node_info)
 */
 
-pub fn grpc__set_routing_infos_force(self_node: ArRmRs<chord_node::ChordNode>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
+pub fn grpc__set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     return stabilizer::set_routing_infos_force(Arc::clone(&self_node), predecessor_info, successor_info_0, ftable_enry_0);
 }
 /*        
@@ -162,14 +164,14 @@ def grpc__set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor
 // id（int）で識別されるデータを担当するノードの名前解決を行う
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-pub fn grpc__find_successor(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> Result<ArRmRs<chord_node::ChordNode>, chord_util::GeneralError> {    
+pub fn grpc__find_successor(existing_node: ArMu<node_info::NodeInfo>, exnode_ref: &Ref<node_info::NodeInfo>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> Result<ArMu<node_info::NodeInfo>, chord_util::GeneralError> {
     return router::find_successor(existing_node, exnode_ref, exnode_ni_ref, id);
 }
 
-pub fn grpc__closest_preceding_finger(existing_node: ArRmRs<chord_node::ChordNode>, exnode_ref: &Ref<chord_node::ChordNode>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> ArRmRs<chord_node::ChordNode> {
+pub fn grpc__closest_preceding_finger(existing_node: ArMu<node_info::NodeInfo>, exnode_ref: &Ref<node_info::NodeInfo>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> ArMu<node_info::NodeInfo> {
     return router::closest_preceding_finger(existing_node, exnode_ni_ref, id);
 }
 
-pub fn grpc__stabilize_successor_inner(self_node: ArRmRs<chord_node::ChordNode>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{
+pub fn grpc__stabilize_successor_inner(self_node: ArMu<node_info::NodeInfo>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{
     return stabilizer::stabilize_successor_inner(self_node);
 }

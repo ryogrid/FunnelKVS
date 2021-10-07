@@ -1,6 +1,6 @@
 extern crate rand;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::RefMut;
 use std::cell::RefCell;
@@ -19,7 +19,8 @@ use crate::router;
 use crate::endpoints;
 use crate::data_store;
 
-type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+type ArMu<T> = Arc<Mutex<T>>;
 
 /*
 // all_data_listグローバル変数に格納される形式としてのみ用いる
@@ -287,10 +288,9 @@ def dprint(cls, print_str : str, flush=False):
 
 // TODO: (rust) 将来的にはNodeInfoのロックを保持し続けなくて済むように出力に必要な要素を各々引数に渡す形に
 //              する必要がありそう
-pub fn gen_debug_str_of_node(node_info : Option<&node_info::NodeInfo>) -> String {
-    let casted_info = node_info.unwrap();
-    return casted_info.born_id.to_string() + &",".to_string() + &format!("{:X}", casted_info.node_id) + &",".to_string()
-       + &conv_id_to_ratio_str(casted_info.node_id);
+pub fn gen_debug_str_of_node(node_info : &node_info::NodeInfo) -> String {
+    return node_info.born_id.to_string() + &",".to_string() + &format!("{:X}", node_info.node_id) + &",".to_string()
+       + &conv_id_to_ratio_str(node_info.node_id);
 }
 /* 
     @classmethod
@@ -309,7 +309,7 @@ pub fn gen_debug_str_of_data(data_id : u32) -> String {
         return hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)
 */
 
-
+/*
 // Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
 //            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
 // TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
@@ -343,6 +343,7 @@ pub fn get_node_by_address(address : &String) -> Result<ArRmRs<chord_node::Chord
 
     return Ok(ret_val_cloned);
 }
+*/
 
 /*
 pub fn get_lock_obj(kind : &str, address : &String) -> ArRmRs<bool> {
@@ -419,6 +420,10 @@ pub fn get_lock_obj(kind : &str, address : &String) -> ArRmRs<bool> {
 // TODO: 実システム化する際は アドレス指定で呼び出せる（ChordNodeオブジェクトのメソッドという形でない）
 //       RPC化する必要がありそう。もしくはこのメソッドの呼び出し自体を無くすか。 is_node_alive
 pub fn is_node_alive(address : &String) -> Result<bool, GeneralError> {
+    // TODO: (rustr) 現状は故障ノードを想定しないため必ずtrueを返す
+    return Ok(true);
+
+/*
     let tmp = get_node_by_address(address);
     match tmp {
         Ok(arc_val) => return Ok(true),
@@ -430,7 +435,9 @@ pub fn is_node_alive(address : &String) -> Result<bool, GeneralError> {
             }
         }
     }
+*/
 }
+
 /*
     # TODO: InternalExp at is_node_alive
 

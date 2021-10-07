@@ -1666,6 +1666,7 @@ fn main() {
     let node_info_arc_ftable_th = Arc::clone(&node_info);
     let data_store_arc_ftable_th = Arc::clone(&data_store);    
 
+    // TODO: (rustr) 自身のjoinの処理を書く
 
     let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
 
@@ -1674,6 +1675,8 @@ fn main() {
     let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
         
     });    
+
+    // TODO: (rustr) RocketでRESTのハンドリングをするサーバを立ててよろしくする
 
     let mut thread_handles = vec![];    
     //thread_handles.push(/* APIのハンドリングをするスレッド？*/ );

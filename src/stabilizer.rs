@@ -95,15 +95,10 @@ def check_successor_list_length(self) -> PResult[bool]:
 // joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
 pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     //with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
-    
-    let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
-    let self_node_ref = get_ref_from_refcell!(self_node_refcell);
-    let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
-    let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
-    
-    self_node_ni_refmut.set_pred_info(predecessor_info);
-    self_node_ni_refmut.successor_info_list[0] = successor_info_0;
-    self_node_ni_refmut.finger_table[0] = Some(ftable_enry_0);
+    let self_node_ref = self_node.lock().unwrap();
+    self_node_ref.successor_info_list[0] = successor_info_0;
+    self_node_ref.finger_table[0] = Some(ftable_enry_0);
+    node_info::set_pred_info(self_node, (*self_node_ref).clone());
 }
 
 /*
@@ -125,7 +120,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
     //println!("join {:?}", tyukai_node_address);
     // 実装上例外は発生しない.
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
-    let tyukai_node = chord_util::get_node_by_address(tyukai_node_address).unwrap();
+    let tyukai_node = chord_util::get_node_info_by_address(tyukai_node_address).unwrap();
 
     let successor: ArMu<node_info::NodeInfo>;
 
@@ -813,7 +808,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     let mut is_successor_has_no_pred = false;
     let successor;
 
-    let ret = chord_util::get_node_by_address(&self_node_ni_refmut.successor_info_list[0].address_str);
+    let ret = chord_util::get_node_info_by_address(&self_node_ni_refmut.successor_info_list[0].address_str);
     {
         // TODO: 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
         successor = ret.unwrap();
@@ -897,7 +892,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         // 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
         // 情報を更新してもらう
         // 事前チェックによって避けられるかもしれないが、常に実行する
-        let successor_obj = chord_util::get_node_by_address(&successor_info_addr).unwrap();
+        let successor_obj = chord_util::get_node_info_by_address(&successor_info_addr).unwrap();
 
         if self_node_ni_refmut.address_str == successor_info_addr {
             //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
@@ -924,7 +919,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
-            let new_successor_obj = chord_util::get_node_by_address(&self_node_ni_refmut.successor_info_list[0].address_str).unwrap();
+            let new_successor_obj = chord_util::get_node_info_by_address(&self_node_ni_refmut.successor_info_list[0].address_str).unwrap();
             if self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
                 //抜けないと多重borrowでpanicしてしまうので
@@ -1566,7 +1561,7 @@ def pass_successor_list(self) -> List['NodeInfo']:
 // 本メソッドはstabilize処理の中で用いられる
 // Attention: InternalControlFlowException を raiseする場合がある
 // TODO: InternalExp at check_predecessor
-pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     //     ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
     //                      + "LOCK_ACQUIRE_TIMEOUT")
@@ -1605,6 +1600,8 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
     chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
             + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
 
+// TODO: (rustr) まだノードダウンの考慮は不要
+/*            
     // この時点で認識している predecessor がノードダウンしていないかチェックする
     let is_pred_alived = match chord_util::is_node_alive(&self_node_ni_refmut.predecessor_info[0].address_str) {
         Err(_e) => false, // err_code == ErrorCode.InternalControlFlowException_CODE
@@ -1628,6 +1625,7 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
     } else { // predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
         self_node_ni_refmut.set_pred_info(caller_node_ni.clone());
     }
+*/
 
     return Ok(true)
 }

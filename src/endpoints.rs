@@ -144,7 +144,7 @@ def grpc__pass_successor_list(self) -> List['NodeInfo']:
     return self.existing_node.stabilizer.pass_successor_list()
 */
 
-pub fn grpc__check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+pub fn grpc__check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     return stabilizer::check_predecessor(self_node, caller_node_ni);
 }
 /*
@@ -163,13 +163,15 @@ def grpc__set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor
 
 // id（int）で識別されるデータを担当するノードの名前解決を行う
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
+//            finger_tableに値が埋められた NodeInfoへの参照を渡すこと
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-pub fn grpc__find_successor(existing_node: ArMu<node_info::NodeInfo>, exnode_ref: &Ref<node_info::NodeInfo>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> Result<ArMu<node_info::NodeInfo>, chord_util::GeneralError> {
-    return router::find_successor(existing_node, exnode_ref, exnode_ni_ref, id);
+pub fn grpc__find_successor(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> Result<&node_info::NodeInfo, chord_util::GeneralError> {
+    return router::find_successor(exnode_ni_ref, id);
 }
 
-pub fn grpc__closest_preceding_finger(existing_node: ArMu<node_info::NodeInfo>, exnode_ref: &Ref<node_info::NodeInfo>, exnode_ni_ref: &Ref<node_info::NodeInfo>, id : u32) -> ArMu<node_info::NodeInfo> {
-    return router::closest_preceding_finger(existing_node, exnode_ni_ref, id);
+// Attention: finger_tableに値が埋められた NodeInfoへの参照を渡すこと
+pub fn grpc__closest_preceding_finger(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> &node_info::NodeInfo {
+    return router::closest_preceding_finger(exnode_ni_ref, id);
 }
 
 pub fn grpc__stabilize_successor_inner(self_node: ArMu<node_info::NodeInfo>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{

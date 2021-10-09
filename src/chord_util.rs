@@ -309,6 +309,10 @@ pub fn gen_debug_str_of_data(data_id : u32) -> String {
         return hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)
 */
 
+pub fn get_node_info_by_address(address : &String) -> Result<&node_info::NodeInfo, GeneralError> {
+    // TODO: (rustr) 通信をして、successor_list と predecessor_info も埋めた NodeInfo を返すようなものにする感じかな・・・
+    return Err(GeneralError::new("not implemented yet".to_string(), ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM));
+}
 /*
 // Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
 //            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する

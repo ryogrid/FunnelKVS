@@ -919,6 +919,8 @@ fn get_all_network_constructed_nodes() -> Vec<ArRmRs<chord_node::ChordNode>> {
 }
 */
 
+// TODO: (rustr) 制御用ツールから、successorを得るAPIなどを用いて（要実装）チェックするようにする
+/*
 // stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
 // ランダムに選択したノードからsuccessor方向にsuccessorの繋がりでノードを辿って
 // 行って各ノードの情報を出力する
@@ -960,7 +962,7 @@ pub fn check_nodes_connectivity() {
         // 得ることに対応する形とする
 
         //match chord_util::get_node_by_address(&cur_node_info_succ_0.successor_info_list[0].address_str) {
-        match chord_util::get_node_by_address(&cur_node_info_succ_0_addr) {            
+        match chord_util::get_node_info_by_address(&cur_node_info_succ_0_addr) {            
             Err(err) => { // ErrorCode.InternalControlFlowException_CODE || ErrorCode.NodeIsDownedException_CODE
                 if err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED {
                     println!("");
@@ -1012,6 +1014,7 @@ pub fn check_nodes_connectivity() {
                          + chord_util::gen_debug_str_of_node(Some(&start_node_info)).as_str() + ","
                          + chord_util::gen_debug_str_of_node(Some(&cur_node_info_succ_0)).as_str()));
     }
+*/    
 
 // TODO: predecessor方向のチェックは後回し
 /*
@@ -1063,8 +1066,8 @@ pub fn check_nodes_connectivity() {
                          + str(all_node_num) + ","
                          + chord_util::gen_debug_str_of_node(start_node_info) + ","
                          + chord_util::gen_debug_str_of_node(cur_node_info))
-*/
 }
+*/
 
 /*
 # stabilize_successorの呼び出しが一通り終わったら確認するのに利用する

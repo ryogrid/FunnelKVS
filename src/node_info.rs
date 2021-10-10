@@ -90,6 +90,7 @@ class NodeInfo:
 use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
+use serde::{Serialize, Deserialize};
 
 use crate::gval;
 use crate::chord_node;
@@ -102,6 +103,7 @@ use crate::router;
 //type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
+#[derive(Serialize, Deserialize)]
 #[derive(Debug)]
 pub struct NodeInfo {
 //    pub existing_node : ArRmRs<chord_node::ChordNode>,

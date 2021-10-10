@@ -556,10 +556,9 @@ if __name__ == '__main__':
 
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]
-/*
+
 #[macro_use]
 extern crate rocket;
-*/
 
 
 #[macro_use] extern crate lazy_static;

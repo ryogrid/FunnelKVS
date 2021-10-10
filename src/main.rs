@@ -557,9 +557,6 @@ if __name__ == '__main__':
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]
 
-// #[macro_use]
-// extern crate tokio;
-
 #[macro_use]
 extern crate rocket;
 
@@ -643,12 +640,6 @@ use std::sync::{Mutex, mpsc};
 use std::sync::atomic::Ordering;
 use std::env;
 use std::collections::HashMap;
-
-//use tokio::macros::support::Future;
-
-// extern crate reqwest;
-// extern crate serde;
-// extern crate serde_json;
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -1653,46 +1644,31 @@ def stabilize_th():
         do_stabilize_once_at_all_node()
 */
 
-//fn req_rest_api_test_inner() -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> { //Result<reqwest::Response, reqwest::Error> {// {
-fn req_rest_api_test_inner() {// {    
-    let text = r#"{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}"#;
-    let arg_node_info = serde_json::from_str::<node_info::NodeInfo>(text).unwrap();
-/*    
-    reqwest::Client::new()
-    .post("http://localhost:8000/serialize")
-    .form(&arg_node_info)
-//        .headers(headers)
-    .send().await;//? // HTTPリクエスト (Resultが返ってくる)
-        //.json() // JSONに変換
-*/
 
-/*
-    let resp = reqwest::Client::new()
-//    .form(arg_node_info)
-    .post("http://localhost:8000/")
-//  .headers(headers)
-    .send();//? // HTTPリクエスト (Resultが返ってくる)
-        //.json() // JSONに変換        
-
-    let ret_tmp = ret.await.unwrap();
-    let ret_text = ret_tmp.text().await.unwrap();
-    println!("{:?}", ret_text);
-
-    return resp;
-*/
+fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://localhost:8000/").unwrap()
     .text();
     //.json::<HashMap<String, String>>().unwrap();
     println!("{:#?}", resp);
 }
 
-//fn req_rest_api_test() -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
-fn req_rest_api_test() {    
-    println!("client mode!\n");
-    req_rest_api_test_inner();
+fn req_rest_api_test_inner_post() {
+    let text = r#"{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}"#;
+    let arg_node_info = serde_json::from_str::<node_info::NodeInfo>(text).unwrap();
+
+    let client = reqwest::blocking::Client::new();
+    let res = client.post("http://localhost:8000/deserialize")
+    .body(serde_json::to_string(&arg_node_info).unwrap())
+    .send().unwrap();
+
+    println!("{:#?}", res.text());
 }
 
-//#[tokio::main]
+fn req_rest_api_test() {    
+    println!("client mode!\n");
+    req_rest_api_test_inner_post();
+}
+
 fn main() {
 /*    
     {

@@ -150,9 +150,16 @@ fn index() -> Json<node_info::NodeInfo> {
     Json(node_info)
 }
 
+#[post("/deserialize", data = "<node_info>")]
+pub fn deserialize_test(node_info: Json<node_info::NodeInfo>) -> String {
+    println!("{:?}", node_info.address_str);
+    println!("{:?}", node_info);
+    format!("Accepted post request! {:?}", node_info.0)
+}
+
 pub fn rest_api_server_start(){
     rocket::ignite()
-        .mount("/", routes![index])
+        .mount("/", routes![index, deserialize_test])
         .launch();
 }
 

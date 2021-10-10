@@ -563,6 +563,12 @@ extern crate rocket;
 
 #[macro_use] extern crate lazy_static;
 
+//HTTPヘッダを生成する構造体を自動生成するためのマクロを使用可能とする
+//認証などを行わないのであれば必要ないかも
+#[macro_use]
+extern crate hyper;
+
+
 // utility macros
 
 /*

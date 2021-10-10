@@ -1685,6 +1685,7 @@ fn main() {
     });    
 
     // TODO: (rustr) RocketでRESTのハンドリングをするサーバを立ててよろしくする
+    endpoints::rest_api_server_start();
 
     let mut thread_handles = vec![];    
     //thread_handles.push(/* APIのハンドリングをするスレッド？*/ );

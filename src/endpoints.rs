@@ -132,6 +132,17 @@ def grpc__pass_successor_list(self) -> List['NodeInfo']:
     return self.existing_node.stabilizer.pass_successor_list()
 */
 
+#[get("/")]
+fn index() -> &'static str {
+    "Hello, world!"
+}
+
+pub fn rest_api_server_start(){
+    rocket::ignite()
+        .mount("/", routes![index])
+        .launch();
+}
+
 // TODO: (rustr) comment-outed at spiking RPC impl
 /*
 pub fn grpc__check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {

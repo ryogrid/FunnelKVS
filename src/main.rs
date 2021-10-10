@@ -557,8 +557,8 @@ if __name__ == '__main__':
 #![feature(proc_macro_hygiene)]
 #![feature(decl_macro)]
 
-#[macro_use]
-extern crate tokio;
+// #[macro_use]
+// extern crate tokio;
 
 #[macro_use]
 extern crate rocket;
@@ -642,9 +642,9 @@ use std::io::{stdout, stdin};
 use std::sync::{Mutex, mpsc};
 use std::sync::atomic::Ordering;
 use std::env;
+use std::collections::HashMap;
 
-use tokio::macros::support::Future;
-//use tokio::prelude::*;
+//use tokio::macros::support::Future;
 
 // extern crate reqwest;
 // extern crate serde;
@@ -1653,7 +1653,8 @@ def stabilize_th():
         do_stabilize_once_at_all_node()
 */
 
-fn req_rest_api_test_inner() -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> { //Result<reqwest::Response, reqwest::Error> {// {
+//fn req_rest_api_test_inner() -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> { //Result<reqwest::Response, reqwest::Error> {// {
+fn req_rest_api_test_inner() {// {    
     let text = r#"{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}"#;
     let arg_node_info = serde_json::from_str::<node_info::NodeInfo>(text).unwrap();
 /*    
@@ -1664,23 +1665,35 @@ fn req_rest_api_test_inner() -> impl Future<Output = Result<reqwest::Response, r
     .send().await;//? // HTTPリクエスト (Resultが返ってくる)
         //.json() // JSONに変換
 */
+
+/*
     let resp = reqwest::Client::new()
-    .get("http://localhost:8000/")
+//    .form(arg_node_info)
+    .post("http://localhost:8000/")
 //  .headers(headers)
     .send();//? // HTTPリクエスト (Resultが返ってくる)
         //.json() // JSONに変換        
 
+    let ret_tmp = ret.await.unwrap();
+    let ret_text = ret_tmp.text().await.unwrap();
+    println!("{:?}", ret_text);
+
     return resp;
+*/
+    let resp = reqwest::blocking::get("http://localhost:8000/").unwrap()
+    .text();
+    //.json::<HashMap<String, String>>().unwrap();
+    println!("{:#?}", resp);
 }
 
-async fn req_rest_api_test() -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
+//fn req_rest_api_test() -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
+fn req_rest_api_test() {    
     println!("client mode!\n");
-    let ret = req_rest_api_test_inner();
-    return ret;    
+    req_rest_api_test_inner();
 }
 
-#[tokio::main]
-async fn main() {
+//#[tokio::main]
+fn main() {
 /*    
     {
         // 最初の1ノードはここで登録する
@@ -1720,10 +1733,7 @@ async fn main() {
     if args.len() > 1 {
         let num: i32 = args[1].parse().unwrap();
         if num == 2 { // REST client
-            let ret = req_rest_api_test().await;
-            let ret_tmp = ret.await.unwrap();
-            let ret_text = ret_tmp.text().await.unwrap();
-            println!("{:?}", ret_text);
+            req_rest_api_test();
         }
     }else{
         let node_info = ArMu_new!(node_info::NodeInfo::new());

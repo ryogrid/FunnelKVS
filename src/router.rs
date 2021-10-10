@@ -17,19 +17,8 @@ use crate::data_store;
 //type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
+// TODO: (rustr) comment-outed at spiking RPC impl
 /*
-#[derive(Debug, Clone)]
-pub struct Router {
-//    pub existing_node : ArRmRs<chord_node::ChordNode>,
-}
-
-impl Router {
-    pub fn new() -> Router {
-        Router {}
-    }
-}
-*/
-
 // id（int）で識別されるデータを担当するノードの名前解決を行う
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
@@ -97,7 +86,7 @@ pub fn find_successor(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> Result<&
         }
     }
 }
-
+*/
 
 /*
     # id（int）で識別されるデータを担当するノードの名前解決を行う
@@ -153,7 +142,8 @@ pub fn find_successor(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> Result<&
             self.existing_node.node_info.lock_of_succ_infos.release()
 */
 
-
+// TODO: (rustr) comment-outed at spiking RPC impl
+/*
 // id(int)　の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_info::NodeInfo {
     // // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する   
@@ -247,7 +237,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
 
     return Arc::clone(&n_dash);
 }
-
+*/
 
 /*
     # id(int)　の前で一番近い位置に存在するノードを探索する
@@ -317,6 +307,8 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
         return n_dash
 */
 
+// TODO: (rustr) comment-outed at spiking RPC impl
+/*
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
 // ni_ref -> existing_nodeのもの
 pub fn closest_preceding_finger(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> &node_info::NodeInfo {
@@ -377,7 +369,7 @@ pub fn closest_preceding_finger(exnode_ni_ref: &node_info::NodeInfo, id : u32) -
     // ことになる
     return Arc::clone(&existing_node);
 }
-
+*/
 
 /*
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す

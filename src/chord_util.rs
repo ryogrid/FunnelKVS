@@ -22,32 +22,6 @@ use crate::data_store;
 //type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
-/*
-// all_data_listグローバル変数に格納される形式としてのみ用いる
-#[derive(Debug, Clone)]
-pub struct KeyValue {
-    pub key : Option<String>,
-    pub value_data : String,
-    pub data_id : Option<u32>
-}
-
-impl KeyValue {
-    pub fn new(key : Option<String>, value : String) -> KeyValue {
-        let tmp_data_id : Option<u32> = match &key {
-            Some(key_string) => Some(hash_str_to_int(key_string)),
-            None => None
-        };
-        KeyValue {key : Some(key.unwrap()), value_data : value, data_id : tmp_data_id}
-    }
-}
-*/
-/*
-    def __eq__(self, other):
-        if not isinstance(other, KeyValue):
-            return False
-        return self.data_id == other.data_id
-*/
-
 // TODO: ディープコピーを取得するメソッドを定義しておきたい at DataIdAndValue
 #[derive(Debug, Clone)]
 pub struct DataIdAndValue {

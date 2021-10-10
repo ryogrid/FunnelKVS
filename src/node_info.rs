@@ -208,7 +208,7 @@ pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
 }
 
 pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
-    let self_node_ref = self_node.lock().unwrap();
+    let mut self_node_ref = self_node.lock().unwrap();
     if self_node_ref.predecessor_info.len() == 0 {
         self_node_ref.predecessor_info.push(node_info);
     }else{

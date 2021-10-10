@@ -108,19 +108,6 @@ type ArMu<T> = Arc<Mutex<T>>;
 
 
 /*
-#[derive(Debug, Clone)]
-pub struct Endpoints {
-//    pub existing_node : ArRmRs<chord_node::ChordNode>,
-}
-
-impl Endpoints {
-    pub fn new() -> Endpoints {
-        Endpoints {}
-    }
-}
-*/
-
-/*
 //TODO: (rust) ダミー実装なので委譲処理が必要になったタイミングで対応すること
 pub fn grpc__delegate_my_tantou_data(predecessor: ArRmRs<chord_node::ChordNode>, node_id : u32) -> Vec<chord_util::KeyValue>{
     return vec![];
@@ -144,22 +131,15 @@ def grpc__pass_successor_list(self) -> List['NodeInfo']:
     return self.existing_node.stabilizer.pass_successor_list()
 */
 
+// TODO: (rustr) comment-outed at spiking RPC impl
+/*
 pub fn grpc__check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     return stabilizer::check_predecessor(self_node, caller_node_ni);
 }
-/*
-# TODO: InternalExp at grpc__check_predecessor
-def grpc__check_predecessor(self, node_info : 'NodeInfo') -> PResult[bool]:
-    return self.existing_node.stabilizer.check_predecessor(node_info)
-*/
 
 pub fn grpc__set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     return stabilizer::set_routing_infos_force(Arc::clone(&self_node), predecessor_info, successor_info_0, ftable_enry_0);
 }
-/*        
-def grpc__set_routing_infos_force(self, predecessor_info : 'NodeInfo', successor_info_0 : 'NodeInfo', ftable_enry_0 : 'NodeInfo'):
-    return self.existing_node.stabilizer.set_routing_infos_force(predecessor_info, successor_info_0, ftable_enry_0)
-*/
 
 // id（int）で識別されるデータを担当するノードの名前解決を行う
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
@@ -177,3 +157,4 @@ pub fn grpc__closest_preceding_finger(exnode_ni_ref: &node_info::NodeInfo, id : 
 pub fn grpc__stabilize_successor_inner(self_node: ArMu<node_info::NodeInfo>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{
     return stabilizer::stabilize_successor_inner(self_node);
 }
+*/

@@ -94,6 +94,7 @@ use std::sync::{Arc, Mutex};
 use std::cell::{RefCell, Ref, RefMut};
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rocket_contrib::json::Json;
+use rocket::State;
 
 use crate::gval;
 use crate::chord_node;
@@ -151,14 +152,19 @@ fn index() -> Json<node_info::NodeInfo> {
 }
 
 #[post("/deserialize", data = "<node_info>")]
-pub fn deserialize_test(node_info: Json<node_info::NodeInfo>) -> String {
+pub fn deserialize_test(self_ninfo: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, node_info: Json<node_info::NodeInfo>) -> String {
+    // TODO: (rustr) 複数の引数をとるようなことがしたければ、それらを含むStructを定義するしか無さそう
+    println!("{:?}", self_ninfo.lock().unwrap());
     println!("{:?}", node_info.address_str);
     println!("{:?}", node_info);
     format!("Accepted post request! {:?}", node_info.0)
 }
 
-pub fn rest_api_server_start(){
+pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>){
+    // TODO: (rustr) 起動時のポート指定
     rocket::ignite()
+        .manage(self_ninfo)
+        .manage(data_store)
         .mount("/", routes![index, deserialize_test])
         .launch();
 }

@@ -606,9 +606,17 @@ macro_rules! ArRmRs_new {
 }
 */
 
+/*
 macro_rules! ArMu_new {
     ($wrapped:expr) => (
         Arc::new(const_reentrant_mutex(RefCell::new($wrapped)))
+    );    
+}
+*/
+
+macro_rules! ArMu_new {
+    ($wrapped:expr) => (
+        Arc::new(Mutex::new($wrapped))
     );    
 }
 
@@ -630,6 +638,7 @@ use std::cell::{RefMut, RefCell, Ref};
 use std::io::{stdout, stdin};
 use std::sync::{Mutex, mpsc};
 use std::sync::atomic::Ordering;
+use std::env;
 
 use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
 
@@ -1629,6 +1638,11 @@ def stabilize_th():
         # 呼び出し時点でのノードリストを対象に stabilize 処理を行う
         do_stabilize_once_at_all_node()
 */
+
+fn req_rest_api_test(){
+
+}
+
 fn main() {
 /*    
     {
@@ -1664,6 +1678,15 @@ fn main() {
         handle.join().unwrap();
     }
 */
+    //引数処理
+    let args: Vec<String> = env::args().collect();
+    if args.len() > 1 {
+        let num: i32 = args[1].parse().unwrap();
+        if num == 2 { // REST client
+            req_rest_api_test();
+        }
+    }
+
 
     let node_info = ArMu_new!(node_info::NodeInfo::new());
     let data_store = ArMu_new!(data_store::DataStore::new());
@@ -1684,7 +1707,7 @@ fn main() {
         
     });    
 
-    endpoints::rest_api_server_start();
+    endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store));
 
     let mut thread_handles = vec![];    
     thread_handles.push(stabilize_succ_th_handle);

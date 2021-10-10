@@ -558,10 +558,13 @@ if __name__ == '__main__':
 #![feature(decl_macro)]
 
 #[macro_use]
+extern crate tokio;
+
+#[macro_use]
 extern crate rocket;
 
-
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
 //HTTPヘッダを生成する構造体を自動生成するためのマクロを使用可能とする
 //認証などを行わないのであれば必要ないかも
@@ -639,6 +642,17 @@ use std::io::{stdout, stdin};
 use std::sync::{Mutex, mpsc};
 use std::sync::atomic::Ordering;
 use std::env;
+
+use tokio::macros::support::Future;
+//use tokio::prelude::*;
+
+// extern crate reqwest;
+// extern crate serde;
+// extern crate serde_json;
+
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
 
@@ -1639,11 +1653,34 @@ def stabilize_th():
         do_stabilize_once_at_all_node()
 */
 
-fn req_rest_api_test(){
+fn req_rest_api_test_inner() -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> { //Result<reqwest::Response, reqwest::Error> {// {
+    let text = r#"{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}"#;
+    let arg_node_info = serde_json::from_str::<node_info::NodeInfo>(text).unwrap();
+/*    
+    reqwest::Client::new()
+    .post("http://localhost:8000/serialize")
+    .form(&arg_node_info)
+//        .headers(headers)
+    .send().await;//? // HTTPリクエスト (Resultが返ってくる)
+        //.json() // JSONに変換
+*/
+    let resp = reqwest::Client::new()
+    .get("http://localhost:8000/")
+//  .headers(headers)
+    .send();//? // HTTPリクエスト (Resultが返ってくる)
+        //.json() // JSONに変換        
 
+    return resp;
 }
 
-fn main() {
+async fn req_rest_api_test() -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    println!("client mode!\n");
+    let ret = req_rest_api_test_inner();
+    return ret;    
+}
+
+#[tokio::main]
+async fn main() {
 /*    
     {
         // 最初の1ノードはここで登録する
@@ -1683,41 +1720,44 @@ fn main() {
     if args.len() > 1 {
         let num: i32 = args[1].parse().unwrap();
         if num == 2 { // REST client
-            req_rest_api_test();
+            let ret = req_rest_api_test().await;
+            let ret_tmp = ret.await.unwrap();
+            let ret_text = ret_tmp.text().await.unwrap();
+            println!("{:?}", ret_text);
         }
+    }else{
+        let node_info = ArMu_new!(node_info::NodeInfo::new());
+        let data_store = ArMu_new!(data_store::DataStore::new());
+    
+        let node_info_arc_succ_th = Arc::clone(&node_info);
+        let data_store_arc_succ_th = Arc::clone(&data_store);
+    
+        let node_info_arc_ftable_th = Arc::clone(&node_info);
+        let data_store_arc_ftable_th = Arc::clone(&data_store);    
+    
+        // TODO: (rustr) 自身のjoinの処理を書く
+    
+        let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
+    
+        });
+    
+        let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
+            
+        });    
+    
+        endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store));
+    
+        let mut thread_handles = vec![];    
+        thread_handles.push(stabilize_succ_th_handle);
+        thread_handles.push(stabilize_ftable_th_handle);
+        
+    
+        // スレッド終了の待ち合わせ（終了してくるスレッドは基本的に無い）
+        for handle in thread_handles {
+            handle.join().unwrap();
+        }   
     }
 
-
-    let node_info = ArMu_new!(node_info::NodeInfo::new());
-    let data_store = ArMu_new!(data_store::DataStore::new());
-
-    let node_info_arc_succ_th = Arc::clone(&node_info);
-    let data_store_arc_succ_th = Arc::clone(&data_store);
-
-    let node_info_arc_ftable_th = Arc::clone(&node_info);
-    let data_store_arc_ftable_th = Arc::clone(&data_store);    
-
-    // TODO: (rustr) 自身のjoinの処理を書く
-
-    let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
-
-    });
-
-    let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
-        
-    });    
-
-    endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store));
-
-    let mut thread_handles = vec![];    
-    thread_handles.push(stabilize_succ_th_handle);
-    thread_handles.push(stabilize_ftable_th_handle);
-    
-
-    // スレッド終了の待ち合わせ（終了してくるスレッドは基本的に無い）
-    for handle in thread_handles {
-        handle.join().unwrap();
-    }    
 }
 /*    
     # 再現性のため乱数シードを固定

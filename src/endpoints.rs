@@ -133,8 +133,21 @@ def grpc__pass_successor_list(self) -> List['NodeInfo']:
 */
 
 #[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+//fn index() -> &'static str {
+fn index() -> Json<node_info::NodeInfo> {
+    let mut node_info = node_info::NodeInfo::new();
+    
+    node_info.node_id = 100;
+    node_info.address_str = "kanbayashi".to_string();
+    node_info.born_id = 77;
+    node_info.successor_info_list = vec![];
+    node_info.successor_info_list.push(node_info.clone());    
+    node_info.predecessor_info = vec![];
+    node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
+    //node_info.finger_table = vec![];
+
+    //"Hello, world!"
+    Json(node_info)
 }
 
 pub fn rest_api_server_start(){

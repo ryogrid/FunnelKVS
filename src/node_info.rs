@@ -177,9 +177,8 @@ impl Clone for NodeInfo {
 }
 
 // 実装の参照からコピーを作成する
-// cloneした場合と異なり、successor_info_listとfinger_tableも一段階だけは
-// 値を埋めて返す
-// またpredecessor_infoも値を埋めて返す
+// cloneした場合と異なり、predecessor_info, successor_info_list, finger_table
+// 一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
 pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
     let mut ret_node_info = NodeInfo::new();
 
@@ -204,7 +203,7 @@ pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
     ret_node_info.predecessor_info = vec![];
     for each_ninfo in &node_info_ref.predecessor_info {
         ret_node_info.successor_info_list.push((*each_ninfo).clone());
-    }    
+    }
 
     return ret_node_info;    
 }

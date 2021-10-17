@@ -939,7 +939,8 @@ fn get_all_network_constructed_nodes() -> Vec<ArRmRs<chord_node::ChordNode>> {
 }
 */
 
-// TODO: (rustr) 制御用ツールから、successorを得るAPIなどを用いて（要実装）チェックするようにする
+// TODO: (rustr) 制御用ツールから、successorを得るAPIなどを用いて（要実装）同等のチェックが行える
+//               ように別実装を行う必要あり（制御用ツールが主体となる）
 /*
 // stabilize_successorの呼び出しが一通り終わったら確認するのに利用する
 // ランダムに選択したノードからsuccessor方向にsuccessorの繋がりでノードを辿って
@@ -1034,58 +1035,6 @@ pub fn check_nodes_connectivity() {
                          + chord_util::gen_debug_str_of_node(Some(&start_node_info)).as_str() + ","
                          + chord_util::gen_debug_str_of_node(Some(&cur_node_info_succ_0)).as_str()));
     }
-*/    
-
-// TODO: predecessor方向のチェックは後回し
-/*
-    // 続いてpredecessor方向に辿る
-    counter = 0
-    cur_node_info = get_a_random_node().node_info
-    start_node_info = cur_node_info
-    chord_util::print_no_lf("check_nodes_connectivity__pred,all_node_num=" + str(all_node_num) + ",already_born_node_num=" + str(gval.already_born_node_num))
-    print(",", flush=True, end="")
-    while counter < all_node_num:
-        chord_util::print_no_lf(str(cur_node_info.born_id) + "," + chord_util::conv_id_to_ratio_str(cur_node_info.node_id) + " -> ")
-        ret = chord_util::get_node_by_address(cur_node_info.address_str)
-        if (ret.is_ok):
-            cur_node_info: 'ChordNode' = cast('ChordNode', ret.result).node_info.predecessor_info
-        else:  # ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-            if cast(int, ret.err_code) == ErrorCode.NodeIsDownedException_CODE:
-                print("")
-                chord_util::dprint("check_nodes_connectivity__pred,NODE_IS_DOWNED")
-                return
-            else: #cast(int, ret.err_code) == ErrorCode.InternalControlFlowException_CODE
-                # join中のノードのノードオブジェクトを get_node_by_address しようとした場合に
-                # TargetNodeDoesNotExistExceptionがraiseされてくるのでその場合は、対象ノードのstabilize_successorはあきらめる
-                print("")
-                chord_util::dprint("check_nodes_connectivity__pred,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_RAISED")
-                return
-
-        if cur_node_info == None:
-            # 先を追っていけないのでチェックを終了する
-            chord_util::dprint("check_nodes_connectivity__pred,PREDECESSOR_INFO_IS_NONE")
-            return
-
-        counter += 1
-
-    print("")
-
-    // 2ノード目から本来チェック可能であるべきだが、stabilize処理の実行タイミングの都合で
-    // 2ノード目がjoinした後、いくらかpredecessorがNoneの状態が生じ、そのタイミングで本チェックが走る場合が
-    // あり得るため、余裕を持たせて5ノード目以降からチェックする
-    // successorを辿って最初のノードに戻ってきているはずだが、そうなっていない場合は successorの
-    // チェーン構造が正しく構成されていないことを意味するためエラーとして終了する
-    if all_node_num >=5 and cur_node_info.node_id != start_node_info.node_id:
-        chord_util::dprint("check_nodes_connectivity_pred_err,chain does not includes all node. all_node_num = "
-                         + str(all_node_num) + ","
-                         + chord_util::gen_debug_str_of_node(start_node_info) + ","
-                         + chord_util::gen_debug_str_of_node(cur_node_info))
-        # raise Exception("PREDECESSOR_CHAIN_IS_NOT_CONSTRUCTED_COLLECTLY")
-    else:
-        chord_util::dprint("check_nodes_connectivity_pred_success,chain includes all node. all_node_num = "
-                         + str(all_node_num) + ","
-                         + chord_util::gen_debug_str_of_node(start_node_info) + ","
-                         + chord_util::gen_debug_str_of_node(cur_node_info))
 }
 */
 

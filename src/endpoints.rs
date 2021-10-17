@@ -189,10 +189,8 @@ pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: 
         .launch();
 }
 
-// TODO: (rustr) comment-outed at spiking RPC impl
-/*
-pub fn grpc__check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
-    return stabilizer::check_predecessor(self_node, caller_node_ni);
+pub fn grpc__check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+    return stabilizer::check_predecessor(Arc::clone(&self_node), caller_node_ni);
 }
 
 pub fn grpc__set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
@@ -203,16 +201,17 @@ pub fn grpc__set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, prede
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 //            finger_tableに値が埋められた NodeInfoへの参照を渡すこと
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-pub fn grpc__find_successor(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> Result<&node_info::NodeInfo, chord_util::GeneralError> {
-    return router::find_successor(exnode_ni_ref, id);
+pub fn grpc__find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+    return router::find_successor(Arc::clone(&self_node), id);
 }
 
 // Attention: finger_tableに値が埋められた NodeInfoへの参照を渡すこと
-pub fn grpc__closest_preceding_finger(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> &node_info::NodeInfo {
-    return router::closest_preceding_finger(exnode_ni_ref, id);
+pub fn grpc__closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> node_info::NodeInfo {
+    return router::closest_preceding_finger(Arc::clone(&self_node), id);
 }
 
+/*
 pub fn grpc__stabilize_successor_inner(self_node: ArMu<node_info::NodeInfo>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{
-    return stabilizer::stabilize_successor_inner(self_node);
+    return stabilizer::stabilize_successor_inner(Arc::clone(&self_node));
 }
 */

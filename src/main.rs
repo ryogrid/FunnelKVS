@@ -1720,6 +1720,10 @@ fn main() {
         let num: i32 = args[1].parse().unwrap();
         if num == 2 { // REST client
             req_rest_api_test();
+        }else if num == 3 { // CLI tool process lauch functionality test
+            let born_id: i32 = args[2].parse().unwrap();
+            let port_num: i32 = args[3].parse().unwrap();
+            println!("born_id={:?}, port_num={:?}", &born_id, &port_num);
         }
     }else{
         let node_info = ArMu_new!(node_info::NodeInfo::new());

@@ -103,8 +103,6 @@ pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor
             self.existing_node.node_info.finger_table[0] = ftable_enry_0
 */
 
-// TODO: (rustr) comment-outed at spiking RPC impl 
-/*
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
 pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
     //with self.existing_node.node_info.lock_of_pred_info, new_node_ni_refmut.lock_of_succ_infos:
@@ -362,7 +360,6 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
 
     //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 }
-*/
 
 /*
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
@@ -744,9 +741,7 @@ def stabilize_successor_inner(self) -> PResult[Optional['NodeInfo']]:
         self.existing_node.node_info.lock_of_pred_info.release()
 */
 
-// TODO: (rustr) comment-outed at spiking RPC impl
-// TODO: (rust) need implement stabilize_successor func
-/*
+
 pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
     let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
     let self_node_ref = get_ref_from_refcell!(self_node_refcell);
@@ -945,7 +940,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     //     self.existing_node.node_info.lock_of_succ_infos.release()
     //     self.existing_node.node_info.lock_of_pred_info.release()    
 }
-*/
 
 /*
 # successorおよびpredicessorに関するstabilize処理を行う
@@ -1355,8 +1349,6 @@ def stabilize_successor(self) -> PResult[bool]:
         self.existing_node.node_info.lock_of_pred_info.release()
 */
 
-// TODO: (rustr) comment-outed at spiking RPC impl
-/*
 // FingerTableに関するstabilize処理を行う
 // 一回の呼び出しで1エントリを更新する
 // FingerTableのエントリはこの呼び出しによって埋まっていく
@@ -1459,7 +1451,6 @@ pub fn stabilize_finger_table(existing_node: ArMu<node_info::NodeInfo>, exnode_r
         }
     }
 }
-*/
 
 /*
 # FingerTableに関するstabilize処理を行う
@@ -1550,13 +1541,11 @@ def pass_successor_list(self) -> List['NodeInfo']:
     return [ node_info.get_partial_deepcopy() for node_info in self.existing_node.node_info.successor_info_list]
 */
 
-// TODO: (rustr) comment-outed at spiking RPC impl
-/*
 // caller_node が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
 // 本メソッドはstabilize処理の中で用いられる
 // Attention: InternalControlFlowException を raiseする場合がある
 // TODO: InternalExp at check_predecessor
-pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
     //     ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
     //                      + "LOCK_ACQUIRE_TIMEOUT")
@@ -1617,8 +1606,6 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: &
 
     return Ok(true)
 }
-*/
-
 
 
 /*        

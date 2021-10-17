@@ -17,12 +17,10 @@ use crate::data_store;
 //type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
-// TODO: (rustr) comment-outed at spiking RPC impl
-/*
 // id（int）で識別されるデータを担当するノードの名前解決を行う
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-pub fn find_successor(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> Result<&node_info::NodeInfo, chord_util::GeneralError> {
+pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<&node_info::NodeInfo, chord_util::GeneralError> {
     // TODO: 実システム化する際か、シミュレータでもノード丸ごとロックしてしまう実装から触るデータを個別にロックする
     //       作りの検証を行う場合はこの手のコードを復活させる必要がある
     // if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
@@ -86,7 +84,6 @@ pub fn find_successor(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> Result<&
         }
     }
 }
-*/
 
 /*
     # id（int）で識別されるデータを担当するノードの名前解決を行う
@@ -142,8 +139,6 @@ pub fn find_successor(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> Result<&
             self.existing_node.node_info.lock_of_succ_infos.release()
 */
 
-// TODO: (rustr) comment-outed at spiking RPC impl
-/*
 // id(int)　の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_info::NodeInfo {
     // // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する   
@@ -237,7 +232,6 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
 
     return Arc::clone(&n_dash);
 }
-*/
 
 /*
     # id(int)　の前で一番近い位置に存在するノードを探索する
@@ -307,11 +301,9 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
         return n_dash
 */
 
-// TODO: (rustr) comment-outed at spiking RPC impl
-/*
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
 // ni_ref -> existing_nodeのもの
-pub fn closest_preceding_finger(exnode_ni_ref: &node_info::NodeInfo, id : u32) -> &node_info::NodeInfo {
+pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> &node_info::NodeInfo {
     // 範囲の広いエントリから探索していく
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
@@ -369,7 +361,6 @@ pub fn closest_preceding_finger(exnode_ni_ref: &node_info::NodeInfo, id : u32) -
     // ことになる
     return Arc::clone(&existing_node);
 }
-*/
 
 /*
     #  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す

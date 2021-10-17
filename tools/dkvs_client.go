@@ -9,6 +9,8 @@ import (
 
 func test_get_request_which_has_query_string() {
 	url := "http://localhost:8000/get-param-test?param1=aaaaaa&param2=bbbbbb"
+	// TODO: クエリストリングでパラメータを渡す際にURIエンコードが行われるか確認して
+	//       されないようであればされるようにする（方法を確認しておく）必要あり
 	req, _ := http.NewRequest("GET", url, nil)
 
 	client := new(http.Client)
@@ -49,6 +51,8 @@ func test_post_request_deserialize() error {
 }
 
 func main() {
+	// TODO: 必要になったら引数処理できるようにする https://qiita.com/nakaryooo/items/2d0befa2c1cf347800c3
+
 	//test_get_request_which_has_query_string()
 	test_post_request_deserialize()
 	fmt.Println("finished!")

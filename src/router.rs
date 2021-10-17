@@ -156,11 +156,6 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
         // 1周目でも実質的に同じ値が入るようになっているので問題ない
         n_dash = n_dash_found;
 
-        // let n_dash_refcell = get_refcell_from_arc_with_locking!(n_dash);
-        // let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
-        // let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
-        // let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
-
         // // n_dashのNodeInfoオブジェクトのクリティカルセクションを開始する
         // let n_dash_ni_lock = chord_util::get_lock_obj("ninfo", &n_dash_ninfo.address_str);
         // let n_dash_ni_lock_keeper = get_refcell_from_arc_with_locking!(n_dash_ni_lock);
@@ -172,38 +167,37 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
         }
         // TODO: x direct access to node_info of n_dash at find_predecessor
         chord_util::dprint(&("find_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(&n_dash_ninfo).as_str()));
+                            + chord_util::gen_debug_str_of_node(n_dash).as_str()));
         // TODO: closest_preceding_finger call at find_predecessor
 
         n_dash_found = &endpoints::grpc__closest_preceding_finger(n_dash, id);
 
-        let n_dash_found_refcell = get_refcell_from_arc_with_locking!(n_dash_found);
-        let n_dash_found_ref = get_ref_from_refcell!(n_dash_found_refcell);
-    
-        let n_dash_found_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_found_ref.node_info);
-        let n_dash_found_ni_ref = get_ref_from_refcell!(n_dash_found_ni_refcell);
+        // let n_dash_found_refcell = get_refcell_from_arc_with_locking!(n_dash_found);
+        // let n_dash_found_ref = get_ref_from_refcell!(n_dash_found_refcell);
+        // let n_dash_found_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_found_ref.node_info);
+        // let n_dash_found_ni_ref = get_ref_from_refcell!(n_dash_found_ni_refcell);
 
         // // n_dash_foundのNodeInfoオブジェクトのクリティカルセクションを開始する
         // let n_dash_found_ni_lock = chord_util::get_lock_obj("ninfo", &n_dash_found_ni_ref.address_str);
         // let n_dash_found_ni_lock_keeper = get_refcell_from_arc_with_locking!(n_dash_found_ni_lock);
 
         // TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
-        if n_dash_found_ni_ref.node_id == n_dash_ninfo.node_id {
+        if n_dash_found.node_id == n_dash.node_id {
             // 見つかったノードが、n_dash と同じで、変わらなかった場合
             // 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
             // なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
             // TODO: x direct access to node_info of n_dash at find_predecessor
             chord_util::dprint(&("find_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
-                                + chord_util::gen_debug_str_of_node(n_dash_ninfo).as_str()));
-            return Arc::clone(&n_dash_found);
+                                + chord_util::gen_debug_str_of_node(n_dash).as_str()));
+            return n_dash_found;
         }
 
         // closelst_preceding_finger は id を通り越してしまったノードは返さない
         // という前提の元で以下のチェックを行う
         // TODO: x direct access to node_info of n_dash at find_predecessor
-        let distance_old = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, n_dash_ninfo.node_id);
+        let distance_old = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, n_dash.node_id);
         // TODO: x direct access to node_info of n_dash_found at find_predecessor
-        let distance_found = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, n_dash_found_ni_ref.node_id);
+        let distance_found = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, n_dash_found.node_id);
         let distance_data_id = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, id);
         if distance_found < distance_old && !(distance_old >= distance_data_id) {
             // 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
@@ -216,21 +210,21 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
 
             // TODO: x direct access to node_info of n_dash at find_predecessor
             chord_util::dprint(&("find_predecessor_4,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
-                                + chord_util::gen_debug_str_of_node(n_dash_ninfo).as_str()));
+                                + chord_util::gen_debug_str_of_node(n_dash).as_str()));
 
-            return Arc::clone(&n_dash);
+            return n_dash;
         }
 
         // TODO: x direct access to node_info of n_dash and n_dash_found at find_predecessor
         chord_util::dprint(&("find_predecessor_5_n_dash_updated,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(n_dash_ninfo).as_str() + "->"
-                            + chord_util::gen_debug_str_of_node(Some(n_dash_found_ni_ref)).as_str()));
+                            + chord_util::gen_debug_str_of_node(n_dash).as_str() + "->"
+                            + chord_util::gen_debug_str_of_node(n_dash_found).as_str()));
 
         // チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
         // ノード情報は次周のループの先頭でn_dash_foundに置き換えられる
     }
 
-    return Arc::clone(&n_dash);
+    return n_dash;
 }
 
 /*

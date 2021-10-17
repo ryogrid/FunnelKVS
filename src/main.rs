@@ -569,6 +569,7 @@ extern crate lazy_static;
 extern crate hyper;
 
 
+
 // utility macros
 
 /*
@@ -1652,6 +1653,14 @@ fn req_rest_api_test_inner_get() {
     println!("{:#?}", resp);
 }
 
+fn req_rest_api_test_inner_get_param_test() {
+    //let resp = reqwest::blocking::get("http://localhost:8000/get-param-test/aaaaaa/bbbbbb").unwrap()
+    let resp = reqwest::blocking::get("http://localhost:8000/get-param-test?param1=aaaaaa&param2=bbbbbb").unwrap()
+    .text();
+    //.json::<HashMap<String, String>>().unwrap();
+    println!("{:#?}", resp);
+}
+
 fn req_rest_api_test_inner_post() {
     let text = r#"{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}"#;
     let arg_node_info = serde_json::from_str::<node_info::NodeInfo>(text).unwrap();
@@ -1666,7 +1675,8 @@ fn req_rest_api_test_inner_post() {
 
 fn req_rest_api_test() {    
     println!("client mode!\n");
-    req_rest_api_test_inner_post();
+    //req_rest_api_test_inner_post();
+    req_rest_api_test_inner_get_param_test();
 }
 
 fn main() {

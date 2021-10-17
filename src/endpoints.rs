@@ -151,6 +151,26 @@ fn index() -> Json<node_info::NodeInfo> {
     Json(node_info)
 }
 
+#[get("/get-param-test?<param1>&<param2>")]
+fn get_param_test(param1: String, param2: String) -> Json<node_info::NodeInfo> {
+    let mut node_info = node_info::NodeInfo::new();
+
+    println!("{:?}", param1);
+    println!("{:?}", param2);
+    
+    node_info.node_id = 100;
+    node_info.address_str = "kanbayashi".to_string();
+    node_info.born_id = 77;
+    node_info.successor_info_list = vec![];
+    node_info.successor_info_list.push(node_info.clone());    
+    node_info.predecessor_info = vec![];
+    node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
+    //node_info.finger_table = vec![];
+
+    //"Hello, world!"
+    Json(node_info)
+}
+
 #[post("/deserialize", data = "<node_info>")]
 pub fn deserialize_test(self_ninfo: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, node_info: Json<node_info::NodeInfo>) -> String {
     // TODO: (rustr) 複数の引数をとるようなことがしたければ、それらを含むStructを定義するしか無さそう
@@ -165,7 +185,7 @@ pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: 
     rocket::ignite()
         .manage(self_ninfo)
         .manage(data_store)
-        .mount("/", routes![index, deserialize_test])
+        .mount("/", routes![index, get_param_test, deserialize_test])
         .launch();
 }
 

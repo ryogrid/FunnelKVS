@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os/exec"
 )
 
 func test_get_request_which_has_query_string() {
@@ -50,10 +51,21 @@ func test_post_request_deserialize() error {
 	return err
 }
 
+// このプログラムがtoolsディレクトリ直下で実行されている前提
+func test_process_exec() {
+	err := exec.Command("../target/debug/rust_dkvs", "3", "5", "100501").Start()
+	//out, err := exec.Command("../target/debug/rust_dkvs", "3", "5", "100501").Output()
+	if err != nil {
+		fmt.Println(err)
+	}
+	//fmt.Printf("%s\n", out)
+}
+
 func main() {
 	// TODO: 必要になったら引数処理できるようにする https://qiita.com/nakaryooo/items/2d0befa2c1cf347800c3
 
 	//test_get_request_which_has_query_string()
-	test_post_request_deserialize()
+	//test_post_request_deserialize()
+	test_process_exec()
 	fmt.Println("finished!")
 }

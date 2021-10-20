@@ -21,31 +21,32 @@ type ArMu<T> = Arc<Mutex<T>>;
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
 pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&exnode_ni_ref).as_str() + ","
+    let self_node_ref = self_node.lock().unwrap();
+    chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
                 + chord_util::gen_debug_str_of_data(id).as_str()));
-
-    let n_dash = find_predecessor(Arc::clone(&existing_node), id);
-    let n_dash_ninfo = n_dash.lock().unwrap();
+    
+    let n_dash = find_predecessor(&self_node_ref, id);
+    //let n_dash_ninfo = n_dash.lock().unwrap();
 
     // TODO: x direct access to node_info of n_dash at find_successor
-    chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                        + chord_util::gen_debug_str_of_node(&n_dash_ninfo).as_str() + ","
-                        + chord_util::gen_debug_str_of_node(&exnode_ni_ref.successor_info_list[0]).as_str() + ","
+    chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(n_dash).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + ","
                         + chord_util::gen_debug_str_of_data(id).as_str()));
 
     
     // TODO: direct access to successor_info_list of n_dash at find_successor
-    match chord_util::get_node_info_by_address(&n_dash_ninfo.successor_info_list[0].address_str) {
+    match chord_util::get_node_info_by_address(&n_dash.successor_info_list[0].address_str) {
         Err(err_code) => {
             // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
             // ここでは何も対処しない
             chord_util::dprint(&("find_successor_4,FOUND_NODE_IS_DOWNED,".to_string()
-            + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
             + chord_util::gen_debug_str_of_data(id).as_str()));
             return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
         },
         Ok(got_node) => {                
-            return Ok(got_node);
+            return Ok((*got_node).clone());
         }
     }
 }
@@ -106,10 +107,6 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
 
 // id(int)　の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_info::NodeInfo {
-    // // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する   
-    // let exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
-    // let exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
-
     let mut n_dash: &node_info::NodeInfo = exnode_ni_ref;
     let mut n_dash_found: &node_info::NodeInfo = n_dash;
 

@@ -121,47 +121,6 @@ class ChordNode:
         # 他の例外の発生ででここに到達した
         return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
 
-    # global_getで取得しようとしたKeyが探索したノードに存在なかった場合に、当該ノードから
-    # successorを辿ってリカバリを試みる処理をくくり出したもの
-    def global_get_recover_succ(self, data_id : int) -> Tuple[str, Optional['ChordNode']]:
-        ret = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
-        if (ret.is_ok):
-            cur_successor : 'ChordNode' = cast('ChordNode', ret.result)
-            got_value_str = cur_successor.endpoints.grpc__get(data_id, for_recovery=True)
-        else:  # ret.is_ok == False
-            if cast(int,ret.err_code) == ErrorCode.NodeIsDownedException_CODE:
-                # ここでは何も対処はしない
-                ChordUtil.dprint("global_get_recover_succ_2,NODE_IS_DOWNED")
-                return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-            else: #cast(int,ret.err_code) == ErrorCode.InternalControlFlowException_CODE
-                # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
-                ChordUtil.dprint("global_get_recover_succ_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
-                return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-
-        ChordUtil.dprint("global_get_recover_succ_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                         + ChordUtil.gen_debug_str_of_data(data_id))
-
-        if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-            # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
-            # 前方に位置するsuccessorを辿ることでデータを取得することができた
-            # TODO: x direct access to node_info of cur_successor at global_get
-            ChordUtil.dprint("global_get_recover_succ_5,"
-                             + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + "data found at successor,"
-                             + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))
-            return got_value_str, cur_successor
-        else:
-            # できなかった
-            # TODO: x direct access to node_info of cur_successor at global_get
-            ChordUtil.dprint("global_get_recover_succ_6,"
-                             + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + "data not found at successor,"
-                             + ChordUtil.gen_debug_str_of_node(cur_successor.node_info))
-            return ChordNode.QUERIED_DATA_NOT_FOUND_STR, cur_successor
-
-        # 他の例外の発生ででここに到達した
-        return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-
     # 得られた value の文字列を返す
     # データの取得に失敗した場合は ChordNode.QUERIED_DATA_NOT_FOUND_STR を返す
     # 取得対象のデータが削除済みのデータであった場合は DataStore.DELETED_ENTRY_MARKING_STR を返す
@@ -390,53 +349,6 @@ lazy_static! {
 }
 */
 
-/*
-#[derive(Debug)]
-pub struct ChordNode {
-    pub node_info : ArRmRs<node_info::NodeInfo>,
-    pub data_store : ArRmRs<data_store::DataStore>,
-//    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
-//    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
-//    pub router : router::Router,
-//    pub endpoints : ArRmRs<endpoints::Endpoints>,
-    // シミュレーション時のみ必要なフィールド（実システムでは不要）
-    //pub is_alive : AtomicBool,
-    // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
-    // 大本から呼び出されないようにするためのフラグ
-    //pub is_join_op_finished : AtomicBool
-}
-
-
-impl ChordNode {
-
-    pub fn new() -> ChordNode {
-        ChordNode {
-            node_info: ArRmRs_new!(node_info::NodeInfo::new()),
-            data_store: ArRmRs_new!(data_store::DataStore::new()),
-//            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
-//            router: ArRmRs_new!(router::Router::new()),
-//            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
-//            router: router::Router::new(),
-//            tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
-//            endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
-//            is_alive: AtomicBool::new(false),
-//            is_join_op_finished: AtomicBool::new(false)
-        }
-    }
-*/
-
-/*    
-    # join処理もコンストラクタで行ってしまう
-    def __init__(self, node_address: str, first_node=False):
-        self.node_info : NodeInfo = NodeInfo()
-
-        self.data_store : DataStore = DataStore(self)
-        self.stabilizer : Stabilizer = Stabilizer(self)
-        self.router : Router = Router(self)
-        self.tqueue : TaskQueue = TaskQueue(self)
-        self.endpoints : Endpoints = Endpoints(self)
-}
-*/
 
 /*
 //シミュレータの神々が利用するのはコンストラクタではなくこちらのファクトリメソッド

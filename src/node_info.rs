@@ -47,44 +47,6 @@ class NodeInfo:
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table: List[Optional[NodeInfo]] = [None] * gval.ID_SPACE_BITS
-
-    # 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
-    # ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
-    # を返す.
-    # 上述の考慮により、コピーした NodeInfoオブジェクト の successor_infoと
-    # predecessor_infoは deepcopy の対象ではあるが、それらの中の同名のフィールド
-    # にはNoneが設定される. これにより、あるノードがコピーされた NodeInfo を保持
-    # した場合、predecessor や successorは辿ることができるが、その先は辿ることが
-    # 直接的にはできないことになる（predecessor や successorの ChordNodeオブジェクト
-    # を引いてやれば可能）
-    # 用途としては、あるノードの node_info を他のノードが取得し保持する際に利用される
-    # ことを想定して実装されている.
-    def get_partial_deepcopy(self) -> 'NodeInfo':
-        ret_node_info: NodeInfo = NodeInfo()
-
-        ret_node_info.node_id = copy.copy(self.node_id)
-        ret_node_info.address_str = copy.copy(self.address_str)
-        ret_node_info.born_id = copy.copy(self.born_id)
-        ret_node_info.successor_info_list = []
-        ret_node_info.predecessor_info = None
-
-        # ロック関連のフィールドは本メソッドでコピーすることで生まれた
-        # オブジェクトにおいて利用されることがあったとしても、ロックの
-        # 対象は上記でコピーしているオブジェクトではなく、フィールドそのもの
-        # であるため、コピーの必要はない
-
-        return ret_node_info
-
-    def __eq__(self, other):
-        if not isinstance(other, NodeInfo):
-            return False
-        return self.node_id == other.node_id
-
-    def __hash__(self):
-        return self.node_id
-
-    def __str__(self):
-        return ChordUtil.gen_debug_str_of_node(self)
 */
 
 use std::sync::{Arc, Mutex};
@@ -216,62 +178,3 @@ pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
         self_node_ref.predecessor_info[0] = node_info;
     }
 }
-
-/*
-pub fn get_partial_deepcopy(orig_node_info: &Ref<NodeInfo>) -> NodeInfo {
-    let mut ret_node_info = NodeInfo::new();
-
-    ret_node_info.node_id = orig_node_info.node_id;
-    ret_node_info.address_str = orig_node_info.address_str.clone();
-    ret_node_info.born_id = orig_node_info.born_id;
-    ret_node_info.successor_info_list = vec![];
-    ret_node_info.predecessor_info = vec![];
-
-    return ret_node_info;
-}
-*/
-
-/*
-pub fn get_partial_deepcopy(orig_node_info: &Ref<NodeInfo>) -> ArRmRs<NodeInfo> {
-    let ret_node_info = RefCell::new(NodeInfo::new());
-    {
-        let ret_node_info_refmut = ret_node_info.borrow_mut();
-        ret_node_info_refmut.node_id = orig_node_info.node_id;
-        ret_node_info_refmut.address_str = orig_node_info.address_str;
-        ret_node_info_refmut.born_id = orig_node_info.born_id;
-        ret_node_info_refmut.successor_info_list = vec![];
-        ret_node_info_refmut.predecessor_info = vec![];
-    }
-
-    return Arc::new(const_reentrant_mutex(ret_node_info));
-}
-*/
-
-/*    
-# 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
-# ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
-# を返す.
-# 上述の考慮により、コピーした NodeInfoオブジェクト の successor_infoと
-# predecessor_infoは deepcopy の対象ではあるが、それらの中の同名のフィールド
-# にはNoneが設定される. これにより、あるノードがコピーされた NodeInfo を保持
-# した場合、predecessor や successorは辿ることができるが、その先は辿ることが
-# 直接的にはできないことになる（predecessor や successorの ChordNodeオブジェクト
-# を引いてやれば可能）
-# 用途としては、あるノードの node_info を他のノードが取得し保持する際に利用される
-# ことを想定して実装されている.
-def get_partial_deepcopy(self) -> 'NodeInfo':
-    ret_node_info: NodeInfo = NodeInfo()
-
-    ret_node_info.node_id = copy.copy(self.node_id)
-    ret_node_info.address_str = copy.copy(self.address_str)
-    ret_node_info.born_id = copy.copy(self.born_id)
-    ret_node_info.successor_info_list = []
-    ret_node_info.predecessor_info = None
-
-    # ロック関連のフィールドは本メソッドでコピーすることで生まれた
-    # オブジェクトにおいて利用されることがあったとしても、ロックの
-    # 対象は上記でコピーしているオブジェクトではなく、フィールドそのもの
-    # であるため、コピーの必要はない
-
-    return ret_node_info
-*/

@@ -21,45 +21,10 @@ type ArMu<T> = Arc<Mutex<T>>;
 // Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
 pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    // TODO: 実システム化する際か、シミュレータでもノード丸ごとロックしてしまう実装から触るデータを個別にロックする
-    //       作りの検証を行う場合はこの手のコードを復活させる必要がある
-    // if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-    //     # 失敗させる
-    //     ChordUtil.dprint("find_successor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-    //                      + "LOCK_ACQUIRE_TIMEOUT")
-    //     return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
-
-    // // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する        
-    // let exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
-    // let exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
-
-    // if exnode_ref.is_alive.load(Ordering::Relaxed) == false {
-    //     // 処理の合間でkillされてしまっていた場合の考慮
-    //     // 何もしないで終了する
-    //     chord_util::dprint(&("find_successor_0_5,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-    //                         + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD"));
-    //     return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_NODE_IS_DOWNED));
-    // }
-
     chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&exnode_ni_ref).as_str() + ","
                 + chord_util::gen_debug_str_of_data(id).as_str()));
 
     let n_dash = find_predecessor(Arc::clone(&existing_node), id);
-    // let n_dash_refcell = get_refcell_from_arc_with_locking!(n_dash);
-    // let n_dash_ref = get_ref_from_refcell!(n_dash_refcell);
-    // let n_dash_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_ref.node_info);
-    // let n_dash_ninfo = get_ref_from_refcell!(n_dash_ni_refcell);
-
-    // // n_dashのNodeInfoオブジェクトのクリティカルセクションを開始する   
-    // let n_dash_ni_lock = chord_util::get_lock_obj("ninfo", &n_dash_ninfo.address_str);
-    // let n_dash_ni_lock_keeper = get_refcell_from_arc_with_locking!(n_dash_ni_lock);
-
-    // below comment-outed code has been not needed at porting
-    // if n_dash == None {
-    //     chord_util::dprint(&("find_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-    //                         + chord_util::gen_debug_str_of_data(id).as_str()));
-    //     return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
-    // }
     let n_dash_ninfo = n_dash.lock().unwrap();
 
     // TODO: x direct access to node_info of n_dash at find_successor
@@ -156,11 +121,6 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
         // 1周目でも実質的に同じ値が入るようになっているので問題ない
         n_dash = n_dash_found;
 
-        // // n_dashのNodeInfoオブジェクトのクリティカルセクションを開始する
-        // let n_dash_ni_lock = chord_util::get_lock_obj("ninfo", &n_dash_ninfo.address_str);
-        // let n_dash_ni_lock_keeper = get_refcell_from_arc_with_locking!(n_dash_ni_lock);
-        //let n_dash_ninfo = n_dash.lock().unwrap();
-
         //while文の書き換えの形でできたif文
         if chord_util::exist_between_two_nodes_right_mawari(n_dash.node_id, n_dash.successor_info_list[0].node_id, id) {
             break;
@@ -170,16 +130,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
                             + chord_util::gen_debug_str_of_node(n_dash).as_str()));
         // TODO: closest_preceding_finger call at find_predecessor
 
-        n_dash_found = &endpoints::grpc__closest_preceding_finger(n_dash, id);
-
-        // let n_dash_found_refcell = get_refcell_from_arc_with_locking!(n_dash_found);
-        // let n_dash_found_ref = get_ref_from_refcell!(n_dash_found_refcell);
-        // let n_dash_found_ni_refcell = get_refcell_from_arc_with_locking!(n_dash_found_ref.node_info);
-        // let n_dash_found_ni_ref = get_ref_from_refcell!(n_dash_found_ni_refcell);
-
-        // // n_dash_foundのNodeInfoオブジェクトのクリティカルセクションを開始する
-        // let n_dash_found_ni_lock = chord_util::get_lock_obj("ninfo", &n_dash_found_ni_ref.address_str);
-        // let n_dash_found_ni_lock_keeper = get_refcell_from_arc_with_locking!(n_dash_found_ni_lock);
+        n_dash_found = &endpoints::rrpc__closest_preceding_finger(n_dash, id);
 
         // TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
         if n_dash_found.node_id == n_dash.node_id {
@@ -303,9 +254,6 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
     // 順に見ていくようにする
 
-    // // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する
-    // let exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
-    // let exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
     let self_node_ref = self_node.lock().unwrap();
 
     for node_info in self_node_ref.finger_table.iter().rev() {
@@ -318,14 +266,10 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
             Some(ni) => ni
         };
 
-        // // conved_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
-        // let conved_node_ni_lock = chord_util::get_lock_obj("ninfo", &conved_node_info.address_str);
-        // let conved_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(conved_node_ni_lock);
-
         chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
-        // テーブル内のエントリが保持しているノードのIDが7自身のIDと探索対象のIDの間にあれば
+        // テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
         // それを返す
         // (大きな範囲を見た場合、探索対象のIDが自身のIDとエントリが保持しているノードのIDの中に含まれて
         //  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている

@@ -34,12 +34,6 @@ impl DataIdAndValue {
         DataIdAndValue {data_id : data_id, value_data : value_data}
     }
 }
-/*
-    def __eq__(self, other):
-        if not isinstance(other, DataIdAndValue):
-            return False
-        return self.data_id == other.data_id
-*/
 
 // GeneralError型で利用するエラーコード
 pub const ERR_CODE_NODE_IS_DOWNED : u32 = 1;
@@ -71,7 +65,8 @@ pub fn get_rnd_int_with_limit(limit : u32) -> u32{
 // 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
 // アルゴリズムはSHA1, 160bitで表現される正の整数となる
 // メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
-// TODO: 本来のハッシュ関数に戻す必要あり hash_str_to_int
+// TODO: (rustr) 32bit出力のハッシュ関数の実装が必要
+//               Rustデフォルトハッシュ関数の下位32bitをとればいい気がする
 pub fn hash_str_to_int(_input_str : &String) -> u32 {
     // hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
     // hash_id_num = int(hash_hex_str, 16)
@@ -287,112 +282,6 @@ pub fn get_node_info_by_address(address : &String) -> Result<&node_info::NodeInf
     // TODO: (rustr) 通信をして、successor_list と predecessor_info も埋めた NodeInfo を返すようなものにする感じかな・・・
     return Err(GeneralError::new("not implemented yet".to_string(), ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM));
 }
-/*
-// Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
-//            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
-// TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
-//       ChordNodeオブジェクトを返す get_node_by_address
-pub fn get_node_by_address(address : &String) -> Result<ArRmRs<chord_node::ChordNode>, GeneralError> {
-    // let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-    // let gd_ref = get_ref_from_refcell!(gd_refcell);
-
-    //println!("get_node_by_address {:?}", address);
-    let get_result = gd_ref.all_node_dict.get(address);
-    let ret_val_cloned = 
-        match get_result {
-            // join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
-            None => { return Err(GeneralError::new("".to_string(), ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM))},
-            Some(arc_val) => Arc::clone(arc_val),
-        };
-
-    {
-        let node_refcell = get_refcell_from_arc_with_locking!(ret_val_cloned);
-        let node_ref = get_ref_from_refcell!(node_refcell);
-
-        let callee_ninfo_refcell = get_refcell_from_arc_with_locking!(node_ref.node_info);
-        let callee_ninfo_ref = get_ref_from_refcell!(callee_ninfo_refcell);
-
-        if node_refcell.borrow().is_alive.load(Ordering::Relaxed) == false {
-            dprint(&("get_node_by_address_1,NODE_IS_DOWNED,".to_string() + &gen_debug_str_of_node(Some(callee_ninfo_ref))));
-            return Err(GeneralError::new("".to_string(), ERR_CODE_NODE_IS_DOWNED));
-        }
-        // ret_val_clonedからborrowしたいた参照を無効にする
-    }
-
-    return Ok(ret_val_cloned);
-}
-*/
-
-/*
-pub fn get_lock_obj(kind : &str, address : &String) -> ArRmRs<bool> {
-    let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-    let gd_refmut = get_refmut_from_refcell!(gd_refcell);
-
-    //println!("get_node_by_address {:?}", address);
-    let get_result;
-    if kind == "ninfo" {
-        get_result = gd_refmut.ninfo_lock_dict.get(address);
-    }else if kind == "dstore" {
-        get_result = gd_refmut.dstore_lock_dict.get(address);
-    }else if kind == "tqueue" {
-        get_result = gd_refmut.tqueue_lock_dict.get(address);
-    }else{
-        panic!("unknown kind is passed at get_lock_obj");
-    }
-    
-    let ret_val_cloned: ArRmRs<bool> = 
-        match get_result {
-            None => {
-                // まだ存在しなかった
-                if kind == "ninfo" {
-                    let new_lock_obj = ArRmRs_new!(false);
-                    gd_refmut.ninfo_lock_dict.insert(address.clone(), Arc::clone(&new_lock_obj));
-                    new_lock_obj 
-                }else if kind == "dstore" {
-                    let new_lock_obj = ArRmRs_new!(false);
-                    gd_refmut.dstore_lock_dict.insert(address.clone(), Arc::clone(&new_lock_obj));
-                    new_lock_obj
-                }else if kind == "tqueue" {
-                    let new_lock_obj = ArRmRs_new!(false);
-                    gd_refmut.tqueue_lock_dict.insert(address.clone(), Arc::clone(&new_lock_obj));
-                    new_lock_obj
-                }else{
-                    panic!("unknown kind is passed at get_lock_obj");                    
-                }                
-            },
-            Some(arc_val) => Arc::clone(arc_val),
-        };
-
-    return ret_val_cloned;
-}
-*/
-
-/*
-    # TODO: InteernalExp, DownedeExp at get_node_by_address
-
-    # Attention: 取得しようとしたノードが all_node_dict に存在しないことは、そのノードが 離脱（ダウンしている状態も含）
-    #            したことを意味するため、当該状態に対応する NodeIsDownedException 例外を raise する
-    # TODO: 実システム化する際は rpcで生存チェックをした上で、rpcで取得した情報からnode_info プロパティの値だけ適切に埋めた
-    #       ChordNodeオブジェクトを返す get_node_by_address
-    @classmethod
-    def get_node_by_address(cls, address : str) -> PResult[Optional['ChordNode']]:
-        try:
-            # with gval.lock_of_all_node_dict:
-            ret_val = gval.all_node_dict[address]
-        except KeyError:
-            # join処理の途中で構築中のノード情報を取得しようとしてしまった場合に発生する
-            # traceback.print_stack(file=sys.stdout)
-            # print("KeyError occured", flush=True)
-
-            return PResult.Err(None, ErrorCode.InternalControlFlowException_CODE)
-
-        if ret_val.is_alive == False:
-            ChordUtil.dprint("get_node_by_address_1,NODE_IS_DOWNED," + ChordUtil.gen_debug_str_of_node(ret_val.node_info))
-            return PResult.Err(None, ErrorCode.NodeIsDownedException_CODE)
-
-        return PResult.Ok(ret_val)
-*/
-
 
 // Attention: InternalControlFlowException を raiseする場合がある
 // TODO: 実システム化する際は アドレス指定で呼び出せる（ChordNodeオブジェクトのメソッドという形でない）

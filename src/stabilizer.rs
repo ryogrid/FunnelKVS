@@ -630,55 +630,24 @@ def stabilize_successor(self):
 // 一回の呼び出しで1エントリを更新する
 // FingerTableのエントリはこの呼び出しによって埋まっていく
 // TODO: InternalExp at stabilize_finger_table
-// TODO: 注 -> (rust) このメソッドの呼び出し時はexisting_nodeのnode_infoの参照は存在しない状態としておくこと
-pub fn stabilize_finger_table(existing_node: ArMu<node_info::NodeInfo>, exnode_ref: &Ref<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {
-    // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-    //     ChordUtil.dprint("stabilize_finger_table_0_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-    //                      + "LOCK_ACQUIRE_TIMEOUT")
-    //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
-    // if self.existing_node.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-    //     self.existing_node.node_info.lock_of_pred_info.release()
-    //     ChordUtil.dprint("stabilize_finger_table_0_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-    //                      + "LOCK_ACQUIRE_TIMEOUT")
-    //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
-    let find_rslt: Result<ArMu<node_info::NodeInfo>, chord_util::GeneralError>;
-    let exnode_ni_refcell = get_refcell_from_arc_with_locking!(exnode_ref.node_info);
-
-    let exnode_id: u32;
+// TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への参照は存在しない状態としておくこと
+pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {
+    let find_rslt: Result<node_info::NodeInfo, chord_util::GeneralError>;
+    let mut self_node_ref = self_node.lock().unwrap();
 
 
-    // let exnode_ni_lock;
-    // let exnode_ni_lock_keeper;
-    // let found_node_ni_lock;
-    // let found_node_ni_lock_keeper;
+    //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
 
-    {
-        let exnode_ni_ref = get_ref_from_refcell!(exnode_ni_refcell);
+    chord_util::dprint(&("stabilize_finger_table_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
 
-        // // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する        
-        // exnode_ni_lock = chord_util::get_lock_obj("ninfo", &exnode_ni_ref.address_str);
-        // exnode_ni_lock_keeper = get_refcell_from_arc_with_locking!(exnode_ni_lock);
+    // FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
+    // 担当するノードに最も近いノードが格納される
+    let update_id = chord_util::overflow_check_and_conv((self_node_ref.node_id as u64) + (2i32.pow(idx as u32) as u64));
 
-        exnode_id = exnode_ni_ref.node_id;
-
-        if exnode_ref.is_alive.load(Ordering::Relaxed) == false {
-            // 処理の合間でkillされてしまっていた場合の考慮
-            // 何もしないで終了する
-            chord_util::dprint(&("stabilize_finger_table_0_2,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str() + ","
-                            + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD"));
-            return Ok(true);
-        }
-
-        //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
-
-        chord_util::dprint(&("stabilize_finger_table_1,".to_string() + chord_util::gen_debug_str_of_node(Some(exnode_ni_ref)).as_str()));
-
-        // FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
-        // 担当するノードに最も近いノードが格納される
-        let update_id = chord_util::overflow_check_and_conv((exnode_ni_ref.node_id as u64) + (2i32.pow(idx as u32) as u64));
-        find_rslt = router::find_successor(existing_node, exnode_ref, exnode_ni_ref, update_id);
-    }
+    drop(self_node_ref);
+    find_rslt = router::find_successor(Arc::clone(&self_node), update_id);
     
+    self_node_ref = self_node.lock().unwrap();
     match find_rslt {
         Err(err_code) => {
             // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_Code || ret.err_code == ErrorCode.InternalControlFlowException_CODE
@@ -687,42 +656,18 @@ pub fn stabilize_finger_table(existing_node: ArMu<node_info::NodeInfo>, exnode_r
             // 適切な担当ノードを得ることができなかった
             // 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
             // ことであるので、更新対象のエントリには None を設定しておく
-            let exnode_ni_refmut = get_refmut_from_refcell!(exnode_ni_refcell);
-            exnode_ni_refmut.finger_table[idx as usize] = None;
+            self_node_ref.finger_table[idx as usize] = None;
             chord_util::dprint(&("stabilize_finger_table_2_5,NODE_IS_DOWNED,".to_string()
-                + chord_util::gen_debug_str_of_node(Some(exnode_ni_refmut)).as_str()));
-                
+                + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
+
             return Ok(true);
         },
-        Ok(found_node_arrmrs) => {
-            // TODO: (rust) x direct access to node_info of found_node at stabilize_finger_table
+        Ok(found_node) => {
+            self_node_ref.finger_table[idx as usize] = Some(found_node.clone());
 
-            //見つかったノードが自分自身であった場合に借用の競合を避けるため回りくどいことをする
-            let found_node_ni_cloned: node_info::NodeInfo;
-            {
-                let found_node_refcell = get_refcell_from_arc_with_locking!(found_node_arrmrs);
-                let found_node_ref = get_ref_from_refcell!(found_node_refcell);
-            
-                let found_node_ni_refcell = get_refcell_from_arc_with_locking!(found_node_ref.node_info);
-                let found_node_ni_ref = get_ref_from_refcell!(found_node_ni_refcell);
-
-
-                // // found_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する
-                // found_node_ni_lock = chord_util::get_lock_obj("ninfo", &found_node_ni_ref.address_str);
-                // found_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(found_node_ni_lock);
-
-
-                found_node_ni_cloned = (*found_node_ni_ref).clone();
-            }
-
-            //exnode_ni_refmut.finger_table[idx as usize] = Some(node_info::get_partial_deepcopy(found_node_ni_ref));
-            let exnode_ni_refmut = get_refmut_from_refcell!(exnode_ni_refcell);
-            exnode_ni_refmut.finger_table[idx as usize] = Some(found_node_ni_cloned.clone());
-
-            // TODO: (rust) x direct access to node_info of found_node at stabilize_finger_table
             chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
-                    + chord_util::gen_debug_str_of_node(Some(exnode_ni_refmut)).as_str() + ","
-                    + chord_util::gen_debug_str_of_node(Some(&found_node_ni_cloned)).as_str()));
+                    + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+                    + chord_util::gen_debug_str_of_node(&found_node).as_str()));
 
             return Ok(true);
         }
@@ -797,41 +742,19 @@ def stabilize_finger_table(self, idx) -> PResult[bool]:
 // Attention: InternalControlFlowException を raiseする場合がある
 // TODO: InternalExp at check_predecessor
 pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
-    // if self.existing_node.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-    //     ChordUtil.dprint("check_predecessor_0," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-    //                      + "LOCK_ACQUIRE_TIMEOUT")
-    //     return PResult.Err(False, ErrorCode.InternalControlFlowException_CODE)
+    let self_node_ref = self_node.lock().unwrap();
 
-    //ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
-    let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
-    let self_node_ref = get_ref_from_refcell!(self_node_refcell);
-    let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
-    let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
-
-
-    // // exnodeのNodeInfoオブジェクトのクリティカルセクションを開始する        
-    // let self_node_ni_lock = chord_util::get_lock_obj("ninfo", &self_node_ni_refmut.address_str);
-    // let self_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(self_node_ni_lock);
-    // // caller_nodeのNodeInfoオブジェクトのクリティカルセクションを開始する        
-    // let caller_node_ni_lock = chord_util::get_lock_obj("ninfo", &caller_node_ni.address_str);
-    // let caller_node_ni_lock_keeper = get_refcell_from_arc_with_locking!(caller_node_ni_lock);
-
-    // let caller_node_refcell = get_refcell_from_arc_with_locking!(caller_node);
-    // let caller_node_ref = get_ref_from_refcell!(caller_node_refcell);
-    // let caller_node_ni_refcell = get_refcell_from_arc_with_locking!(caller_node_ref.node_info);
-    // let caller_node_ni_ref = get_ref_from_refcell!(caller_node_ni_refcell);
-
-    if self_node_ni_refmut.predecessor_info.len() == 0 {
+    if self_node_ref.predecessor_info.len() == 0 {
         // predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
-        self_node_ni_refmut.set_pred_info(caller_node_ni.clone());
-        chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-            + chord_util::gen_debug_str_of_node(Some(&caller_node_ni)).as_str() + ","
-            + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
+        node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
+        chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
         return Ok(true);
     }
 
-    chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-            + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
+    chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
 
     // TODO: (rustr) まだノードダウンの考慮は不要
     // // この時点で認識している predecessor がノードダウンしていないかチェックする
@@ -840,22 +763,22 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
     //     Ok(is_alive) => is_alive
     // };
     // if is_pred_alived {
-    //     let distance_check = chord_util::calc_distance_between_nodes_left_mawari(self_node_ni_refmut.node_id, caller_node_ni.node_id);
-    //     let distance_cur = chord_util::calc_distance_between_nodes_left_mawari(self_node_ni_refmut.node_id,
-    //                                                                         self_node_ni_refmut.predecessor_info[0].node_id);
-    //     // 確認を求められたノードの方が現在の predecessor より predecessorらしければ
-    //     // 経路表の情報を更新する
-    //     if distance_check < distance_cur {
-    //         self_node_ni_refmut.set_pred_info( caller_node_ni.clone());
-    //         chord_util::dprint(&("check_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-    //                 + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str() + ","
-    //                 + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.predecessor_info[0])).as_str()));
-    //     }
+    let distance_check = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id, caller_node_ni.node_id);
+    let distance_cur = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id,
+                                                                        self_node_ref.predecessor_info[0].node_id);
+    // 確認を求められたノードの方が現在の predecessor より predecessorらしければ
+    // 経路表の情報を更新する
+    if distance_check < distance_cur {
+        node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
+        chord_util::dprint(&("check_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+                + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + ","
+                + chord_util::gen_debug_str_of_node(&self_node_ref.predecessor_info[0]).as_str()));
+    }
     // } else { // predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
     //     self_node_ni_refmut.set_pred_info(caller_node_ni.clone());
     // }
 
-    return Ok(true)
+    return Ok(true);
 }
 
 /*        
@@ -907,4 +830,4 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
             return PResult.Ok(True)
         finally:
             self.existing_node.node_info.lock_of_pred_info.release()
-*/       
+*/

@@ -72,7 +72,8 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
     //println!("join {:?}", tyukai_node_address);
     // 実装上例外は発生しない.
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
-    let tyukai_node = chord_util::get_node_info_by_address(tyukai_node_address).unwrap();
+    // TODO: (rustr)RPC呼出しに置き換える必要あり
+    let tyukai_node = chord_util::get_node_info(tyukai_node_address).unwrap();
 
     let successor: ArMu<node_info::NodeInfo>;
 
@@ -384,31 +385,20 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
 */
 
 pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
-    let self_node_refcell = get_refcell_from_arc_with_locking!(self_node);
-    let self_node_ref = get_ref_from_refcell!(self_node_refcell);
-    let self_node_ni_refcell = get_refcell_from_arc_with_locking!(self_node_ref.node_info);
-    let self_node_ni_refmut = get_refmut_from_refcell!(self_node_ni_refcell);
+    let self_node_ref = self_node.lock().unwrap();
 
-
-    chord_util::dprint(&("stabilize_successor_1,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-          + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
+    chord_util::dprint(&("stabilize_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+          + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
 
     // firstノードだけが存在する状況で、firstノードがself_nodeであった場合に対する考慮
-    if self_node_ni_refmut.predecessor_info.len() == 0 && self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
-        chord_util::dprint(&("stabilize_successor_1_5,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-                         + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
+    if self_node_ref.predecessor_info.len() == 0 && self_node_ref.node_id == self_node_ref.successor_info_list[0].node_id {
+        chord_util::dprint(&("stabilize_successor_1_5,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+                         + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
 
         // secondノードがjoinしてきた際にチェーン構造は2ノードで適切に構成されるように
         // なっているため、ここでは何もせずに終了する
 
         return Ok(true);
-
-        // // secondノードがjoin済みであれば、当該ノードのstabilize_successorによって
-        // // secondノードがpredecessorとして設定されているはずなので、succesorをそちら
-        // // に張り替える
-        // self_node_ni_ref.successor_info_list[0] = self_node_ni_ref.predecessor_info[0].clone();
-        // // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        // self_node_ni_ref.finger_table[0] = Some(self_node_ni_ref.successor_info_list[0].clone());
     }
 
     // 自身のsuccessorに、当該ノードが認識しているpredecessorを訪ねる
@@ -418,16 +408,20 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     let mut is_successor_has_no_pred = false;
     let successor;
 
-    let ret = chord_util::get_node_info_by_address(&self_node_ni_refmut.successor_info_list[0].address_str);
+    // TODO: (rustr)RPC呼出しに置き換える必要あり
+    let ret = chord_util::get_node_info(&self_node_ref.successor_info_list[0].address_str);
     {
-        // TODO: 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
+        // TODO: (rustr) 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
         successor = ret.unwrap();
-        let successor_refcell = get_refcell_from_arc_with_locking!(successor);
-        let successor_ref = get_ref_from_refcell!(successor_refcell);
-        let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
-        let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
-        let successor_info = successor_ni_ref;
+        // let successor_refcell = get_refcell_from_arc_with_locking!(successor);
+        // let successor_ref = get_ref_from_refcell!(successor_refcell);
+        // let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
+        // let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
+        // let successor_info = successor_ni_ref;
 
+// TODO: (rustr)実システム化する際にコメントアウトした。check_predecessor呼び出し時に呼び出し元は
+//              自身のNodeInfoのロックを解放するようにするので、問題ないはず
+/*        
         // 2ノードで環が構成されている場合に、お互いがstabilize_successorを呼び出した場合にデッドロック
         // してしまうケースを避けるための考慮
         if self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
@@ -439,6 +433,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
             return Ok(true);
         }
+*/
 
         if successor_info.predecessor_info.len() == 0 {
             is_successor_has_no_pred = true;
@@ -497,7 +492,8 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         // 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
         // 情報を更新してもらう
         // 事前チェックによって避けられるかもしれないが、常に実行する
-        let successor_obj = chord_util::get_node_info_by_address(&successor_info_addr).unwrap();
+        // TODO: (rustr)RPC呼出しに置き換える必要あり
+        let successor_obj = chord_util::get_node_info(&successor_info_addr).unwrap();
 
         if self_node_ni_refmut.address_str == successor_info_addr {
             //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
@@ -524,7 +520,8 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
-            let new_successor_obj = chord_util::get_node_info_by_address(&self_node_ni_refmut.successor_info_list[0].address_str).unwrap();
+            // TODO: (rustr)RPC呼出しに置き換える必要あり
+            let new_successor_obj = chord_util::get_node_info(&self_node_ni_refmut.successor_info_list[0].address_str).unwrap();
             if self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
                 //抜けないと多重borrowでpanicしてしまうので

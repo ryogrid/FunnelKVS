@@ -151,8 +151,4 @@ pub fn rrpc__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32)
     return router::closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), id);
 }
 
-/*
-pub fn grpc__stabilize_successor_inner(self_node: ArMu<node_info::NodeInfo>) -> Result<Option<node_info::NodeInfo>, chord_util::GeneralError>{
-    return stabilizer::stabilize_successor_inner(Arc::clone(&self_node));
-}
-*/
+// TODO: (rustr) get_node_infoメソッドのラッパーとなるRPCエンドポイントを定義する

@@ -28,7 +28,6 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
     let n_dash = find_predecessor(&self_node_ref, id);
     //let n_dash_ninfo = n_dash.lock().unwrap();
 
-    // TODO: x direct access to node_info of n_dash at find_successor
     chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
                         + chord_util::gen_debug_str_of_node(n_dash).as_str() + ","
                         + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + ","
@@ -36,7 +35,9 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
 
     
     // TODO: direct access to successor_info_list of n_dash at find_successor
-    match chord_util::get_node_info_by_address(&n_dash.successor_info_list[0].address_str) {
+    // TODO: (rustr)ここでn_dashのsuccessor_info_listを参照してしまっているがn_dashはそこの情報も埋まっているので一応問題無い
+    // TOCO: (rustr)RPC呼出しに置き換える必要あり
+    match chord_util::get_node_info(&n_dash.successor_info_list[0].address_str) {
         Err(err_code) => {
             // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
             // ここでは何も対処しない
@@ -46,7 +47,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
             return Err(chord_util::GeneralError::new("".to_string(), chord_util::ERR_CODE_APPROPRIATE_NODE_NOT_FOND));
         },
         Ok(got_node) => {                
-            return Ok((*got_node).clone());
+            return Ok(got_node.clone());
         }
     }
 }
@@ -277,11 +278,12 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
             chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
-            let gnba_rslt = chord_util::get_node_info_by_address(&conved_node_info.address_str);
+            // TODO: (rustr)RPC呼出しに置き換える必要あり
+            let gnba_rslt = chord_util::get_node_info(&conved_node_info.address_str);
 
             match gnba_rslt {
                 //Ok(node_opt) => { return Arc::clone(&node_opt);},
-                Ok(node_opt) => { return node_info::partial_clone_from_ref_strong(node_opt);},
+                Ok(node_opt) => { return node_info::partial_clone_from_ref_strong(&node_opt);},
                 Err(_err) => {
                     // err.err_code == chord_util::ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM || err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED
                     // ここでは何も対処しない

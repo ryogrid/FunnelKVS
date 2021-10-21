@@ -255,8 +255,6 @@ def dprint(cls, print_str : str, flush=False):
     print(str(datetime.datetime.now()) + "," + print_str, flush=flush)
 */
 
-// TODO: (rust) 将来的にはNodeInfoのロックを保持し続けなくて済むように出力に必要な要素を各々引数に渡す形に
-//              する必要がありそう
 pub fn gen_debug_str_of_node(node_info : &node_info::NodeInfo) -> String {
     return node_info.born_id.to_string() + &",".to_string() + &format!("{:X}", node_info.node_id) + &",".to_string()
        + &conv_id_to_ratio_str(node_info.node_id);
@@ -278,7 +276,7 @@ pub fn gen_debug_str_of_data(data_id : u32) -> String {
         return hex(data_id) + "," + ChordUtil.conv_id_to_ratio_str(data_id)
 */
 
-pub fn get_node_info_by_address(address : &String) -> Result<&node_info::NodeInfo, GeneralError> {
+pub fn get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
     // TODO: (rustr) 通信をして、successor_list と predecessor_info も埋めた NodeInfo を返すようなものにする感じかな・・・
     return Err(GeneralError::new("not implemented yet".to_string(), ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM));
 }

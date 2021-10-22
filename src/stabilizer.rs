@@ -406,18 +406,18 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     // 場合があるため、successorのChordNodeオブジェクトを引いて、そこから最新のnode_info
     // の参照を得る
     let mut is_successor_has_no_pred = false;
-    let successor;
+    //let successor;
 
     // TODO: (rustr)RPC呼出しに置き換える必要あり
     let ret = chord_util::get_node_info(&self_node_ref.successor_info_list[0].address_str);
-    {
-        // TODO: (rustr) 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
-        successor = ret.unwrap();
-        // let successor_refcell = get_refcell_from_arc_with_locking!(successor);
-        // let successor_ref = get_ref_from_refcell!(successor_refcell);
-        // let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
-        // let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
-        // let successor_info = successor_ni_ref;
+    //{
+    // TODO: (rustr) 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
+    let successor_info = ret.unwrap();
+    // let successor_refcell = get_refcell_from_arc_with_locking!(successor);
+    // let successor_ref = get_ref_from_refcell!(successor_refcell);
+    // let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
+    // let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
+    // let successor_info = successor_ni_ref;
 
 // TODO: (rustr)実システム化する際にコメントアウトした。check_predecessor呼び出し時に呼び出し元は
 //              自身のNodeInfoのロックを解放するようにするので、問題ないはず
@@ -435,54 +435,37 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         }
 */
 
-        if successor_info.predecessor_info.len() == 0 {
-            is_successor_has_no_pred = true;
+    if successor_info.predecessor_info.len() == 0 {
+        is_successor_has_no_pred = true;
 
 
-            if self_node_ni_refmut.node_id == successor_info.node_id {
-                //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
-                //抜けないと多重borrowでpanicしてしまうので
-                chord_util::dprint(&("WARN!!!".to_string()));
-                return Ok(true);
-            }
-
-            // 下のif文内で本来出力すべきだが、こちらに書いた方がラクなのでここにおいておく
-            chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-            + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
-        }
+        if self_node_ref.node_id == successor_info.node_id {
+            //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
+            chord_util::dprint(&("WARN!!!".to_string()));
+            return Ok(true);
+        }        
     }
+    //}
 
-    // successor_info = self.node_info.successor_info
     if is_successor_has_no_pred {
-        // successor が predecessor を未設定であった場合は自身を predecessor として保持させて
-        // 処理を終了する(check_predecessor関数により行う)
-        //successor_info.predecessor_info.insert(0, (*self_node_ni_ref).clone()); //node_info::partial_clone_from_ref());
-        check_predecessor(Arc::clone(&successor),  (*self_node_ni_refmut).clone());
+        chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+        + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
+
+        endpoints::rrpc__check_predecessor(ArMu_new!(node_info::partial_clone_from_ref_strong(&successor_info)), &self_node_ref);
 
         return Ok(true);
     }
 
-    let successor_info_addr;
-    let pred_id_of_successor;
-    {
-        let successor_refcell = get_refcell_from_arc_with_locking!(successor);
-        let successor_ref = get_ref_from_refcell!(successor_refcell);
-        let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
-        let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
-        let successor_info = successor_ni_ref;
-        successor_info_addr = successor_info.address_str.clone();
+    chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+                    + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
 
-        chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-                        + chord_util::gen_debug_str_of_node(Some(&successor_info.successor_info_list[0])).as_str()));
+    let pred_id_of_successor = successor_info.predecessor_info[0].node_id;
 
-        pred_id_of_successor = successor_info.predecessor_info[0].node_id;
-
-        chord_util::dprint(&("stabilize_successor_3_5,".to_string() + &format!("{:X}", pred_id_of_successor)));
-    }
+    chord_util::dprint(&("stabilize_successor_3_5,".to_string() + &format!("{:X}", pred_id_of_successor)));
 
     // 下のパターン1から3という記述は以下の資料による説明に基づく
     // https://www.slideshare.net/did2/chorddht
-    if pred_id_of_successor == self_node_ni_refmut.node_id {
+    if pred_id_of_successor == self_node_ref.node_id {
         // パターン1
         // 特に訂正は不要なので処理を終了する
         return Ok(true);
@@ -492,17 +475,17 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         // 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
         // 情報を更新してもらう
         // 事前チェックによって避けられるかもしれないが、常に実行する
-        // TODO: (rustr)RPC呼出しに置き換える必要あり
-        let successor_obj = chord_util::get_node_info(&successor_info_addr).unwrap();
+        //let successor_obj = chord_util::get_node_info(&successor_info.address_str).unwrap();
 
-        if self_node_ni_refmut.address_str == successor_info_addr {
+        if self_node_ref.address_str == successor_info.address_str {
             //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
             //抜けないと多重borrowでpanicしてしまうので
             chord_util::dprint(&("WARN!!!".to_string()));
             return Ok(true);
         }
 
-        check_predecessor(Arc::clone(&successor_obj), (*self_node_ni_refmut).clone());
+        endpoints::rrpc__check_predecessor(ArMu_new!(node_info::partial_clone_from_ref_strong(&successor_info)), &self_node_ref);
+        //check_predecessor(Arc::clone(&successor_obj), (*self_node_ni_refmut).clone());
 
         let successor_obj_refcell = get_refcell_from_arc_with_locking!(successor_obj);
         let successor_obj_ref = get_ref_from_refcell!(successor_obj_refcell);

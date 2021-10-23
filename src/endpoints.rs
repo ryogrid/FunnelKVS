@@ -179,3 +179,12 @@ pub fn rrpc__get_node_info(address : &String) -> Result<node_info::NodeInfo, Gen
     // TODO: (rustr) ひとまずダミーを渡しておく
     return chord_util::get_node_info(ArMu_new!(node_info::NodeInfo::new()));
 }
+
+// ブラウザからアドレス解決を試すためのエンドポイント
+// 与えられた0から100の整数の100分の1をID空間のサイズ（最大値）にかけた
+// 値をIDとして、find_successorした結果を返す
+// 問い合わせはまず自身に対してかける
+pub fn rrpc__resolve_id_val(id : u32) -> Json<node_info::NodeInfo> {
+    // TODO: (rustr) ひとまずダミーを渡しておく
+    Json(router::find_successor(ArMu_new!(ArMu_new!(node_info::NodeInfo::new())), id).unwrap())
+}

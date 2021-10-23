@@ -64,11 +64,16 @@ pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor
 */
 
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
-pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String, born_id: i32){
+pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyukai_node_address: &String, born_id: i32){
     let mut new_node_ref = new_node.lock().unwrap();
     let deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
     let mut is_second_node:bool = false;
 
+    // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+    new_node_ref.born_id = born_id;
+    new_node_ref.address_str = (*self_node_address).clone();
+    new_node_ref.node_id = chord_util::hash_str_to_int(&new_node_ref.address_str);
+    
     if born_id == 1 { 
         // first_node の場合
 

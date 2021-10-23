@@ -549,7 +549,12 @@ fn main() {
         let data_store_arc_ftable_th = Arc::clone(&data_store);
     
         // 仲介ノードを介してChordネットワークに参加する
-        stabilizer::join(Arc::clone(&node_info), &(tyukai_addr + ":" + &tyukai_port_num.to_string()), born_id);
+        stabilizer::join(
+            Arc::clone(&node_info),
+            &(bind_addr.clone() + ":" + &bind_port_num.to_string()),
+            &(tyukai_addr + ":" + &tyukai_port_num.to_string()),
+            born_id
+        );
 
         let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
 // TODO: (rustr) RPC化のテストの邪魔になりそうなので一旦コメントアウト (stabilizeスレッド2つ)

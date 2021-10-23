@@ -565,21 +565,24 @@ fn main() {
 */
     //引数処理
     let args: Vec<String> = env::args().collect();
-    if args.len() > 1 {
+    if args.len() == 2 {
         let num: i32 = args[1].parse().unwrap();
         if num == 2 { // REST client
             req_rest_api_test();
         }else if num == 3 { // CLI tool process lauch functionality test
-            let born_id: i32 = args[2].parse().unwrap();
-            let port_num: i32 = args[3].parse().unwrap();
-            //TODO: (rustr) ログの出力先ディレクトリのパスも受けられるようにする
-            //              ディレクトリがまだ存在しなければここの引数処理の中で作成してしまう
-            
-            //TODO: (rustr) ロガーライブラリは初期化時にディレクトリパスも含めて出力先を指定できるものを選びたい
-            //              （つまり、ロガーライブラリの初期化もグローバルに一度やればOK、みたいなものであればここでやる）
-            println!("born_id={:?}, port_num={:?}", &born_id, &port_num);
+
         }
-    }else{
+    }else if args.len() > 2 {
+        let born_id: i32 = args[1].parse().unwrap();
+        let port_num: i32 = args[2].parse().unwrap();
+        let log_out_path: String = args[3].parse().unwrap();
+        //TODO: (rustr) ログの出力先ディレクトリのパスも受けられるようにする
+        //              ディレクトリがまだ存在しなければここの引数処理の中で作成してしまう
+        
+        //TODO: (rustr) ロガーライブラリは初期化時にディレクトリパスも含めて出力先を指定できるものを選びたい
+        //              （つまり、ロガーライブラリの初期化もグローバルに一度やればOK、みたいなものであればここでやる）
+        println!("born_id={:?}, port_num={:?}, log_out_path={:?}", &born_id, &port_num, &log_out_path);
+
         let node_info = ArMu_new!(node_info::NodeInfo::new());
         let data_store = ArMu_new!(data_store::DataStore::new());
     
@@ -599,7 +602,7 @@ fn main() {
             
         });    
     
-        endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store));
+        endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store), port_num);
     
         let mut thread_handles = vec![];    
         thread_handles.push(stabilize_succ_th_handle);

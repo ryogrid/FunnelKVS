@@ -6,6 +6,8 @@ use std::cell::RefMut;
 use std::cell::RefCell;
 use std::sync::atomic::Ordering;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
 
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rand::Rng;
@@ -63,20 +65,27 @@ pub fn get_rnd_int_with_limit(limit : u32) -> u32{
 }
 
 // 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
-// アルゴリズムはSHA1, 160bitで表現される正の整数となる
-// メモ: 10進数の整数は組み込みの hex関数で 16進数表現での文字列に変換可能
-// TODO: (rustr) 32bit出力のハッシュ関数の実装が必要
-//               Rustデフォルトハッシュ関数の下位32bitをとればいい気がする
-pub fn hash_str_to_int(_input_str : &String) -> u32 {
-    // hash_hex_str = hashlib.sha1(input_str.encode()).hexdigest()
-    // hash_id_num = int(hash_hex_str, 16)
+// RustのDefaultHasherでハッシュをとった64bit値の下位32bitを u32 型で返す
+pub fn hash_str_to_int(input_str : &String) -> u32 {
+    let mut hasher = DefaultHasher::new();
+    let str_bytes = input_str.as_bytes();
 
+    for elem in str_bytes{
+        hasher.write_u8(*elem);
+    }
+    
+    let hash_val_u64 = hasher.finish();
+    let hash_val_u32 = hash_val_u64 as u32;
+
+    return hash_val_u32;
+/*    
     // TODO: ID_SPACE_BITS ビットで表現できる符号なし整数をID空間とする.
     //       通常、ID_SPACE_BITS は sha1 で 160 となるが、この検証コードでは
     //       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
     //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
     let rand_val: u32 = get_rnd_int_with_limit(gval::ID_SPACE_RANGE);
     return rand_val;
+*/
 }
 
 pub fn get_unixtime_in_nanos() -> i32{

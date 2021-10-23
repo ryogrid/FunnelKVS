@@ -54,6 +54,7 @@ use std::cell::{RefCell, Ref, RefMut};
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rocket_contrib::json::Json;
 use rocket::State;
+use rocket::config::{Config, Environment};
 
 use chord_util::GeneralError;
 
@@ -116,13 +117,27 @@ pub fn deserialize_test(self_ninfo: State<ArMu<node_info::NodeInfo>>, data_store
     format!("Accepted post request! {:?}", node_info.0)
 }
 
-pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>){
+pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, port_num: i32){
     // TODO: (rustr) 起動時のポート指定
+    let config = Config::build(Environment::Production)
+    .address("127.0.0.1")
+    .port(port_num as u16)
+    .finalize()
+    .unwrap();
+
+    let app = rocket::custom(config);
+    
+    app.manage(self_ninfo)
+       .manage(data_store)
+       .mount("/", routes![index, get_param_test, deserialize_test])
+       .launch();
+/*    
     rocket::ignite()
         .manage(self_ninfo)
         .manage(data_store)
         .mount("/", routes![index, get_param_test, deserialize_test])
         .launch();
+*/
 }
 
 // TODO: (rustr) 分散KVS化する際は、putのレプリカ配るだけ版みたいなものを実装する必要あり

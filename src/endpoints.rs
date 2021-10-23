@@ -186,5 +186,5 @@ pub fn rrpc__get_node_info(address : &String) -> Result<node_info::NodeInfo, Gen
 // 問い合わせはまず自身に対してかける
 pub fn rrpc__resolve_id_val(id : u32) -> Json<node_info::NodeInfo> {
     // TODO: (rustr) ひとまずダミーを渡しておく
-    Json(router::find_successor(ArMu_new!(ArMu_new!(node_info::NodeInfo::new())), id).unwrap())
+    Json(router::find_successor(ArMu_new!(node_info::NodeInfo::new()), id).unwrap())
 }

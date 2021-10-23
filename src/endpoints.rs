@@ -117,11 +117,10 @@ pub fn deserialize_test(self_ninfo: State<ArMu<node_info::NodeInfo>>, data_store
     format!("Accepted post request! {:?}", node_info.0)
 }
 
-pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, port_num: i32){
-    // TODO: (rustr) 起動時のポート指定
+pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, bind_addr: String, bind_port_num: i32){
     let config = Config::build(Environment::Production)
-    .address("127.0.0.1")
-    .port(port_num as u16)
+    .address(bind_addr)
+    .port(bind_port_num as u16)
     .finalize()
     .unwrap();
 

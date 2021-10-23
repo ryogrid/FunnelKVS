@@ -127,7 +127,7 @@ type ArMu<T> = Arc<Mutex<T>>;
 pub struct DataStore {
 //    pub existing_node : ArRmRs<chord_node::ChordNode>,
     // Keyはハッシュを通されたものなので元データの値とは異なる
-    pub stored_data : HashMap<String, chord_util::DataIdAndValue>,
+    stored_data : HashMap<String, chord_util::DataIdAndValue>,
 }
 
 impl DataStore {

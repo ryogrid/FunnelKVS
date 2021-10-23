@@ -415,7 +415,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     let mut is_successor_has_no_pred = false;
     //let successor;
     
-    // TODO: (rustr)RPC呼出しに置き換える必要あり
     let ret = endpoints::rrpc__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
     //{
     // TODO: (rustr) 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
@@ -502,7 +501,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
-            // TODO: (rustr)RPC呼出しに置き換える必要あり
             let new_successor_info = endpoints::rrpc__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str).unwrap();
             if deep_cloned_self_node.node_id == deep_cloned_self_node.successor_info_list[0].node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける

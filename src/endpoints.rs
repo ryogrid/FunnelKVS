@@ -162,7 +162,6 @@ pub fn rrpc__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32)
 }
 
 pub fn rrpc__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
-    // TODO: (rustr) get_node_infoメソッドのラッパーとなるRPCエンドポイントを定義する
-    //               現時点ではひとまずダミーのNodeInfoオブジェクトを渡すようにしてある
+    // TODO: (rustr) ひとまずダミーを渡しておく
     return chord_util::get_node_info(ArMu_new!(node_info::NodeInfo::new()));
 }

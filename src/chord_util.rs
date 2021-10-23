@@ -245,6 +245,7 @@ def exist_between_two_nodes_right_mawari(cls, from_id : int, end_id : int, targe
 
 // TODO: (rustr) グローバル定数を見て、ファイルに書き出すフラグが立っていたら、ファイルに書くようにする (dprint)
 //               スレッドセーフなロガーライブラリを採用する必要がありそう？？？
+//               最初は3ノードで動作確認をするので、その時点ではstdoutに書き出す形で問題ない
 pub fn dprint(print_str : &String) {
     let local = Local::now();
     let local_naive = local.naive_local();
@@ -284,6 +285,7 @@ pub fn get_node_info(self_node: ArMu<node_info::NodeInfo>) -> Result<node_info::
     return Ok(ret);
 }
 
+/*
 // Attention: InternalControlFlowException を raiseする場合がある
 // TODO: 実システム化する際は アドレス指定で呼び出せる（ChordNodeオブジェクトのメソッドという形でない）
 //       RPC化する必要がありそう。もしくはこのメソッドの呼び出し自体を無くすか。 is_node_alive
@@ -291,20 +293,19 @@ pub fn is_node_alive(address : &String) -> Result<bool, GeneralError> {
     // TODO: (rustr) 現状は故障ノードを想定しないため必ずtrueを返す
     return Ok(true);
 
-/*
-    let tmp = get_node_by_address(address);
-    match tmp {
-        Ok(arc_val) => return Ok(true),
-        Err(err) => {
-            if err.err_code == ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM {
-                return Err(err);
-            }else{ // ERR_CODE_NODE_IS_DOWNED
-                return Ok(false);
-            }
-        }
-    }
-*/
+    // let tmp = get_node_by_address(address);
+    // match tmp {
+    //     Ok(arc_val) => return Ok(true),
+    //     Err(err) => {
+    //         if err.err_code == ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM {
+    //             return Err(err);
+    //         }else{ // ERR_CODE_NODE_IS_DOWNED
+    //             return Ok(false);
+    //         }
+    //     }
+    // }
 }
+*/
 
 /*
     # TODO: InternalExp at is_node_alive

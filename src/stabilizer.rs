@@ -75,7 +75,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
     // 実装上例外は発生しない.
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
     // TODO: (rustr)RPC呼出しに置き換える必要あり
-    let tyukai_node = chord_util::get_node_info(tyukai_node_address).unwrap();
+    let tyukai_node = endpoints::rrpc__get_node_info(tyukai_node_address).unwrap();
 
     let successor: ArMu<node_info::NodeInfo>;
 
@@ -388,6 +388,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
             ChordUtil.dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name)
 */
 
+// TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
 pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
     let mut self_node_ref = self_node.lock().unwrap();
     let mut deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -415,7 +416,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     //let successor;
     
     // TODO: (rustr)RPC呼出しに置き換える必要あり
-    let ret = chord_util::get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
+    let ret = endpoints::rrpc__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
     //{
     // TODO: (rustr) 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
     let successor_info = ret.unwrap();
@@ -475,7 +476,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         // 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
         // 情報を更新してもらう
         // 事前チェックによって避けられるかもしれないが、常に実行する
-        //let successor_obj = chord_util::get_node_info(&successor_info.address_str).unwrap();
+        //let successor_obj = endpoints::rrpc__get_node_info(&successor_info.address_str).unwrap();
 
         if deep_cloned_self_node.address_str == successor_info.address_str {
             //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
@@ -502,7 +503,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
             // TODO: (rustr)RPC呼出しに置き換える必要あり
-            let new_successor_info = chord_util::get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str).unwrap();
+            let new_successor_info = endpoints::rrpc__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str).unwrap();
             if deep_cloned_self_node.node_id == deep_cloned_self_node.successor_info_list[0].node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
                 //抜けないと多重borrowでpanicしてしまうので
@@ -603,7 +604,7 @@ def stabilize_successor(self):
 // 一回の呼び出しで1エントリを更新する
 // FingerTableのエントリはこの呼び出しによって埋まっていく
 // TODO: InternalExp at stabilize_finger_table
-// TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への参照は存在しない状態としておくこと
+// TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
 pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {    
     let mut self_node_ref = self_node.lock().unwrap();
     //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
@@ -709,8 +710,7 @@ def stabilize_finger_table(self, idx) -> PResult[bool]:
 
 // caller_node が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
 // 本メソッドはstabilize処理の中で用いられる
-// Attention: InternalControlFlowException を raiseする場合がある
-// TODO: InternalExp at check_predecessor
+// TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
 pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let self_node_ref = self_node.lock().unwrap();
 

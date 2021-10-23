@@ -40,7 +40,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
     // TODO: direct access to successor_info_list of n_dash at find_successor
     // TODO: (rustr)ここでn_dashのsuccessor_info_listを参照してしまっているがn_dashはそこの情報も埋まっているので一応問題無い
     // TOCO: (rustr)RPC呼出しに置き換える必要あり
-    match chord_util::get_node_info(&n_dash.successor_info_list[0].address_str) {
+    match endpoints::rrpc__get_node_info(&n_dash.successor_info_list[0].address_str) {
         Err(err_code) => {
             // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
             // ここでは何も対処しない
@@ -284,7 +284,7 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
                             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
             // TODO: (rustr)RPC呼出しに置き換える必要あり
-            let gnba_rslt = chord_util::get_node_info(&conved_node_info.address_str);
+            let gnba_rslt = endpoints::rrpc__get_node_info(&conved_node_info.address_str);
 
             match gnba_rslt {
                 //Ok(node_opt) => { return Arc::clone(&node_opt);},

@@ -55,6 +55,8 @@ use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rocket_contrib::json::Json;
 use rocket::State;
 
+use chord_util::GeneralError;
+
 use crate::gval;
 use crate::chord_node;
 use crate::node_info;
@@ -155,4 +157,8 @@ pub fn rrpc__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32)
     return router::closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), id);
 }
 
-// TODO: (rustr) get_node_infoメソッドのラッパーとなるRPCエンドポイントを定義する
+pub fn rrpc__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
+    // TODO: (rustr) get_node_infoメソッドのラッパーとなるRPCエンドポイントを定義する
+    //               現時点ではひとまずダミーのNodeInfoオブジェクトを渡すようにしてある
+    return chord_util::get_node_info(ArMu_new!(node_info::NodeInfo::new()));
+}

@@ -148,7 +148,7 @@ pub fn check_nodes_connectivity() {
         // 得ることに対応する形とする
 
         //match chord_util::get_node_by_address(&cur_node_info_succ_0.successor_info_list[0].address_str) {
-        match chord_util::get_node_info_by_address(&cur_node_info_succ_0_addr) {            
+        match endpoints::rrpc__get_node_info_by_address(&cur_node_info_succ_0_addr) {            
             Err(err) => { // ErrorCode.InternalControlFlowException_CODE || ErrorCode.NodeIsDownedException_CODE
                 if err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED {
                     println!("");

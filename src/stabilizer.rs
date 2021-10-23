@@ -65,21 +65,22 @@ pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor
 
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
 pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String, born_id: i32){
-    let new_node_ref = new_node.lock().unwrap();
+    let mut new_node_ref = new_node.lock().unwrap();
+    let deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
     let mut is_second_node:bool = false;
 
     if born_id == 1 { 
         // first_node の場合
 
         // successorとpredecessorは自身として終了する
-        //let succ_list_target_idx = new_node_ni_refmut.successor_info_list.len() - 1;
-        new_node_ref.successor_info_list.push((*new_node_ref).clone());
-        //new_node_ni_refmut.predecessor_info[0] = new_node_copied_for_pred_info;
+        new_node_ref.successor_info_list.push(deep_cloned_new_node.clone());
         drop(new_node_ref);
-        node_info::set_pred_info(new_node, (*new_node_ref).clone());
+        node_info::set_pred_info(Arc::clone(&new_node), deep_cloned_new_node.clone());
 
         return;
     }
+
+    drop(new_node_ref);    
 
     //println!("join {:?}", tyukai_node_address);
     // 実装上例外は発生しない.
@@ -87,207 +88,61 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String, b
     // TODO: (rustr)RPC呼出しに置き換える必要あり
     let tyukai_node = endpoints::rrpc__get_node_info(tyukai_node_address).unwrap();
 
-    let successor: ArMu<node_info::NodeInfo>;
+    // 仲介ノードに自身のsuccessorになるべきノードを探してもらう
+    chord_util::dprint(&("join_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_new_node).as_str() + ","
+        + chord_util::gen_debug_str_of_node(&tyukai_node).as_str()));    
+    let successor = endpoints::rrpc__find_successor(&tyukai_node, deep_cloned_new_node.node_id);
 
-    {
-        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
-        let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
-        let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
-        let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);        
-
-        //new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-        {
-            let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-            let new_node_ref = get_ref_from_refcell!(new_node_refcell);
-            let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_ref.node_info);
-            let new_node_ni_ref = get_ref_from_refcell!(new_node_ni_refcell);
-
-            // TODO: (rust) x direct access to node_info of tyukai_node at join
-            chord_util::dprint(&("join_1,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_ref)).as_str() + ","
-                                + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
-
-            // 仲介ノードに自身のsuccessorになるべきノードを探してもらう
-
-            // TODO: find_successor call at join
-            successor = match endpoints::rrpc__find_successor(
-                Arc::clone(&tyukai_node), tyukai_node_ref, tyukai_node_ni_ref, new_node_ni_ref.node_id) {
-                    Err(_e) => { // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-                        // リトライに必要な情報を記録しておく
-                        // TODO: (rust) リトライの対応は後回し
-                        // need_join_retry_node = self.existing_node;
-                        // need_join_retry_tyukai_node = tyukai_node;
-
-                        // 自ノードの情報、仲介ノードの情報
-                        // TODO: (rust) x direct access to node_info of tyukai_node at join
-                        chord_util::dprint(
-                            &("join_2,RETRY_IS_NEEDED,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_ref)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
-                        return
-                    },
-                    Ok(got_node) => {
-                        //TODO: (rust) リトライ対応は後回し
-                        //need_join_retry_node = None;
-                        got_node
-                    }
-            }
-            // grpc__find_successorの呼び出しのために &Ref<NodeInfo>が必要であったが
-            // 後続の処理では mutable な参照が必要となるためここで無効化する
-        }   
-
-        // mutableな参照を借用し直す
-        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-        let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);        
-
-        let successor_refcell = get_refcell_from_arc_with_locking!(successor);
-        let successor_ref = get_ref_from_refcell!(successor_refcell);
-        let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
-        let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
-
-        // TODO: (rust) for debug
-        if new_node_ni_refmut.node_id == successor_ni_ref.node_id {
-            chord_util::dprint(&("join_2_5,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(Some(&new_node_ni_refmut.successor_info_list[0])).as_str() + ",FOUND_NODE_IS_SAME_WITH_SELF_NODE!!!"));
-        }
-
-        // TODO: (rust) x direct access to node_info of predecessor at join
-        if tyukai_node_ni_ref.node_id == tyukai_node_ni_ref.successor_info_list[0].node_id {
-            // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
-
-            //predecessor = tyukai_node;
-
-            // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
-            // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
-            is_second_node = true;
-            new_node_ni_refmut.successor_info_list.push((*tyukai_node_ni_ref).clone());
-            new_node_ni_refmut.set_pred_info((*tyukai_node_ni_ref).clone());
-
-            // mutableな参照が必要な都合により、後続のコードで残りの処理を行う
-        }else{
-            // TODO: (rust) x direct access to node_info of successor at join
-            //let succ_infos_len = new_node_ni_refmut.successor_info_list.len();
-            new_node_ni_refmut.successor_info_list.push((*successor_ni_ref).clone());
-        }
-
-        // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
-        new_node_ni_refmut.finger_table[0] = Some(new_node_ni_refmut.successor_info_list[0].clone());
+    // TODO: (rustr) for debug
+    if deep_cloned_new_node.node_id == successor.node_id {
+        chord_util::dprint(&("join_2_5,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_new_node).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(&tyukai_node).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(&deep_cloned_new_node.successor_info_list[0]).as_str() + ",FOUND_NODE_IS_SAME_WITH_SELF_NODE!!!"));
     }
 
-    {
-        // mutableな参照を借用し直す
-        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-        let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
+    new_node_ref = new_node.lock().unwrap();
+    if tyukai_node.node_id == tyukai_node.successor_info_list[0].node_id {
+        // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
 
-        if is_second_node {
-            // secondノードの場合の考慮の続き
-            endpoints::rrpc__set_routing_infos_force(
-                Arc::clone(&tyukai_node),
-                (*new_node_ni_refmut).clone(),
-                (*new_node_ni_refmut).clone(),
-                (*new_node_ni_refmut).clone()
-            );
-        }
+        //predecessor = tyukai_node;
 
-        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
-        let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
-        let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
-        let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
-    }
-
-    if is_second_node {
-        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-        let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
-
-        let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
-        let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
-        let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
-        let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
-
-        // secondノードの場合の考慮の続き
-        chord_util::dprint(&("join_3,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(Some(&new_node_ni_refmut.successor_info_list[0])).as_str()));
-    } else {
-        // successorと、successorノードの情報だけ適切なものとする
-        // TODO: check_predecessor call at join
-
-        let new_node_ni;
-        {
-            let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-            let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-            let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-            let new_node_ni_ref = get_refmut_from_refcell!(new_node_ni_refcell);
-            new_node_ni = (*new_node_ni_ref).clone();
-        }
-
-        match endpoints::rrpc__check_predecessor(Arc::clone(&successor), new_node_ni){
-            Err(_e) => {  // ret.err_code == ErrorCode.InternalControlFlowException_CODE
-                // リトライに必要な情報を記録しておく
-                // TODO: (rust) リトライの対応は後回し
-                //need_join_retry_node = self.existing_node;
-                //need_join_retry_tyukai_node = tyukai_node;
-
-                let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-                let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-                let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-                let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
+        // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
+        // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+        is_second_node = true;
         
-                let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
-                let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
-                let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
-                let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
-                
-                // 既に値を設定してしまっている場合にリトライ時に問題が生じることを考慮し、
-                // 内容をリセットしておく
-                new_node_ni_refmut.successor_info_list = vec![];
+        new_node_ref.successor_info_list.push(tyukai_node.clone());
 
-                // 自ノードの情報、仲介ノードの情報
-                // TODO: (rust) x direct access to node_info of tyukai_node at join
-                chord_util::dprint(&("join_3,RETRY_IS_NEEDED,".to_string() + chord_util::gen_debug_str_of_node(
-                    Some(new_node_ni_refmut)).as_str() + ","
-                                    + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str()));
-                //chord_util::dprint(traceback.format_exc());
-                return
-            },
-            Ok(_dummy_bool) => {
-                let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-                let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-                let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-                let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
+        drop(new_node_ref);
+        node_info::set_pred_info(Arc::clone(&new_node), tyukai_node.clone());
+        endpoints::rrpc__set_routing_infos_force(
+            &tyukai_node,
+            deep_cloned_new_node.clone(),
+            deep_cloned_new_node.clone(),
+            deep_cloned_new_node.clone()
+        );
+
+        chord_util::dprint(&("join_3,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_new_node).as_str() + ","
+        + chord_util::gen_debug_str_of_node(&tyukai_node).as_str() + ","
+        + chord_util::gen_debug_str_of_node(&deep_cloned_new_node.successor_info_list[0]).as_str()));
         
-                let tyukai_node_refcell = get_refcell_from_arc_with_locking!(tyukai_node);
-                let tyukai_node_ref = get_ref_from_refcell!(tyukai_node_refcell);
-                let tyukai_node_ni_refcell = get_refcell_from_arc_with_locking!(tyukai_node_ref.node_info);
-                let tyukai_node_ni_ref = get_ref_from_refcell!(tyukai_node_ni_refcell);
-                
-                chord_util::dprint(&("join_4,".to_string() + chord_util::gen_debug_str_of_node(Some(new_node_ni_refmut)).as_str() + ","
-                + chord_util::gen_debug_str_of_node(Some(tyukai_node_ni_ref)).as_str() + ","
-                + chord_util::gen_debug_str_of_node(Some(&new_node_ni_refmut.successor_info_list[0])).as_str()));                
-            },
-        }
-
-        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
-        let new_node_refmut = get_refmut_from_refcell!(new_node_refcell);
-        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
-        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);    
-
-        // successor_info_listを埋めておく
-        // TODO: pass_successor_list call at join
-        let succ_list_of_succ = endpoints::grpc__pass_successor_list(Arc::clone(&successor));
-        let list_len = succ_list_of_succ.len() as i32;
-        for idx in 0..(gval::SUCCESSOR_LIST_NORMAL_LEN - 1) {
-            if idx < list_len {
-                new_node_ni_refmut.successor_info_list.push(
-                    succ_list_of_succ[idx as usize].clone());
-            }
-        }
+        return;
+    }else{
+        new_node_ref.successor_info_list.push(successor.clone());
+        drop(new_node_ref);
     }
+
+    new_node_ref = new_node.lock().unwrap();
+
+    // successorを設定する
+    new_node_ref.successor_info_list.push(successor.clone());
+
+    // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
+    new_node_ref.finger_table[0] = Some(new_node_ref.successor_info_list[0].clone());
+
+    // successorと、successorノードの情報だけ適切なものとする
+    // TODO: check_predecessor call at join
+
+    endpoints::rrpc__check_predecessor(&successor, &deep_cloned_new_node);
 }
 
 

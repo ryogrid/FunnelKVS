@@ -63,13 +63,23 @@ pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor
             self.existing_node.node_info.finger_table[0] = ftable_enry_0
 */
 
-// TODO: (rustr) need implemnt join
-/*
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
-pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
-    //with self.existing_node.node_info.lock_of_pred_info, new_node_ni_refmut.lock_of_succ_infos:
-
+pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String, born_id: i32){
+    let new_node_ref = new_node.lock().unwrap();
     let mut is_second_node:bool = false;
+
+    if born_id == 1 { 
+        // first_node の場合
+
+        // successorとpredecessorは自身として終了する
+        //let succ_list_target_idx = new_node_ni_refmut.successor_info_list.len() - 1;
+        new_node_ref.successor_info_list.push((*new_node_ref).clone());
+        //new_node_ni_refmut.predecessor_info[0] = new_node_copied_for_pred_info;
+        drop(new_node_ref);
+        node_info::set_pred_info(new_node, (*new_node_ref).clone());
+
+        return;
+    }
 
     //println!("join {:?}", tyukai_node_address);
     // 実装上例外は発生しない.
@@ -279,7 +289,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
         }
     }
 }
-*/
+
 
 /*
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する

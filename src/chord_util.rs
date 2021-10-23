@@ -243,6 +243,8 @@ def exist_between_two_nodes_right_mawari(cls, from_id : int, end_id : int, targe
         return False
 */
 
+// TODO: (rustr) グローバル定数を見て、ファイルに書き出すフラグが立っていたら、ファイルに書くようにする (dprint)
+//               スレッドセーフなロガーライブラリを採用する必要がありそう？？？
 pub fn dprint(print_str : &String) {
     let local = Local::now();
     let local_naive = local.naive_local();

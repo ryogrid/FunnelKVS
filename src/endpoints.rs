@@ -123,6 +123,10 @@ pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: 
         .launch();
 }
 
+// TODO: (rustr) 分散KVS化する際は、putのレプリカ配るだけ版みたいなものを実装する必要あり
+//               実際に処理を行う側は正規のputかレプリカの配布かを判別できるフラグを追加する形で
+//               1つのメソッドにまとめてしまって良いかと思う
+
 // TODO: ひとまずRPC化して結合するまでは、grpc__xxx は NodeInfoの完全な実体（完全なClone）を受けて
 //       それらが内部で読んでいる関数には受けた実体を ArMu_new!(xxx) でラップして渡す、とすればいい気がする・・・
 

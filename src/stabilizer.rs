@@ -63,6 +63,8 @@ pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor
             self.existing_node.node_info.finger_table[0] = ftable_enry_0
 */
 
+// TODO: (rustr) need implemnt join
+/*
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
 pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
     //with self.existing_node.node_info.lock_of_pred_info, new_node_ni_refmut.lock_of_succ_infos:
@@ -276,6 +278,8 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
             }
         }
     }
+}
+*/
 
 /*
     # node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
@@ -385,15 +389,17 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, tyukai_node_address: &String){
 */
 
 pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
-    let self_node_ref = self_node.lock().unwrap();
+    let mut self_node_ref = self_node.lock().unwrap();
+    let mut deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    drop(self_node_ref);
+    
+    chord_util::dprint(&("stabilize_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+          + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
-    chord_util::dprint(&("stabilize_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
-          + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
-
-    // firstノードだけが存在する状況で、firstノードがself_nodeであった場合に対する考慮
-    if self_node_ref.predecessor_info.len() == 0 && self_node_ref.node_id == self_node_ref.successor_info_list[0].node_id {
-        chord_util::dprint(&("stabilize_successor_1_5,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
-                         + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
+    // firstノードだけが存在する状況で、self_nodeがfirst_nodeであった場合に対する考慮
+    if deep_cloned_self_node.predecessor_info.len() == 0 && deep_cloned_self_node.node_id == deep_cloned_self_node.successor_info_list[0].node_id {
+        chord_util::dprint(&("stabilize_successor_1_5,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+                         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
         // secondノードがjoinしてきた際にチェーン構造は2ノードで適切に構成されるように
         // なっているため、ここでは何もせずに終了する
@@ -407,17 +413,12 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     // の参照を得る
     let mut is_successor_has_no_pred = false;
     //let successor;
-
+    
     // TODO: (rustr)RPC呼出しに置き換える必要あり
-    let ret = chord_util::get_node_info(&self_node_ref.successor_info_list[0].address_str);
+    let ret = chord_util::get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
     //{
     // TODO: (rustr) 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
     let successor_info = ret.unwrap();
-    // let successor_refcell = get_refcell_from_arc_with_locking!(successor);
-    // let successor_ref = get_ref_from_refcell!(successor_refcell);
-    // let successor_ni_refcell = get_refcell_from_arc_with_locking!(successor_ref.node_info);
-    // let successor_ni_ref = get_ref_from_refcell!(successor_ni_refcell);
-    // let successor_info = successor_ni_ref;
 
 // TODO: (rustr)実システム化する際にコメントアウトした。check_predecessor呼び出し時に呼び出し元は
 //              自身のNodeInfoのロックを解放するようにするので、問題ないはず
@@ -438,25 +439,24 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     if successor_info.predecessor_info.len() == 0 {
         is_successor_has_no_pred = true;
 
-
-        if self_node_ref.node_id == successor_info.node_id {
+        if deep_cloned_self_node.node_id == successor_info.node_id {
             //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
             chord_util::dprint(&("WARN!!!".to_string()));
             return Ok(true);
-        }        
+        }
     }
     //}
 
     if is_successor_has_no_pred {
-        chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
-        + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
+        chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+        + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
-        endpoints::rrpc__check_predecessor(ArMu_new!(node_info::partial_clone_from_ref_strong(&successor_info)), &self_node_ref);
+        endpoints::rrpc__check_predecessor(ArMu_new!(node_info::partial_clone_from_ref_strong(&successor_info)), &deep_cloned_self_node);
 
         return Ok(true);
     }
 
-    chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+    chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                     + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
 
     let pred_id_of_successor = successor_info.predecessor_info[0].node_id;
@@ -465,7 +465,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
     // 下のパターン1から3という記述は以下の資料による説明に基づく
     // https://www.slideshare.net/did2/chorddht
-    if pred_id_of_successor == self_node_ref.node_id {
+    if pred_id_of_successor == deep_cloned_self_node.node_id {
         // パターン1
         // 特に訂正は不要なので処理を終了する
         return Ok(true);
@@ -477,51 +477,44 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         // 事前チェックによって避けられるかもしれないが、常に実行する
         //let successor_obj = chord_util::get_node_info(&successor_info.address_str).unwrap();
 
-        if self_node_ref.address_str == successor_info.address_str {
+        if deep_cloned_self_node.address_str == successor_info.address_str {
             //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
             //抜けないと多重borrowでpanicしてしまうので
             chord_util::dprint(&("WARN!!!".to_string()));
             return Ok(true);
         }
 
-        endpoints::rrpc__check_predecessor(ArMu_new!(node_info::partial_clone_from_ref_strong(&successor_info)), &self_node_ref);
+        endpoints::rrpc__check_predecessor(ArMu_new!(node_info::partial_clone_from_ref_strong(&successor_info)), &deep_cloned_self_node);
         //check_predecessor(Arc::clone(&successor_obj), (*self_node_ni_refmut).clone());
 
-        let successor_obj_refcell = get_refcell_from_arc_with_locking!(successor_obj);
-        let successor_obj_ref = get_ref_from_refcell!(successor_obj_refcell);
-        let successor_obj_ni_refcell = get_refcell_from_arc_with_locking!(successor_obj_ref.node_info);
-        let successor_obj_ni_ref = get_ref_from_refcell!(successor_obj_ni_refcell);
-
-        let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_obj_ni_ref.node_id, pred_id_of_successor);
-        let distance_me = chord_util::calc_distance_between_nodes_left_mawari(successor_obj_ni_ref.node_id, self_node_ni_refmut.node_id);
+        let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, pred_id_of_successor);
+        let distance_me = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, deep_cloned_self_node.node_id);
         if distance_unknown < distance_me {
             // successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
             // successorから自身に対して前方向にたどった場合の経路中に存在する場合
             // 自身の認識するsuccessorの情報を更新する
 
-            self_node_ni_refmut.successor_info_list[0] = successor_obj_ni_ref.predecessor_info[0].clone();
+            self_node_ref = self_node.lock().unwrap();
+            self_node_ref.successor_info_list[0] = successor_info.predecessor_info[0].clone();
+            deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+            drop(self_node_ref);
 
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
             // TODO: (rustr)RPC呼出しに置き換える必要あり
-            let new_successor_obj = chord_util::get_node_info(&self_node_ni_refmut.successor_info_list[0].address_str).unwrap();
-            if self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
+            let new_successor_info = chord_util::get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str).unwrap();
+            if deep_cloned_self_node.node_id == deep_cloned_self_node.successor_info_list[0].node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
                 //抜けないと多重borrowでpanicしてしまうので
                 chord_util::dprint(&("WARN!!!".to_string()));
                 return Ok(true);
             }            
-            
-            let new_successor_obj_refcell = get_refcell_from_arc_with_locking!(new_successor_obj);
-            let new_successor_obj_ref = get_ref_from_refcell!(new_successor_obj_refcell);
-            let new_successor_obj_ni_refcell = get_refcell_from_arc_with_locking!(new_successor_obj_ref.node_info);
-            let new_successor_obj_ni_ref = get_ref_from_refcell!(new_successor_obj_ni_refcell);
 
-            check_predecessor(Arc::clone(&new_successor_obj), (*self_node_ni_refmut).clone());
+            endpoints::rrpc__check_predecessor(ArMu_new!(node_info::partial_clone_from_ref_strong(&new_successor_info)), &deep_cloned_self_node);
 
-            chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut)).as_str() + ","
-                             + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str() + ","
-                             + chord_util::gen_debug_str_of_node(Some(&new_successor_obj_ni_ref)).as_str()));
+            chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+                             + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","
+                             + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str()));
 
             return Ok(true);
         }

@@ -572,6 +572,11 @@ fn main() {
         }else if num == 3 { // CLI tool process lauch functionality test
             let born_id: i32 = args[2].parse().unwrap();
             let port_num: i32 = args[3].parse().unwrap();
+            //TODO: (rustr) ログの出力先ディレクトリのパスも受けられるようにする
+            //              ディレクトリがまだ存在しなければここの引数処理の中で作成してしまう
+            
+            //TODO: (rustr) ロガーライブラリは初期化時にディレクトリパスも含めて出力先を指定できるものを選びたい
+            //              （つまり、ロガーライブラリの初期化もグローバルに一度やればOK、みたいなものであればここでやる）
             println!("born_id={:?}, port_num={:?}", &born_id, &port_num);
         }
     }else{
@@ -582,7 +587,7 @@ fn main() {
         let data_store_arc_succ_th = Arc::clone(&data_store);
     
         let node_info_arc_ftable_th = Arc::clone(&node_info);
-        let data_store_arc_ftable_th = Arc::clone(&data_store);    
+        let data_store_arc_ftable_th = Arc::clone(&data_store);
     
         // TODO: (rustr) 自身のjoinの処理を書く
     

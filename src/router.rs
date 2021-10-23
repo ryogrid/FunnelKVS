@@ -29,7 +29,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
     //let n_dash_ninfo = n_dash.lock().unwrap();
 
     chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
-                        + chord_util::gen_debug_str_of_node(n_dash).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(&n_dash).as_str() + ","
                         + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + ","
                         + chord_util::gen_debug_str_of_data(id).as_str()));
 
@@ -107,9 +107,9 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
 */
 
 // id(int)　の前で一番近い位置に存在するノードを探索する
-pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_info::NodeInfo {
-    let mut n_dash: &node_info::NodeInfo = exnode_ni_ref;
-    let mut n_dash_found: &node_info::NodeInfo = n_dash;
+pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> node_info::NodeInfo {
+    let mut n_dash: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
+    let mut n_dash_found: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
 
     chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&exnode_ni_ref).as_str()));
     
@@ -125,10 +125,10 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
         }
         // TODO: x direct access to node_info of n_dash at find_predecessor
         chord_util::dprint(&("find_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(n_dash).as_str()));
+                            + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
         // TODO: closest_preceding_finger call at find_predecessor
 
-        n_dash_found = &endpoints::rrpc__closest_preceding_finger(n_dash, id);
+        n_dash_found = endpoints::rrpc__closest_preceding_finger(&n_dash, id);
 
         // TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
         if n_dash_found.node_id == n_dash.node_id {
@@ -137,7 +137,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
             // なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
             // TODO: x direct access to node_info of n_dash at find_predecessor
             chord_util::dprint(&("find_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
-                                + chord_util::gen_debug_str_of_node(n_dash).as_str()));
+                                + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
             return n_dash_found;
         }
 
@@ -159,15 +159,15 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> &node_i
 
             // TODO: x direct access to node_info of n_dash at find_predecessor
             chord_util::dprint(&("find_predecessor_4,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
-                                + chord_util::gen_debug_str_of_node(n_dash).as_str()));
+                                + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
 
             return n_dash;
         }
 
         // TODO: x direct access to node_info of n_dash and n_dash_found at find_predecessor
         chord_util::dprint(&("find_predecessor_5_n_dash_updated,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
-                            + chord_util::gen_debug_str_of_node(n_dash).as_str() + "->"
-                            + chord_util::gen_debug_str_of_node(n_dash_found).as_str()));
+                            + chord_util::gen_debug_str_of_node(&n_dash).as_str() + "->"
+                            + chord_util::gen_debug_str_of_node(&n_dash_found).as_str()));
 
         // チェックの結果問題ないので n_dashを closest_preceding_fingerで探索して得た
         // ノード情報は次周のループの先頭でn_dash_foundに置き換えられる

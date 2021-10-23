@@ -22,52 +22,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate hyper;
 
-
-
 // utility macros
-
-/*
-// IN:  Arc<ReentrandMutex<RefCell<T>>>
-// OUT: &RefCell<T>
-macro_rules! get_refcell_from_arc_with_locking {
-    ($arc:expr) => (
-        &*(($arc.as_ref()).borrow().lock())//;
-    );
-}
-
-// IN:  &RefCell<T>
-// OUT: &mut RefMut<T>
-macro_rules! get_refmut_from_refcell {
-    ($refcell:expr) => (
-        &mut ($refcell).borrow_mut()//;
-    );
-}
-
-
-// IN:  &RefCell<T>
-// OUT: &Ref<T>
-macro_rules! get_ref_from_refcell {
-    ($refcell:expr) => (
-        &($refcell).borrow()//;
-    );
-}
-*/
-
-/*
-macro_rules! ArRmRs_new {
-    ($wrapped:expr) => (
-        Arc::new(const_reentrant_mutex(RefCell::new($wrapped)))
-    );    
-}
-*/
-
-/*
-macro_rules! ArMu_new {
-    ($wrapped:expr) => (
-        Arc::new(const_reentrant_mutex(RefCell::new($wrapped)))
-    );    
-}
-*/
 
 macro_rules! ArMu_new {
     ($wrapped:expr) => (
@@ -588,7 +543,7 @@ fn main() {
 
         let node_info = ArMu_new!(node_info::NodeInfo::new());
         let data_store = ArMu_new!(data_store::DataStore::new());
-    
+
         let node_info_arc_succ_th = Arc::clone(&node_info);
         let data_store_arc_succ_th = Arc::clone(&data_store);
     
@@ -596,15 +551,25 @@ fn main() {
         let data_store_arc_ftable_th = Arc::clone(&data_store);
     
         // TODO: (rustr) 自身のjoinの処理を書く
-    
+
         let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
-    
+// TODO: (rustr) RPC化のテストの邪魔になりそうなので一旦コメントアウト (stabilizeスレッド2つ)
+/*
+            stabilizer::stabilize_successor(Arc::clone(&node_info_arc_succ_th));
+            std::thread::sleep(std::time::Duration::from_millis((20) as u64));
+*/
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
-            
+// TODO: (rustr) RPC化のテストの邪魔になりそうなので一旦コメントアウト (stabilizeスレッド2つ)
+/*
+            for idx in 0..(gval::ID_SPACE_BITS - 1){
+                stabilizer::stabilize_finger_table(Arc::clone(&node_info_arc_ftable_th), idx as i32);
+                std::thread::sleep(std::time::Duration::from_millis((10) as u64));
+            }
+*/
         });    
-    
+
         endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store), bind_addr, bind_port_num);
     
         let mut thread_handles = vec![];    

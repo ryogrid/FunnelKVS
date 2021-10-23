@@ -135,7 +135,8 @@ pub fn calc_distance_between_nodes_left_mawari(base_id : u32, target_id : u32) -
     // successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
     // 距離0と考えることもできるが、一周分を距離として返す
     if base_id == target_id {
-        return (gval::ID_SPACE_RANGE - 1) as u32;
+        //return (gval::ID_SPACE_RANGE - 1) as u32;
+        return gval::ID_SPACE_RANGE;
     }
 
     // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
@@ -184,7 +185,8 @@ pub fn calc_distance_between_nodes_right_mawari(base_id : u32, target_id : u32) 
     // successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
     // 距離0と考えることもできるが、一周分を距離として返す
     if base_id == target_id {
-        return gval::ID_SPACE_RANGE - 1;
+        //return gval::ID_SPACE_RANGE - 1;
+        return gval::ID_SPACE_RANGE;
     }
 
     // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを

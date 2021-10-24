@@ -186,9 +186,9 @@ pub fn rrpc__set_routing_infos_force(self_node: &node_info::NodeInfo, predecesso
     return stabilizer::set_routing_infos_force(dummy_self_node, predecessor_info, successor_info_0, ftable_enry_0);
 }
 
-pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> node_info::NodeInfo {
+pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     //TODO: (rustr) ひとまずダミー返しておく
-    return node_info::NodeInfo::new();
+    return Ok(node_info::NodeInfo::new());
 }
 
 // id（int）で識別されるデータを担当するノードの名前解決を行う
@@ -196,8 +196,8 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> n
 //            finger_tableに値が埋められた NodeInfoへの参照を渡すこと
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
 //pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> node_info::NodeInfo {
-    return router::find_successor(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), id).unwrap();
+pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+    return router::find_successor(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), id);
 }
 
 // Attention: finger_tableに値が埋められた NodeInfoへの参照を渡すこと

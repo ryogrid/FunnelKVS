@@ -484,40 +484,6 @@ fn req_rest_api_test() {
 }
 
 fn main() {
-/*    
-    {
-        // 最初の1ノードはここで登録する
-        let first_node = chord_node::new_and_join("".to_string(), true);
-        let first_node_refcell = get_refcell_from_arc_with_locking!(first_node);
-        let first_node_refmut = get_refmut_from_refcell!(first_node_refcell);
-        let first_node_ni_refcell = get_refcell_from_arc_with_locking!(first_node_refmut.node_info);
-        let first_node_ni_refmut = get_refmut_from_refcell!(first_node_ni_refcell);
-
-        first_node_refmut.is_join_op_finished.store(true, Ordering::Relaxed);
-
-        {
-            let gd_refcell = get_refcell_from_arc_with_locking!(gval::global_datas);
-            let gd_refmut = get_refmut_from_refcell!(gd_refcell);
-            gd_refmut.all_node_dict.insert(first_node_ni_refmut.address_str.clone(), Arc::clone(&first_node));
-            println!("{:?}", gd_refmut.all_node_dict);
-        }
-    }
-
-    // 次に生成するノードが同一のアドレス文字列を持つことを避けるため
-    std::thread::sleep(std::time::Duration::from_millis(500));
-
-    let mut thread_handles = vec![];
-    thread_handles.push(std::thread::spawn(node_join_th));
-    thread_handles.push(std::thread::spawn(stabilize_succ_th));
-    thread_handles.push(std::thread::spawn(stabilize_ftable_th));
-
-    chord_util::dprint(&("main: Start waiting thread exit!".to_string()));
-
-    // スレッド終了の待ち合わせ（終了してくるスレッドは基本的に無い）
-    for handle in thread_handles {
-        handle.join().unwrap();
-    }
-*/
     //引数処理
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {

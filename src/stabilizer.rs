@@ -96,7 +96,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // 仲介ノードに自身のsuccessorになるべきノードを探してもらう
     chord_util::dprint(&("join_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_new_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&tyukai_node).as_str()));    
-    let successor = endpoints::rrpc_call__find_successor(&tyukai_node, deep_cloned_new_node.node_id);
+    let successor = endpoints::rrpc_call__find_successor(&tyukai_node, deep_cloned_new_node.node_id).unwrap();
 
     // TODO: (rustr) for debug
     if deep_cloned_new_node.node_id == successor.node_id {
@@ -475,6 +475,7 @@ def stabilize_successor(self):
 // TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
 pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {    
     let mut self_node_ref = self_node.lock().unwrap();
+    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
     //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
 
     chord_util::dprint(&("stabilize_finger_table_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
@@ -484,7 +485,7 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
     let update_id = chord_util::overflow_check_and_conv((self_node_ref.node_id as u64) + (2i32.pow(idx as u32) as u64));
 
     drop(self_node_ref);
-    let find_rslt = router::find_successor(Arc::clone(&self_node), update_id);
+    let find_rslt = endpoints::rrpc_call__find_successor(&deep_cloned_self_node, update_id);
     
     self_node_ref = self_node.lock().unwrap();
     match find_rslt {

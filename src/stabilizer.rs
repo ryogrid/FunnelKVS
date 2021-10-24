@@ -124,6 +124,8 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
         
         new_node_ref.successor_info_list.push(tyukai_node.clone());
 
+        drop(deep_cloned_new_node);
+        deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
         drop(new_node_ref);
         node_info::set_pred_info(Arc::clone(&new_node), tyukai_node.clone());
         endpoints::rrpc_call__set_routing_infos_force(

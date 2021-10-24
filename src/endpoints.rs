@@ -213,9 +213,11 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> R
         &("http://".to_string() + self_node.address_str.as_str() + "/find_successor"),
         serde_json::to_string(&id).unwrap());
     
-    let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&req_rslt.unwrap()).unwrap();
+    let req_rslt_ref = &req_rslt.unwrap();
+    println!("req_rslt_ref at find_successor: {:?}", req_rslt_ref);
+    let ret_ninfo = serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(req_rslt_ref).unwrap();
     println!("find_successor: {:?}", ret_ninfo);
-    return Ok(ret_ninfo);
+    return ret_ninfo;
 }
 
 // id（int）で識別されるデータを担当するノードの名前解決を行う

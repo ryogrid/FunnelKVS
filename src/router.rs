@@ -129,7 +129,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> node_in
                             + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
         // TODO: closest_preceding_finger call at find_predecessor
 
-        n_dash_found = endpoints::rrpc_call__closest_preceding_finger(&n_dash, id);
+        n_dash_found = endpoints::rrpc_call__closest_preceding_finger(&n_dash, id).unwrap();
 
         // TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
         if n_dash_found.node_id == n_dash.node_id {

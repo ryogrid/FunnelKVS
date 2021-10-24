@@ -175,9 +175,9 @@ pub fn rrpc__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: 
     return stabilizer::check_predecessor(dummy_self_node, node_info::partial_clone_from_ref_strong(caller_node_ni));
 }
 
-pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
+pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     //TODO: (rustr) ひとまずダミー処理
-    return;
+    return Ok(true);
 }
 
 pub fn rrpc__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
@@ -204,13 +204,13 @@ pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result
 // pub fn grpc__closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> node_info::NodeInfo {
 //     return router::closest_preceding_finger(Arc::clone(&self_node), id);
 // }
-pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32) -> node_info::NodeInfo {
+pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     //TODO: (rustr) ひとまずダミーを返す
-    return node_info::NodeInfo::new();
+    return Ok(node_info::NodeInfo::new());
 }
 
-pub fn rrpc__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32) -> node_info::NodeInfo {
-    return router::closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), id);
+pub fn rrpc__closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> node_info::NodeInfo {
+    return router::closest_preceding_finger(Arc::clone(&self_node), id);
 }
 
 pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
@@ -218,9 +218,9 @@ pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo
     return Ok(node_info::NodeInfo::new());
 }
 
-pub fn rrpc__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
+pub fn rrpc__get_node_info(self_node: ArMu<node_info::NodeInfo>) -> node_info::NodeInfo {
     // TODO: (rustr) ひとまずダミーを渡しておく
-    return chord_util::get_node_info(ArMu_new!(node_info::NodeInfo::new()));
+    return chord_util::get_node_info(Arc::clone(&self_node));
 }
 
 // ブラウザからアドレス解決を試すためのエンドポイント

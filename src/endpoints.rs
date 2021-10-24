@@ -240,7 +240,15 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
         &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger"),
         serde_json::to_string(&id).unwrap());
     
-    let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&req_rslt.unwrap()).unwrap();
+    let res_text = match req_rslt {
+        Err(err) => {
+            chord_util::dprint(&err.message);
+            panic!("error at rrpc_call__closest_preceding_finger");
+        },
+        Ok(text) => {text}
+    };
+    println!("res_text: {:?}", res_text);
+    let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&res_text).unwrap();
     println!("closest_preceding_finger: {:?}", ret_ninfo);
     return Ok(ret_ninfo);
 }

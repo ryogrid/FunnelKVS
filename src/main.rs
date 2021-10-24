@@ -451,7 +451,7 @@ def stabilize_th():
 
 
 fn req_rest_api_test_inner_get() {
-    let resp = reqwest::blocking::get("http://localhost:8000/").unwrap()
+    let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()
     .text();
     //.json::<HashMap<String, String>>().unwrap();
     println!("{:#?}", resp);
@@ -480,7 +480,8 @@ fn req_rest_api_test_inner_post() {
 fn req_rest_api_test() {    
     println!("client mode!\n");
     //req_rest_api_test_inner_post();
-    req_rest_api_test_inner_get_param_test();
+    //req_rest_api_test_inner_get_param_test();
+    req_rest_api_test_inner_get();
 }
 
 fn main() {
@@ -513,7 +514,7 @@ fn main() {
     
         let node_info_arc_ftable_th = Arc::clone(&node_info);
         let data_store_arc_ftable_th = Arc::clone(&data_store);
-    
+/*    
         // 仲介ノードを介してChordネットワークに参加する
         stabilizer::join(
             Arc::clone(&node_info),
@@ -521,6 +522,7 @@ fn main() {
             &(tyukai_addr + ":" + &tyukai_port_num.to_string()),
             born_id
         );
+*/
 
         let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
 // TODO: (rustr) RPC化のテストの邪魔になりそうなので一旦コメントアウト (stabilizeスレッド2つ)
@@ -540,8 +542,13 @@ fn main() {
 */
         });    
 
+        std::thread::spawn(|| loop{
+            std::thread::sleep(std::time::Duration::from_millis((10000) as u64));
+            println!("req_rest_api_test!");
+            req_rest_api_test();
+        });
         endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store), bind_addr, bind_port_num);
-    
+
         let mut thread_handles = vec![];    
         thread_handles.push(stabilize_succ_th_handle);
         thread_handles.push(stabilize_ftable_th_handle);

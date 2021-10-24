@@ -127,15 +127,15 @@ fn get_param_test(param1: String, param2: String) -> Json<node_info::NodeInfo> {
 }
 
 #[post("/deserialize", data = "<node_info>")]
-pub fn deserialize_test(self_ninfo: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, node_info: Json<node_info::NodeInfo>) -> String {
+pub fn deserialize_test(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, node_info: Json<node_info::NodeInfo>) -> String {
     // TODO: (rustr) 複数の引数をとるようなことがしたければ、それらを含むStructを定義するしか無さそう
-    println!("{:?}", self_ninfo.lock().unwrap());
+    println!("{:?}", self_node.lock().unwrap());
     println!("{:?}", node_info.address_str);
     println!("{:?}", node_info);
     format!("Accepted post request! {:?}", node_info.0)
 }
 
-pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, bind_addr: String, bind_port_num: i32){
+pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, bind_addr: String, bind_port_num: i32){
     let config = Config::build(Environment::Production)
     .address(bind_addr)
     .port(bind_port_num as u16)
@@ -144,7 +144,7 @@ pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: 
 
     let app = rocket::custom(config);
     
-    app.manage(self_ninfo)
+    app.manage(self_node)
        .manage(data_store)
        .mount("/", routes![index, get_param_test, deserialize_test, result_type])
        .launch();

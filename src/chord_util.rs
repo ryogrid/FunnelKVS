@@ -12,6 +12,7 @@ use std::hash::Hasher;
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rand::Rng;
 use chrono::{Local, DateTime, Date};
+use serde::{Serialize, Deserialize};
 
 use crate::gval;
 use crate::chord_node;
@@ -42,6 +43,7 @@ pub const ERR_CODE_NODE_IS_DOWNED : u32 = 1;
 pub const ERR_CODE_APPROPRIATE_NODE_NOT_FOND : u32 = 2;
 pub const ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM : u32 = 3;
 
+#[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]
 pub struct GeneralError {
     pub message: String,

@@ -88,6 +88,24 @@ fn index() -> Json<node_info::NodeInfo> {
     Json(node_info)
 }
 
+#[get("/result-type")]
+//fn index() -> &'static str {
+fn result_type() -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
+    let mut node_info = node_info::NodeInfo::new();
+    
+    node_info.node_id = 100;
+    node_info.address_str = "kanbayashi".to_string();
+    node_info.born_id = 77;
+    node_info.successor_info_list = vec![];
+    node_info.successor_info_list.push(node_info.clone());    
+    node_info.predecessor_info = vec![];
+    node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
+    //node_info.finger_table = vec![];
+
+    //"Hello, world!"
+    Json(Ok(node_info))
+}
+
 #[get("/get-param-test?<param1>&<param2>")]
 fn get_param_test(param1: String, param2: String) -> Json<node_info::NodeInfo> {
     let mut node_info = node_info::NodeInfo::new();
@@ -128,7 +146,7 @@ pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: 
     
     app.manage(self_ninfo)
        .manage(data_store)
-       .mount("/", routes![index, get_param_test, deserialize_test])
+       .mount("/", routes![index, get_param_test, deserialize_test, result_type])
        .launch();
 /*    
     rocket::ignite()

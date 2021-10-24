@@ -558,16 +558,20 @@ fn main() {
 
         let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
 // TODO: (rustr) RPC化のテストの邪魔になりそうなので一旦コメントアウト (stabilizeスレッド2つ)
+/*
             stabilizer::stabilize_successor(Arc::clone(&node_info_arc_succ_th));
             std::thread::sleep(std::time::Duration::from_millis((20) as u64));
+*/
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
 // TODO: (rustr) RPC化のテストの邪魔になりそうなので一旦コメントアウト (stabilizeスレッド2つ)
+/*
             for idx in 0..(gval::ID_SPACE_BITS - 1){
-                stabilizer::stabilize_finger_table(Arc::clone(&node_info_arc_ftable_th), idx as i32);
-                std::thread::sleep(std::time::Duration::from_millis((10) as u64));
+                    stabilizer::stabilize_finger_table(Arc::clone(&node_info_arc_ftable_th), idx as i32);
+                    std::thread::sleep(std::time::Duration::from_millis((10) as u64));
             }
+*/
         });    
 
         endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store), bind_addr, bind_port_num);

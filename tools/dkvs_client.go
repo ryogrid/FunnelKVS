@@ -51,6 +51,20 @@ func test_post_request_deserialize() error {
 	return err
 }
 
+func test_get_request_Result_type_return() {
+	url := "http://127.0.0.1:8000/result-type"
+	// TODO: クエリストリングでパラメータを渡す際にURIエンコードが行われるか確認して
+	//       されないようであればされるようにする（方法を確認しておく）必要あり
+	req, _ := http.NewRequest("GET", url, nil)
+
+	client := new(http.Client)
+	resp, _ := client.Do(req)
+	defer resp.Body.Close()
+
+	byteArray, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(byteArray))
+}
+
 // このプログラムがtoolsディレクトリ直下で実行されている前提
 func test_process_exec() {
 	err := exec.Command("../target/debug/rust_dkvs", "3", "5", "100501").Start()
@@ -66,6 +80,7 @@ func main() {
 
 	//test_get_request_which_has_query_string()
 	//test_post_request_deserialize()
-	test_process_exec()
+	//test_process_exec()
+	test_get_request_Result_type_return()
 	fmt.Println("finished!")
 }

@@ -304,6 +304,7 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
                 rrpc__check_predecessor,
                 rrpc__set_routing_infos_force,
                 rrpc__find_successor,
+                rrpc__closest_preceding_finger,                
                 rrpc__get_node_info,
                 rrpc__resolve_id_val
             ]

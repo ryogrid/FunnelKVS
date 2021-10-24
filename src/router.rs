@@ -143,7 +143,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> node_in
             // TODO: x direct access to node_info of n_dash at find_predecessor
             chord_util::dprint(&("find_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
                                 + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
-            return n_dash_found;
+            return n_dash_found.clone();
         }
 
         // closelst_preceding_finger は id を通り越してしまったノードは返さない
@@ -166,7 +166,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> node_in
             chord_util::dprint(&("find_predecessor_4,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
                                 + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
 
-            return n_dash;
+            return n_dash.clone();
         }
 
         // TODO: x direct access to node_info of n_dash and n_dash_found at find_predecessor
@@ -178,7 +178,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> node_in
         // ノード情報は次周のループの先頭でn_dash_foundに置き換えられる
     }
 
-    return n_dash;
+    return n_dash.clone();
 }
 
 /*
@@ -290,7 +290,7 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
             match gnba_rslt {
                 //Ok(node_opt) => { return Arc::clone(&node_opt);},
                 //Ok(node_opt) => { return node_info::partial_clone_from_ref_strong(&node_opt);},
-                Ok(node_opt) => { return node_opt.clone();},
+                Ok(node_opt) => { return node_opt;},
                 Err(_err) => {
                     // err.err_code == chord_util::ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM || err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED
                     // ここでは何も対処しない

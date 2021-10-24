@@ -126,6 +126,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> node_in
 
         //while文の書き換えの形でできたif文
         if chord_util::exist_between_two_nodes_right_mawari(n_dash.node_id, n_dash.successor_info_list[0].node_id, id) {
+            println!("check loop break at find_predecessor {:?} {:?}", n_dash.node_id, n_dash.successor_info_list[0].node_id);
             break;
         }
         // TODO: x direct access to node_info of n_dash at find_predecessor

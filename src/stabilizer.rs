@@ -141,7 +141,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
         
         return;
     }else{
-        new_node_ref.successor_info_list.push(successor.clone());
+        //new_node_ref.successor_info_list.push(successor.clone());
         drop(new_node_ref);
     }
 
@@ -156,6 +156,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // successorと、successorノードの情報だけ適切なものとする
     // TODO: check_predecessor call at join
 
+    drop(new_node_ref);
     endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node);
 }
 
@@ -271,8 +272,9 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
 pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
     let mut self_node_ref = self_node.lock().unwrap();
     let mut deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    //println!("P-SELF-S: P: {:?} SELF: {:?} S {:?}", self_node_ref.predecessor_info, *self_node_ref, self_node_ref.successor_info_list);
     drop(self_node_ref);
-    
+
     chord_util::dprint(&("stabilize_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
           + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
@@ -330,7 +332,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
-        endpoints::rrpc_call__check_predecessor(&node_info::partial_clone_from_ref_strong(&successor_info), &deep_cloned_self_node);
+        endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node);
 
         return Ok(true);
     }
@@ -363,7 +365,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             return Ok(true);
         }
 
-        endpoints::rrpc_call__check_predecessor(&node_info::partial_clone_from_ref_strong(&successor_info), &deep_cloned_self_node);
+        endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node);
         //check_predecessor(Arc::clone(&successor_obj), (*self_node_ni_refmut).clone());
 
         let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, pred_id_of_successor);
@@ -388,7 +390,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
                 return Ok(true);
             }            
 
-            endpoints::rrpc_call__check_predecessor(&node_info::partial_clone_from_ref_strong(&new_successor_info), &deep_cloned_self_node);
+            endpoints::rrpc_call__check_predecessor(&new_successor_info, &deep_cloned_self_node);
 
             chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                              + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","

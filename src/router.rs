@@ -289,7 +289,8 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
 
             match gnba_rslt {
                 //Ok(node_opt) => { return Arc::clone(&node_opt);},
-                Ok(node_opt) => { return node_info::partial_clone_from_ref_strong(&node_opt);},
+                //Ok(node_opt) => { return node_info::partial_clone_from_ref_strong(&node_opt);},
+                Ok(node_opt) => { return node_opt.clone();},
                 Err(_err) => {
                     // err.err_code == chord_util::ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM || err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED
                     // ここでは何も対処しない

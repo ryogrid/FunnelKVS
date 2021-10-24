@@ -531,7 +531,7 @@ fn main() {
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
-            for idx in 0..(gval::ID_SPACE_BITS - 1){
+            for idx in 1..(gval::ID_SPACE_BITS + 1){
                     stabilizer::stabilize_finger_table(Arc::clone(&node_info_arc_ftable_th), idx as i32);
                     std::thread::sleep(std::time::Duration::from_millis(10 as u64));
             }

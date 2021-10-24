@@ -493,9 +493,9 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
 
     // FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
     // 担当するノードに最も近いノードが格納される
-    let update_id = chord_util::overflow_check_and_conv((self_node_ref.node_id as u64) + (2i32.pow(idx as u32) as u64));
+    let update_id = chord_util::overflow_check_and_conv((self_node_ref.node_id as u64) + (2u64.pow(idx as u32) as u64));
 
-    println!("update_id: {:?}", update_id);
+    println!("update_id: {:?} {:?}", update_id, idx);
 
     drop(self_node_ref);
     let find_rslt = endpoints::rrpc_call__find_successor(&deep_cloned_self_node, update_id);
@@ -509,14 +509,14 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
             // 適切な担当ノードを得ることができなかった
             // 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
             // ことであるので、更新対象のエントリには None を設定しておく
-            self_node_ref.finger_table[idx as usize] = None;
+            self_node_ref.finger_table[(idx - 1) as usize] = None;
             chord_util::dprint(&("stabilize_finger_table_2_5,NODE_IS_DOWNED,".to_string()
                 + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
 
             return Ok(true);
         },
         Ok(found_node) => {
-            self_node_ref.finger_table[idx as usize] = Some(found_node.clone());
+            self_node_ref.finger_table[(idx - 1) as usize] = Some(found_node.clone());
 
             chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
                     + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","

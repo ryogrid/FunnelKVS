@@ -25,7 +25,8 @@ use crate::data_store;
 //type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
-// TODO: ディープコピーを取得するメソッドを定義しておきたい at DataIdAndValue
+// TODO: (rustr)ディープコピーを取得するメソッドを定義しておきたい at DataIdAndValue
+#[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]
 pub struct DataIdAndValue {
     pub data_id : i32,
@@ -42,6 +43,7 @@ impl DataIdAndValue {
 pub const ERR_CODE_NODE_IS_DOWNED : u32 = 1;
 pub const ERR_CODE_APPROPRIATE_NODE_NOT_FOND : u32 = 2;
 pub const ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM : u32 = 3;
+pub const ERR_CODE_HTTP_REQUEST_ERR : u32 = 4;
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]

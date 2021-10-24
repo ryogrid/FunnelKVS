@@ -55,6 +55,8 @@ use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rocket_contrib::json::Json;
 use rocket::State;
 use rocket::config::{Config, Environment};
+use reqwest::Error;
+use serde::{Serialize, Deserialize};
 
 use chord_util::GeneralError;
 
@@ -69,6 +71,38 @@ use crate::stabilizer;
 
 //type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
+
+// urlは "http://から始まるものにすること"
+fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
+    let resp = match reqwest::blocking::get(url_str){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(response) => response
+    };
+
+    let ret = match resp.text(){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(text) => text
+    };
+
+    return Ok(ret);
+}
+
+// urlは "http://から始まるものにすること"
+// json_str は JSONの文字列表現をそのまま渡せばよい
+fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_util::GeneralError> {
+    let client = reqwest::blocking::Client::new();
+    let resp = match client.post(url_str).body(json_str).send(){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(response) => response        
+    };
+
+    let ret = match resp.text(){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(text) => text
+    };
+
+    return Ok(ret);
+}
 
 #[get("/")]
 //fn index() -> &'static str {
@@ -165,8 +199,12 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
 //       それらが内部で読んでいる関数には受けた実体を ArMu_new!(xxx) でラップして渡す、とすればいい気がする・・・
 
 pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
-    //TODO: (rustr) ひとまずダミーを返しておく
-    return Ok(false);
+    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor"),
+        serde_json::to_string(caller_node_ni).unwrap());
+    
+    return Ok(true);
 }
 
 pub fn rrpc__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
@@ -176,7 +214,13 @@ pub fn rrpc__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: 
 }
 
 pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
-    //TODO: (rustr) ひとまずダミー処理
+    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
+    let rpc_arg = SetRoutingInfosForce::new(predecessor_info, successor_info_0, ftable_enry_0);
+
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/set_routing_infos_force"),
+        serde_json::to_string(&rpc_arg).unwrap());
+
     return Ok(true);
 }
 
@@ -187,8 +231,13 @@ pub fn rrpc__set_routing_infos_force(self_node: &node_info::NodeInfo, predecesso
 }
 
 pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    //TODO: (rustr) ひとまずダミー返しておく
-    return Ok(node_info::NodeInfo::new());
+    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/find_successor"),
+        serde_json::to_string(&id).unwrap());
+    
+    let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&req_rslt.unwrap()).unwrap();
+    return Ok(ret_ninfo);
 }
 
 // id（int）で識別されるデータを担当するノードの名前解決を行う
@@ -205,8 +254,13 @@ pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result
 //     return router::closest_preceding_finger(Arc::clone(&self_node), id);
 // }
 pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    //TODO: (rustr) ひとまずダミーを返す
-    return Ok(node_info::NodeInfo::new());
+    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger"),
+        serde_json::to_string(&id).unwrap());
+    
+    let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&req_rslt.unwrap()).unwrap();
+    return Ok(ret_ninfo);
 }
 
 pub fn rrpc__closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> node_info::NodeInfo {
@@ -214,8 +268,10 @@ pub fn rrpc__closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id :
 }
 
 pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
-    // TODO: (rustr) ひとまずダミーを渡しておく
-    return Ok(node_info::NodeInfo::new());
+    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
+    let req_rslt = http_get_request(&("http://".to_string() + address.as_str() + "/get_node_info"));
+    let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&req_rslt.unwrap()).unwrap();
+    return Ok(ret_ninfo);
 }
 
 pub fn rrpc__get_node_info(self_node: ArMu<node_info::NodeInfo>) -> node_info::NodeInfo {
@@ -230,4 +286,26 @@ pub fn rrpc__get_node_info(self_node: ArMu<node_info::NodeInfo>) -> node_info::N
 pub fn rrpc__resolve_id_val(id : u32) -> Json<node_info::NodeInfo> {
     // TODO: (rustr) ひとまずダミーを渡しておく
     Json(router::find_successor(ArMu_new!(node_info::NodeInfo::new()), id).unwrap())
+}
+
+#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+struct SetRoutingInfosForce{
+    predecessor_info: node_info::NodeInfo,
+    successor_info_0: node_info::NodeInfo,
+    ftable_enry_0: node_info::NodeInfo
+}
+
+impl SetRoutingInfosForce {
+    pub fn new(
+        predecessor_info: node_info::NodeInfo,
+        successor_info_0: node_info::NodeInfo,
+        ftable_enry_0: node_info::NodeInfo) -> SetRoutingInfosForce 
+    {
+        SetRoutingInfosForce {
+            predecessor_info: predecessor_info, 
+            successor_info_0: successor_info_0,
+            ftable_enry_0: ftable_enry_0
+        }
+    }
 }

@@ -91,12 +91,12 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // 実装上例外は発生しない.
     // また実システムでもダウンしているノードの情報が与えられることは想定しない
     // TODO: (rustr)RPC呼出しに置き換える必要あり
-    let tyukai_node = endpoints::rrpc__get_node_info(tyukai_node_address).unwrap();
+    let tyukai_node = endpoints::rrpc_call__get_node_info(tyukai_node_address).unwrap();
 
     // 仲介ノードに自身のsuccessorになるべきノードを探してもらう
     chord_util::dprint(&("join_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_new_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&tyukai_node).as_str()));    
-    let successor = endpoints::rrpc__find_successor(&tyukai_node, deep_cloned_new_node.node_id);
+    let successor = endpoints::rrpc_call__find_successor(&tyukai_node, deep_cloned_new_node.node_id);
 
     // TODO: (rustr) for debug
     if deep_cloned_new_node.node_id == successor.node_id {
@@ -119,7 +119,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
 
         drop(new_node_ref);
         node_info::set_pred_info(Arc::clone(&new_node), tyukai_node.clone());
-        endpoints::rrpc__set_routing_infos_force(
+        endpoints::rrpc_call__set_routing_infos_force(
             &tyukai_node,
             deep_cloned_new_node.clone(),
             deep_cloned_new_node.clone(),
@@ -147,7 +147,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // successorと、successorノードの情報だけ適切なものとする
     // TODO: check_predecessor call at join
 
-    endpoints::rrpc__check_predecessor(&successor, &deep_cloned_new_node);
+    endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node);
 }
 
 
@@ -285,7 +285,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     let mut is_successor_has_no_pred = false;
     //let successor;
     
-    let ret = endpoints::rrpc__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
+    let ret = endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
     //{
     // TODO: (rustr) 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
     let successor_info = ret.unwrap();
@@ -321,7 +321,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
-        endpoints::rrpc__check_predecessor(&node_info::partial_clone_from_ref_strong(&successor_info), &deep_cloned_self_node);
+        endpoints::rrpc_call__check_predecessor(&node_info::partial_clone_from_ref_strong(&successor_info), &deep_cloned_self_node);
 
         return Ok(true);
     }
@@ -354,7 +354,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             return Ok(true);
         }
 
-        endpoints::rrpc__check_predecessor(&node_info::partial_clone_from_ref_strong(&successor_info), &deep_cloned_self_node);
+        endpoints::rrpc_call__check_predecessor(&node_info::partial_clone_from_ref_strong(&successor_info), &deep_cloned_self_node);
         //check_predecessor(Arc::clone(&successor_obj), (*self_node_ni_refmut).clone());
 
         let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, pred_id_of_successor);
@@ -371,7 +371,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
-            let new_successor_info = endpoints::rrpc__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str).unwrap();
+            let new_successor_info = endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str).unwrap();
             if deep_cloned_self_node.node_id == deep_cloned_self_node.successor_info_list[0].node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
                 //抜けないと多重borrowでpanicしてしまうので
@@ -379,7 +379,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
                 return Ok(true);
             }            
 
-            endpoints::rrpc__check_predecessor(&node_info::partial_clone_from_ref_strong(&new_successor_info), &deep_cloned_self_node);
+            endpoints::rrpc_call__check_predecessor(&node_info::partial_clone_from_ref_strong(&new_successor_info), &deep_cloned_self_node);
 
             chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                              + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","

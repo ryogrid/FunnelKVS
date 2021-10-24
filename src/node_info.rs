@@ -114,15 +114,14 @@ impl NodeInfo {
 }
 
 // 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
-// ため、そこの考慮を行い、また、finger_tableはコピーしない形での deepcopy
-// を返す.
+// ため、そこの考慮を行ったデータを返す
 // 上述の考慮により、コピーした NodeInfoオブジェクト の successor_infoと
-// predecessor_infoは deepcopy の対象ではあるが、それらの中の同名のフィールド
-// にはNoneが設定される. これにより、あるノードがコピーされた NodeInfo を保持
-// した場合、predecessor や successorは辿ることができるが、その先は辿ることが
-// 直接的にはできないことになる（predecessor や successorの ChordNodeオブジェクト
-// を引いてやれば可能）
-// 用途としては、あるノードの node_info を他のノードが取得し保持する際に利用される
+// predecessor_info および finger_table は deepcopy の対象ではあるが、
+// それらには空のVecが設定される. これにより、あるノードがコピーされた NodeInfo を保持
+// していても、自身のpredecessor や successor は自身が保持しているそれらのNodeInfo
+// オブジェクトの情報から辿ることができるが、その先は辿ることは直接的にはできないことになる
+//（predecessor や successor の NodeInfoオブジェクトをRPCで当該ノードから取得すれば可能）
+// 用途としては、あるノードの NodeInfo を他のノードが取得し保持する際に利用される
 // ことを想定して実装されている.
 impl Clone for NodeInfo {
     fn clone(&self) -> Self {
@@ -140,7 +139,7 @@ impl Clone for NodeInfo {
 
 // 実装の参照からコピーを作成する
 // cloneした場合と異なり、predecessor_info, successor_info_list, finger_table
-// 一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
+// も一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
 pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
     let mut ret_node_info = NodeInfo::new();
 

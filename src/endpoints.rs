@@ -146,16 +146,31 @@ pub fn rest_api_server_start(self_ninfo: ArMu<node_info::NodeInfo>, data_store: 
 // TODO: ひとまずRPC化して結合するまでは、grpc__xxx は NodeInfoの完全な実体（完全なClone）を受けて
 //       それらが内部で読んでいる関数には受けた実体を ArMu_new!(xxx) でラップして渡す、とすればいい気がする・・・
 
+pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+    //TODO: (rustr) ひとまずダミーを返しておく
+    return Ok(false);
+}
+
 pub fn rrpc__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     //TODO: (rustr) ひとまずダミーを渡しておく
     let dummy_self_node = ArMu_new!(node_info::NodeInfo::new());
     return stabilizer::check_predecessor(dummy_self_node, node_info::partial_clone_from_ref_strong(caller_node_ni));
 }
 
+pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
+    //TODO: (rustr) ひとまずダミー処理
+    return;
+}
+
 pub fn rrpc__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     //TODO: (rustr) ひとまずダミーを渡しておく
     let dummy_self_node = ArMu_new!(node_info::NodeInfo::new());    
     return stabilizer::set_routing_infos_force(dummy_self_node, predecessor_info, successor_info_0, ftable_enry_0);
+}
+
+pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> node_info::NodeInfo {
+    //TODO: (rustr) ひとまずダミー返しておく
+    return node_info::NodeInfo::new();
 }
 
 // id（int）で識別されるデータを担当するノードの名前解決を行う
@@ -171,8 +186,18 @@ pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> node_i
 // pub fn grpc__closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> node_info::NodeInfo {
 //     return router::closest_preceding_finger(Arc::clone(&self_node), id);
 // }
+pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32) -> node_info::NodeInfo {
+    //TODO: (rustr) ひとまずダミーを返す
+    return node_info::NodeInfo::new();
+}
+
 pub fn rrpc__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32) -> node_info::NodeInfo {
     return router::closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), id);
+}
+
+pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
+    // TODO: (rustr) ひとまずダミーを渡しておく
+    return Ok(node_info::NodeInfo::new());
 }
 
 pub fn rrpc__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {

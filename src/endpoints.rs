@@ -247,9 +247,9 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
         },
         Ok(text) => {text}
     };
-    println!("res_text: {:?}", res_text);
+    //println!("res_text: {:?}", res_text);
     let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&res_text).unwrap();
-    println!("closest_preceding_finger: {:?}", ret_ninfo);
+    //println!("closest_preceding_finger: {:?}", ret_ninfo);
     return Ok(ret_ninfo);
 }
 

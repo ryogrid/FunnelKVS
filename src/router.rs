@@ -257,6 +257,8 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
     // 順に見ていくようにする
 
+    chord_util::dprint(&"closest_preceding_finger_start".to_string());
+
     let self_node_ref = self_node.lock().unwrap();
     let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
     drop(self_node_ref);

@@ -36,11 +36,11 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
                         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","
                         + chord_util::gen_debug_str_of_data(id).as_str()));
 
-    println!("n_dash after find_predecessor: {:?}", n_dash);
+    //println!("n_dash after find_predecessor: {:?}", n_dash);
     // ここでn_dashのsuccessor_info_listを参照してしまっているがn_dashはそこの情報も埋まっているので一応問題無い
     let asked_n_dash_info = endpoints::rrpc_call__get_node_info(&n_dash.address_str).unwrap();
 
-    println!("asked_n_dash_info at find_predecessor: {:?}", asked_n_dash_info);
+    //println!("asked_n_dash_info at find_predecessor: {:?}", asked_n_dash_info);
     
     match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str) {
         Err(err_code) => {

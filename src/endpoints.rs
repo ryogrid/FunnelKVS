@@ -214,9 +214,9 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> R
         serde_json::to_string(&id).unwrap());
     
     let req_rslt_ref = &req_rslt.unwrap();
-    println!("req_rslt_ref at find_successor: {:?}", req_rslt_ref);
+    //println!("req_rslt_ref at find_successor: {:?}", req_rslt_ref);
     let ret_ninfo = serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(req_rslt_ref).unwrap();
-    println!("find_successor: {:?}", ret_ninfo);
+    //println!("find_successor: {:?}", ret_ninfo);
     return ret_ninfo;
 }
 
@@ -252,10 +252,10 @@ pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>
 
 pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
     //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
-    println!("get_node_info: {:?}", *address);
+    //println!("get_node_info: {:?}", *address);
     let req_rslt = http_get_request(&("http://".to_string() + address.as_str() + "/get_node_info"));
     let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&req_rslt.unwrap()).unwrap();
-    println!("get_node_info: {:?}", ret_ninfo);
+    //println!("get_node_info: {:?}", ret_ninfo);
     return Ok(ret_ninfo);
 }
 

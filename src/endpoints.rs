@@ -169,28 +169,6 @@ pub fn deserialize_test(self_node: State<ArMu<node_info::NodeInfo>>, data_store:
     format!("Accepted post request! {:?}", node_info.0)
 }
 
-pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, bind_addr: String, bind_port_num: i32){
-    let config = Config::build(Environment::Production)
-    .address(bind_addr)
-    .port(bind_port_num as u16)
-    .finalize()
-    .unwrap();
-
-    let app = rocket::custom(config);
-    
-    app.manage(self_node)
-       .manage(data_store)
-       .mount("/", routes![index, get_param_test, deserialize_test, result_type])
-       .launch();
-/*    
-    rocket::ignite()
-        .manage(self_ninfo)
-        .manage(data_store)
-        .mount("/", routes![index, get_param_test, deserialize_test])
-        .launch();
-*/
-}
-
 // TODO: (rustr) 分散KVS化する際は、putのレプリカ配るだけ版みたいなものを実装する必要あり
 //               実際に処理を行う側は正規のputかレプリカの配布かを判別できるフラグを追加する形で
 //               1つのメソッドにまとめてしまって良いかと思う
@@ -207,10 +185,9 @@ pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node
     return Ok(true);
 }
 
-pub fn rrpc__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
-    //TODO: (rustr) ひとまずダミーを渡しておく
-    let dummy_self_node = ArMu_new!(node_info::NodeInfo::new());
-    return stabilizer::check_predecessor(dummy_self_node, node_info::partial_clone_from_ref_strong(caller_node_ni));
+#[post("/check_predecessor", data = "<caller_node_ni>")]
+pub fn rrpc__check_predecessor(self_node: State<ArMu<node_info::NodeInfo>>, caller_node_ni: Json<node_info::NodeInfo>) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(stabilizer::check_predecessor(Arc::clone(&self_node), caller_node_ni.0));
 }
 
 pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
@@ -224,10 +201,10 @@ pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, prede
     return Ok(true);
 }
 
-pub fn rrpc__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
-    //TODO: (rustr) ひとまずダミーを渡しておく
-    let dummy_self_node = ArMu_new!(node_info::NodeInfo::new());    
-    return stabilizer::set_routing_infos_force(dummy_self_node, predecessor_info, successor_info_0, ftable_enry_0);
+#[post("/set_routing_infos_force", data = "<rpc_args>")]
+pub fn rrpc__set_routing_infos_force(self_node: State<ArMu<node_info::NodeInfo>>, rpc_args: Json<SetRoutingInfosForce>){
+    let args = rpc_args.0;
+    return stabilizer::set_routing_infos_force(Arc::clone(&self_node), args.predecessor_info, args.successor_info_0, args.ftable_enry_0);
 }
 
 pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
@@ -245,8 +222,9 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> R
 //            finger_tableに値が埋められた NodeInfoへの参照を渡すこと
 // TODO: AppropriateExp, DownedExp, InternalExp at find_successor
 //pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    return router::find_successor(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), id);
+#[post("/find_successor", data = "<id>")]
+pub fn rrpc__find_successor(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
+    return Json(router::find_successor(Arc::clone(&self_node), id.0));
 }
 
 // Attention: finger_tableに値が埋められた NodeInfoへの参照を渡すこと
@@ -263,8 +241,9 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
     return Ok(ret_ninfo);
 }
 
-pub fn rrpc__closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> node_info::NodeInfo {
-    return router::closest_preceding_finger(Arc::clone(&self_node), id);
+#[post("/closest_preceding_finger", data = "<id>")]
+pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<node_info::NodeInfo> {
+    return Json(router::closest_preceding_finger(Arc::clone(&self_node), id.0));
 }
 
 pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
@@ -274,23 +253,52 @@ pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo
     return Ok(ret_ninfo);
 }
 
-pub fn rrpc__get_node_info(self_node: ArMu<node_info::NodeInfo>) -> node_info::NodeInfo {
-    // TODO: (rustr) ひとまずダミーを渡しておく
-    return chord_util::get_node_info(Arc::clone(&self_node));
+#[get("/get_node_info")]
+pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>) -> Json<node_info::NodeInfo> {
+    return Json(chord_util::get_node_info(Arc::clone(&self_node)));
 }
 
 // ブラウザからアドレス解決を試すためのエンドポイント
 // 与えられた0から100の整数の100分の1をID空間のサイズ（最大値）にかけた
 // 値をIDとして、find_successorした結果を返す
 // 問い合わせはまず自身に対してかける
-pub fn rrpc__resolve_id_val(id : u32) -> Json<node_info::NodeInfo> {
-    // TODO: (rustr) ひとまずダミーを渡しておく
-    Json(router::find_successor(ArMu_new!(node_info::NodeInfo::new()), id).unwrap())
+#[get("/resolve_id_val?<percentage>")]
+pub fn rrpc__resolve_id_val(percentage : String) -> Json<node_info::NodeInfo> {
+    let percentage_num: f32 = percentage.parse().unwrap();
+    let id = ((percentage_num / 100.0) as f64) * (gval::ID_MAX as f64);
+    Json(router::find_successor(ArMu_new!(node_info::NodeInfo::new()), id as u32).unwrap())
 }
+
+pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, bind_addr: String, bind_port_num: i32){
+    let config = Config::build(Environment::Production)
+    .address(bind_addr)
+    .port(bind_port_num as u16)
+    .finalize()
+    .unwrap();
+
+    let app = rocket::custom(config);
+    
+    app.manage(self_node)
+       .manage(data_store)
+       .mount(
+           "/", 
+            routes![
+                index,
+                get_param_test,
+                deserialize_test,
+                result_type,
+                rrpc__check_predecessor,
+                rrpc__set_routing_infos_force,
+                rrpc__find_successor
+            ]
+        )
+       .launch();
+}
+
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]
-struct SetRoutingInfosForce{
+pub struct SetRoutingInfosForce{
     predecessor_info: node_info::NodeInfo,
     successor_info_0: node_info::NodeInfo,
     ftable_enry_0: node_info::NodeInfo

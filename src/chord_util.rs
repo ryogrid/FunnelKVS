@@ -143,13 +143,13 @@ pub fn calc_distance_between_nodes_left_mawari(base_id : u32, target_id : u32) -
         return gval::ID_SPACE_RANGE;
     }
 
-    // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
-    // 同じ数だけずらす
-    let mut slided_base_id = base_id as i32 - target_id as i32;
+    // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらしたと考えて、
+    // base_idを同じ数だけずらす
+    let mut slided_base_id = base_id as i64 - target_id as i64;
     if slided_base_id < 0 {
         // マイナスの値をとった場合は値0を通り越しているので
         // それにあった値に置き換える
-        slided_base_id = (gval::ID_MAX as i32) + (slided_base_id as i32);
+        slided_base_id = (gval::ID_MAX as i64) + (slided_base_id as i64);
     }
 
     // 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
@@ -193,13 +193,13 @@ pub fn calc_distance_between_nodes_right_mawari(base_id : u32, target_id : u32) 
         return gval::ID_SPACE_RANGE;
     }
 
-    // 0をまたいだ場合に考えやすくするためにtarget_idを0にずらし、base_idを
+    // 0をまたいだ場合に考えやすくするためにbase_idを0にずらしたと考えて、target_idを
     // 同じ数だけずらす
-    let mut slided_target_id = (target_id as i32) - (base_id as i32);
+    let mut slided_target_id = (target_id as i64) - (base_id as i64);
     if slided_target_id < 0 {
         // マイナスの値をとった場合は値0を通り越しているので
         // それにあった値に置き換える
-        slided_target_id = (gval::ID_MAX as i32) + (slided_target_id as i32);
+        slided_target_id = (gval::ID_MAX as i64) + (slided_target_id as i64);
     }
 
     // 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差

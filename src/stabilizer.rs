@@ -66,22 +66,29 @@ pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
 pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyukai_node_address: &String, born_id: i32){
     let mut new_node_ref = new_node.lock().unwrap();
-    let deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
-    let mut is_second_node:bool = false;
-
+    
     // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
     new_node_ref.born_id = born_id;
     new_node_ref.address_str = (*self_node_address).clone();
     new_node_ref.node_id = chord_util::hash_str_to_int(&new_node_ref.address_str);
-    
+
+    let mut deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
+    let mut is_second_node:bool = false;
+
+    //println!("address_str at join: {:?}", new_node_ref.address_str);
+
     if born_id == 1 { 
         // first_node の場合
 
         // successorとpredecessorは自身として終了する
         new_node_ref.successor_info_list.push(deep_cloned_new_node.clone());
+        new_node_ref.finger_table[0] = Some(deep_cloned_new_node.clone());
+        drop(deep_cloned_new_node);
+        deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
         drop(new_node_ref);
         node_info::set_pred_info(Arc::clone(&new_node), deep_cloned_new_node.clone());
 
+        println!("first_node at join: {:?}", new_node.lock().unwrap());
         return;
     }
 
@@ -483,6 +490,8 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
     // FingerTableの各要素はインデックスを idx とすると 2^IDX 先のIDを担当する、もしくは
     // 担当するノードに最も近いノードが格納される
     let update_id = chord_util::overflow_check_and_conv((self_node_ref.node_id as u64) + (2i32.pow(idx as u32) as u64));
+
+    println!("update_id: {:?}", update_id);
 
     drop(self_node_ref);
     let find_rslt = endpoints::rrpc_call__find_successor(&deep_cloned_self_node, update_id);

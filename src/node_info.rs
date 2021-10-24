@@ -166,6 +166,7 @@ pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
         ret_node_info.successor_info_list.push((*each_ninfo).clone());
     }
 
+    //println!("clone_strong: {:?}", ret_node_info);
     return ret_node_info;    
 }
 

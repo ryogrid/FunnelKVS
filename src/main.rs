@@ -523,6 +523,7 @@ fn main() {
             born_id
         );
 
+        std::thread::sleep(std::time::Duration::from_millis(500 as u64));
 
         let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
             stabilizer::stabilize_successor(Arc::clone(&node_info_arc_succ_th));

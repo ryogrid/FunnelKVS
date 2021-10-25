@@ -294,8 +294,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     // 自身が保持している successor_infoのミュータブルなフィールドは最新の情報でない
     // 場合があるため、successorのChordNodeオブジェクトを引いて、そこから最新のnode_info
     // の参照を得る
-    let mut is_successor_has_no_pred = false;
-    //let successor;
     
     let ret = endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
     //{
@@ -319,24 +317,23 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 */
 
     if successor_info.predecessor_info.len() == 0 {
-        is_successor_has_no_pred = true;
-
-        if deep_cloned_self_node.node_id == successor_info.node_id {
-            //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
-            chord_util::dprint(&("WARN!!!".to_string()));
-            return Ok(true);
-        }
-    }
-    //}
-
-    if is_successor_has_no_pred {
+        //is_successor_has_no_pred = true;
         chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
         endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node);
 
         return Ok(true);
+        
+/*
+        if deep_cloned_self_node.node_id == successor_info.node_id {
+            //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
+            chord_util::dprint(&("WARN!!!".to_string()));
+            return Ok(true);
+        }
+*/
     }
+    //}
 
     chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                     + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
@@ -350,6 +347,8 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     if pred_id_of_successor == deep_cloned_self_node.node_id {
         // パターン1
         // 特に訂正は不要なので処理を終了する
+        chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+        + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
         return Ok(true);
     }else{
         // 以下、パターン2およびパターン3に対応する処理
@@ -359,18 +358,26 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         // 事前チェックによって避けられるかもしれないが、常に実行する
         //let successor_obj = endpoints::rrpc__get_node_info(&successor_info.address_str).unwrap();
 
+/*        
         if deep_cloned_self_node.address_str == successor_info.address_str {
             //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
             //抜けないと多重borrowでpanicしてしまうので
             chord_util::dprint(&("WARN!!!".to_string()));
             return Ok(true);
         }
+*/
+        chord_util::dprint(&("stabilize_successor_5,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+        + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
 
         endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node);
         //check_predecessor(Arc::clone(&successor_obj), (*self_node_ni_refmut).clone());
 
         let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, pred_id_of_successor);
         let distance_me = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, deep_cloned_self_node.node_id);
+        chord_util::dprint(&("stabilize_successor distance_unknown=".to_string() 
+            + distance_unknown.to_string().as_str() 
+            + " distance_me=" + distance_me.to_string().as_str())
+        );
         if distance_unknown < distance_me {
             // successorの認識しているpredecessorが自身ではなく、かつ、そのpredecessorが
             // successorから自身に対して前方向にたどった場合の経路中に存在する場合
@@ -384,16 +391,17 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
             let new_successor_info = endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str).unwrap();
+/*
             if deep_cloned_self_node.node_id == deep_cloned_self_node.successor_info_list[0].node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
                 //抜けないと多重borrowでpanicしてしまうので
                 chord_util::dprint(&("WARN!!!".to_string()));
                 return Ok(true);
-            }            
-
+            }
+*/
             endpoints::rrpc_call__check_predecessor(&new_successor_info, &deep_cloned_self_node);
 
-            chord_util::dprint(&("stabilize_successor_4,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+            chord_util::dprint(&("stabilize_successor_6,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                              + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","
                              + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str()));
 
@@ -600,7 +608,7 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
     drop(self_node_ref);
 
     chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
-        + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str()
+        + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
     if deep_cloned_self_node.predecessor_info.len() == 0 {
@@ -627,6 +635,10 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
     let distance_check = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id, caller_node_ni.node_id);
     let distance_cur = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id,
                                                                         self_node_ref.predecessor_info[0].node_id);
+    chord_util::dprint(&("check_predecessor distance_check=".to_string() 
+        + distance_check.to_string().as_str() 
+        + " distance_cur=" + distance_cur.to_string().as_str())
+    );
     // 確認を求められたノードの方が現在の predecessor より predecessorらしければ
     // 経路表の情報を更新する
     if distance_check < distance_cur {

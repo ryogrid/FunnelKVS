@@ -78,7 +78,7 @@ func test_process_exec() {
 	//fmt.Printf("%s\n", out)
 }
 
-func http_get_request(addr_and_port string, path_str string) {
+func http_get_request(addr_and_port string, path_str string) map[string]interface{} {
 	url := "http://" + addr_and_port + path_str
 	// TODO: クエリストリングでパラメータを渡す際にURIエンコードが行われるか確認して
 	//       されないようであればされるようにする（方法を確認しておく）必要あり
@@ -96,7 +96,8 @@ func http_get_request(addr_and_port string, path_str string) {
 		fmt.Println(err)
 	}
 
-	fmt.Println(decoded_data)
+	return decoded_data.(map[string]interface{})
+	//fmt.Println(decoded_data)
 	/*
 		// 表示
 		for _, data := range decode_data.([]interface{}) {
@@ -108,8 +109,35 @@ func http_get_request(addr_and_port string, path_str string) {
 	//	fmt.Println(string(byteArray))
 }
 
+func extract_addr_and_born_id(input_json map[string]interface{}) (string, float64, string) {
+	ret_addr := input_json["address_str"].(string)
+	ret_born_id := input_json["born_id"].(float64)
+	succ_list := input_json["successor_info_list"].([]interface{})
+	succ_entry_0 := succ_list[0].(map[string]interface{})
+	ret_succ_addr := succ_entry_0["address_str"].(string)
+	return ret_addr, ret_born_id, ret_succ_addr
+}
+
 func check_chain_with_successor_info() {
-	http_get_request("127.0.0.1:8002", "/get_node_info")
+	const endpoint_path = "/get_node_info"
+	start_addr := "127.0.0.1:8000"
+	//start_addr := "127.0.0.1:8002"
+
+	succ_addr := start_addr
+	cur_addr := ""
+	born_id := -1.0
+	counter := 0
+	for true {
+		resp_json := http_get_request(succ_addr, endpoint_path)
+		cur_addr, born_id, succ_addr = extract_addr_and_born_id(resp_json)
+		counter++
+		fmt.Printf("addr=%s born_id=%f counter=%d\n", cur_addr, born_id, counter)
+		if succ_addr == start_addr {
+			break
+		}
+	}
+
+	//http_get_request("127.0.0.1:8002", "/get_node_info")
 }
 
 func main() {

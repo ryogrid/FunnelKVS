@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"strconv"
+	"time"
 )
 
 func test_get_request_which_has_query_string() {
@@ -109,35 +111,60 @@ func http_get_request(addr_and_port string, path_str string) map[string]interfac
 	//	fmt.Println(string(byteArray))
 }
 
-func extract_addr_and_born_id(input_json map[string]interface{}) (string, float64, string) {
+func extract_addr_and_born_id(input_json map[string]interface{}) (string, float64, float64, string) {
 	ret_addr := input_json["address_str"].(string)
 	ret_born_id := input_json["born_id"].(float64)
+	ret_node_id := input_json["node_id"].(float64)
 	succ_list := input_json["successor_info_list"].([]interface{})
 	succ_entry_0 := succ_list[0].(map[string]interface{})
 	ret_succ_addr := succ_entry_0["address_str"].(string)
-	return ret_addr, ret_born_id, ret_succ_addr
+	return ret_addr, ret_born_id, ret_node_id, ret_succ_addr
 }
 
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
-	start_addr := "127.0.0.1:8000"
-	//start_addr := "127.0.0.1:8002"
+	start_addr := "127.0.0.1:10000"
+	//start_addr := "127.0.0.1:8002"=
 
 	succ_addr := start_addr
 	cur_addr := ""
 	born_id := -1.0
+	node_id := -1.0
 	counter := 0
 	for true {
 		resp_json := http_get_request(succ_addr, endpoint_path)
-		cur_addr, born_id, succ_addr = extract_addr_and_born_id(resp_json)
+		cur_addr, born_id, node_id, succ_addr = extract_addr_and_born_id(resp_json)
 		counter++
-		fmt.Printf("addr=%s born_id=%f counter=%d\n", cur_addr, born_id, counter)
+		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter)
 		if succ_addr == start_addr {
 			break
 		}
 	}
 
 	//http_get_request("127.0.0.1:8002", "/get_node_info")
+}
+
+func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {
+	err := exec.Command(
+		"../target/debug/rust_dkvs",
+		strconv.Itoa(born_id),
+		bind_addr,
+		strconv.Itoa(bind_port),
+		tyukai_addr,
+		strconv.Itoa(tyukai_port),
+		log_dir).Start()
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func setup_nodes(num int) {
+	cur_port := 10000
+	for ii := 0; ii < num; ii++ {
+		start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")
+		fmt.Printf("%d nodes launched.\n", ii+1)
+		time.Sleep(time.Second * 1)
+	}
 }
 
 func main() {
@@ -147,6 +174,7 @@ func main() {
 	//test_post_request_deserialize()
 	//test_process_exec()
 	//test_get_request_Result_type_return()
+	setup_nodes(20)
 	check_chain_with_successor_info()
 	fmt.Println("finished!")
 }

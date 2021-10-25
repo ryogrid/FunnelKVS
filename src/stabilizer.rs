@@ -595,19 +595,25 @@ def stabilize_finger_table(self, idx) -> PResult[bool]:
 // 本メソッドはstabilize処理の中で用いられる
 // TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
 pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
-    let self_node_ref = self_node.lock().unwrap();
+    let mut self_node_ref = self_node.lock().unwrap();
+    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    drop(self_node_ref);
 
-    if self_node_ref.predecessor_info.len() == 0 {
+    chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+        + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str()
+        + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
+
+    if deep_cloned_self_node.predecessor_info.len() == 0 {
         // predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
         node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
-        chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+        chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
             + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
+            + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
         return Ok(true);
     }
 
-    chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str()));
+    chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
     // TODO: (rustr) まだノードダウンの考慮は不要
     // // この時点で認識している predecessor がノードダウンしていないかチェックする
@@ -616,13 +622,17 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
     //     Ok(is_alive) => is_alive
     // };
     // if is_pred_alived {
+    
+    self_node_ref = self_node.lock().unwrap();
     let distance_check = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id, caller_node_ni.node_id);
     let distance_cur = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id,
                                                                         self_node_ref.predecessor_info[0].node_id);
     // 確認を求められたノードの方が現在の predecessor より predecessorらしければ
     // 経路表の情報を更新する
     if distance_check < distance_cur {
+        drop(self_node_ref);
         node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
+        self_node_ref = self_node.lock().unwrap();
         chord_util::dprint(&("check_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
                 + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + ","
                 + chord_util::gen_debug_str_of_node(&self_node_ref.predecessor_info[0]).as_str()));

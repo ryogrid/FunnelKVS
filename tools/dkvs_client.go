@@ -174,7 +174,7 @@ func main() {
 	//test_post_request_deserialize()
 	//test_process_exec()
 	//test_get_request_Result_type_return()
-	setup_nodes(100)
+	setup_nodes(40)
 	check_chain_with_successor_info()
 	fmt.Println("finished!")
 }

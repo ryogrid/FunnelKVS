@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -46,6 +47,7 @@ func test_post_request_deserialize() error {
 	defer resp.Body.Close()
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
+
 	fmt.Println(string(byteArray))
 
 	return err
@@ -62,6 +64,7 @@ func test_get_request_Result_type_return() {
 	defer resp.Body.Close()
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
+
 	fmt.Println(string(byteArray))
 }
 
@@ -75,12 +78,47 @@ func test_process_exec() {
 	//fmt.Printf("%s\n", out)
 }
 
+func http_get_request(addr_and_port string, path_str string) {
+	url := "http://" + addr_and_port + path_str
+	// TODO: クエリストリングでパラメータを渡す際にURIエンコードが行われるか確認して
+	//       されないようであればされるようにする（方法を確認しておく）必要あり
+	req, _ := http.NewRequest("GET", url, nil)
+
+	client := new(http.Client)
+	resp, _ := client.Do(req)
+	defer resp.Body.Close()
+
+	byteArray, _ := ioutil.ReadAll(resp.Body)
+
+	// JSONデコード
+	var decoded_data interface{}
+	if err := json.Unmarshal(byteArray, &decoded_data); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(decoded_data)
+	/*
+		// 表示
+		for _, data := range decode_data.([]interface{}) {
+			var d = data.(map[string]interface{})
+			fmt.Printf("%d : %s\n", int(d["id"].(float64)), d["name"])
+		}
+	*/
+
+	//	fmt.Println(string(byteArray))
+}
+
+func check_chain_with_successor_info() {
+	http_get_request("127.0.0.1:8002", "/get_node_info")
+}
+
 func main() {
 	// TODO: 必要になったら引数処理できるようにする https://qiita.com/nakaryooo/items/2d0befa2c1cf347800c3
 
 	//test_get_request_which_has_query_string()
 	//test_post_request_deserialize()
 	//test_process_exec()
-	test_get_request_Result_type_return()
+	//test_get_request_Result_type_return()
+	check_chain_with_successor_info()
 	fmt.Println("finished!")
 }

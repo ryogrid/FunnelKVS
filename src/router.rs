@@ -123,7 +123,13 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> node_in
     loop {
         // 1周目でも実質的に同じ値が入るようになっているので問題ない
         n_dash = n_dash_found;
-
+/*
+        // TODO: (rustr)ブラウザからのアドレス解決をすると、n_dashのsuccessor_info_listが空だとエラーになる
+        //              対処を入れてみる
+        let ndash_addr = n_dash.address_str.clone();
+        drop(n_dash);
+        n_dash = endpoints::rrpc_call__get_node_info(&ndash_addr).unwrap();
+*/
         //while文の書き換えの形でできたif文
         if chord_util::exist_between_two_nodes_right_mawari(n_dash.node_id, n_dash.successor_info_list[0].node_id, id) {
             println!("check loop break at find_predecessor {:?} {:?}", n_dash.node_id, n_dash.successor_info_list[0].node_id);

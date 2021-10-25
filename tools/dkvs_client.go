@@ -163,7 +163,7 @@ func setup_nodes(num int) {
 	for ii := 0; ii < num; ii++ {
 		start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")
 		fmt.Printf("%d nodes launched.\n", ii+1)
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Second * 2)
 	}
 }
 
@@ -174,7 +174,7 @@ func main() {
 	//test_post_request_deserialize()
 	//test_process_exec()
 	//test_get_request_Result_type_return()
-	setup_nodes(20)
+	setup_nodes(100)
 	check_chain_with_successor_info()
 	fmt.Println("finished!")
 }

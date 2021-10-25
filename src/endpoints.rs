@@ -51,6 +51,8 @@ class Endpoints:
 */
 use std::sync::{Arc, Mutex};
 use std::cell::{RefCell, Ref, RefMut};
+use std::time::Duration;
+
 use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rocket_contrib::json::Json;
 use rocket::State;
@@ -74,7 +76,11 @@ type ArMu<T> = Arc<Mutex<T>>;
 
 // urlは "http://から始まるものにすること"
 fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
-    let resp = match reqwest::blocking::get(url_str){
+    let client = reqwest::blocking::Client::builder()
+    .timeout(Duration::from_secs(10))
+    .build().unwrap();
+
+    let resp = match client.get(url_str).send(){
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
         Ok(response) => response
     };
@@ -90,7 +96,11 @@ fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
 // urlは "http://から始まるものにすること"
 // json_str は JSONの文字列表現をそのまま渡せばよい
 fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_util::GeneralError> {
-    let client = reqwest::blocking::Client::new();
+    //let client = reqwest::blocking::Client::new();
+    let client = reqwest::blocking::Client::builder()
+    .timeout(Duration::from_secs(10))
+    .build().unwrap();
+
     let resp = match client.post(url_str).body(json_str).send(){
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
         Ok(response) => response        
@@ -247,9 +257,9 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
         },
         Ok(text) => {text}
     };
-    //println!("res_text: {:?}", res_text);
+    println!("res_text: {:?}", res_text);
     let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&res_text).unwrap();
-    //println!("closest_preceding_finger: {:?}", ret_ninfo);
+    println!("closest_preceding_finger: {:?}", ret_ninfo);
     return Ok(ret_ninfo);
 }
 
@@ -277,10 +287,10 @@ pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>) -> Json<
 // 値をIDとして、find_successorした結果を返す
 // 問い合わせはまず自身に対してかける
 #[get("/resolve_id_val?<percentage>")]
-pub fn rrpc__resolve_id_val(percentage : String) -> Json<node_info::NodeInfo> {
+pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, percentage : String) -> Json<node_info::NodeInfo> {
     let percentage_num: f32 = percentage.parse().unwrap();
     let id = ((percentage_num / 100.0) as f64) * (gval::ID_MAX as f64);
-    Json(router::find_successor(ArMu_new!(node_info::NodeInfo::new()), id as u32).unwrap())
+    Json(router::find_successor(Arc::clone(&self_node), id as u32).unwrap())
 }
 
 pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, bind_addr: String, bind_port_num: i32){

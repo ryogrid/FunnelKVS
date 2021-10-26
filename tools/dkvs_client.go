@@ -124,7 +124,7 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
-	start_addr := "127.0.0.1:10000"
+	start_addr := "127.0.0.1:11000"
 	//start_addr := "127.0.0.1:8002"=
 
 	succ_addr := start_addr
@@ -147,7 +147,7 @@ func check_chain_with_successor_info() {
 
 func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {
 	err := exec.Command(
-		"./rust_dkvs.bat", //"../target/debug/rust_dkvs",
+		"rust_dkvs.bat", //"../target/debug/rust_dkvs",
 		strconv.Itoa(born_id),
 		bind_addr,
 		strconv.Itoa(bind_port),
@@ -160,11 +160,12 @@ func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr stri
 }
 
 func setup_nodes(num int) {
-	cur_port := 10000
+	start_port := 11000
+	cur_port := start_port
 	for ii := 0; ii < num; ii++ {
-		start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")
-		fmt.Printf("%d nodes launched.\n", ii+1)
-		time.Sleep(time.Second * 2)
+		start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", start_port, "./")
+		//start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")		fmt.Printf("%d nodes launched.\n", ii+1)
+		time.Sleep(time.Second * 3)
 	}
 }
 

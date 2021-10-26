@@ -77,7 +77,7 @@ type ArMu<T> = Arc<Mutex<T>>;
 // urlは "http://から始まるものにすること"
 fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
     let client = reqwest::blocking::Client::builder()
-    .timeout(Duration::from_secs(10))
+    .timeout(Duration::from_secs(100))
     .build().unwrap();
 
     let resp = match client.get(url_str).send(){
@@ -98,7 +98,7 @@ fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
 fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_util::GeneralError> {
     //let client = reqwest::blocking::Client::new();
     let client = reqwest::blocking::Client::builder()
-    .timeout(Duration::from_secs(10))
+    .timeout(Duration::from_secs(100))
     .build().unwrap();
 
     let resp = match client.post(url_str).body(json_str).send(){
@@ -297,6 +297,7 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
     let config = Config::build(Environment::Production)
     .address(bind_addr)
     .port(bind_port_num as u16)
+    .workers(30)
     .finalize()
     .unwrap();
 

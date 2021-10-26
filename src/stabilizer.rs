@@ -148,7 +148,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // TODO: check_predecessor call at join
 
     drop(new_node_ref);
-    endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node):
+    endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node);
 }
 
 // TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと

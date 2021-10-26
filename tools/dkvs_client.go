@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -146,7 +147,7 @@ func check_chain_with_successor_info() {
 
 func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {
 	err := exec.Command(
-		"../target/debug/rust_dkvs",
+		"./rust_dkvs.bat", //"../target/debug/rust_dkvs",
 		strconv.Itoa(born_id),
 		bind_addr,
 		strconv.Itoa(bind_port),
@@ -170,11 +171,27 @@ func setup_nodes(num int) {
 func main() {
 	// TODO: 必要になったら引数処理できるようにする https://qiita.com/nakaryooo/items/2d0befa2c1cf347800c3
 
+	op := flag.String("op", "setup-nodes", "setup chord network")
+	arg1 := flag.String("arg1", "30", "argument if operation needs it")
+	flag.Parse()
+
+	switch *op {
+	case "setup-nodes":
+		node_num, _ := strconv.Atoi(*arg1)
+		setup_nodes(node_num)
+		break
+	case "check-chain":
+		check_chain_with_successor_info()
+		break
+	default:
+		fmt.Println("dkvs_client -op=<operation-name> -arg1=<argument if needed>")
+	}
+
 	//test_get_request_which_has_query_string()
 	//test_post_request_deserialize()
 	//test_process_exec()
 	//test_get_request_Result_type_return()
-	setup_nodes(40)
-	check_chain_with_successor_info()
+	//setup_nodes(40)
+	//check_chain_with_successor_info()
 	fmt.Println("finished!")
 }

@@ -127,3 +127,20 @@ pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
         self_node_ref.predecessor_info[0] = node_info;
     }
 }
+
+// RPC呼出しが接続失敗やタイムアウトで終了し、かつ、対象がsuccessorで
+// あった場合にリカバリ処理を行う
+pub fn recovery_succ(self_node: &mut NodeInfo, target_node: &NodeInfo, err: &chord_util::GeneralError){
+    if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR && target_node.node_id == self_node.node_id {
+        // finger_tableを適当な位置から辿ってsuccessorに設定する
+        for ninfo_ref_option in &self_node.finger_table[10..3]{
+            match ninfo_ref_option {
+                None => { continue; }
+                Some(ninfo) => {
+                    self_node.successor_info_list[0] = (*ninfo).clone();
+                    break;
+                }
+            }
+        }
+    }
+}

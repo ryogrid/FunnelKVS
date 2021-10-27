@@ -148,7 +148,14 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // TODO: check_predecessor call at join
 
     drop(new_node_ref);
-    endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node);
+    match endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node){
+        Err(err) => {
+            // IDを変えてリトライ
+            // (これで異なるsuccessorが得られて、そのノードは生きていることを期待する)
+            join(new_node, self_node_address, tyukai_node_address, born_id);
+        }
+        Ok(some) => {}
+    };
 }
 
 // TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
@@ -203,9 +210,17 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
-        endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node);
+        match endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node){
+            Err(err) => {
+                self_node_ref = self_node.lock().unwrap();
+                node_info::recovery_succ(&mut self_node_ref, &successor_info, &err);
+                return Ok(true);
+            }
+            Ok(some) => {}
+        };
 
         return Ok(true);
+    }
         
 /*
         if deep_cloned_self_node.node_id == successor_info.node_id {
@@ -214,7 +229,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             return Ok(true);
         }
 */
-    }
     //}
 
     chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
@@ -251,7 +265,14 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         chord_util::dprint(&("stabilize_successor_5,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
 
-        endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node);
+        match endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node){
+            Err(err) => {
+                self_node_ref = self_node.lock().unwrap();
+                node_info::recovery_succ(&mut self_node_ref, &successor_info, &err);
+                return Ok(true);
+            }
+            Ok(some) => {}
+        };
         //check_predecessor(Arc::clone(&successor_obj), (*self_node_ni_refmut).clone());
 
         let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, pred_id_of_successor);
@@ -281,7 +302,14 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
                 return Ok(true);
             }
 */
-            endpoints::rrpc_call__check_predecessor(&new_successor_info, &deep_cloned_self_node);
+            match endpoints::rrpc_call__check_predecessor(&new_successor_info, &deep_cloned_self_node){
+                Err(err) => {
+                    self_node_ref = self_node.lock().unwrap();
+                    node_info::recovery_succ(&mut self_node_ref, &successor_info, &err);
+                    return Ok(true);
+                }
+                Ok(some) => {}
+            };
 
             chord_util::dprint(&("stabilize_successor_6,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                              + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","
@@ -299,7 +327,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 // FingerTableのエントリはこの呼び出しによって埋まっていく
 // TODO: InternalExp at stabilize_finger_table
 // TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
-pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {    
+pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
     //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
@@ -317,7 +345,7 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
     
     self_node_ref = self_node.lock().unwrap();
     match find_rslt {
-        Err(err_code) => {
+        Err(err) => {
             // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_Code || ret.err_code == ErrorCode.InternalControlFlowException_CODE
             //  || ret.err_code == ErrorCode.NodeIsDownedException_CODE
 
@@ -327,6 +355,8 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
             self_node_ref.finger_table[(idx - 1) as usize] = None;
             chord_util::dprint(&("stabilize_finger_table_2_5,NODE_IS_DOWNED,".to_string()
                 + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
+
+            node_info::recovery_succ(&mut self_node_ref, &deep_cloned_self_node, &err);
 
             return Ok(true);
         },

@@ -58,6 +58,14 @@ impl GeneralError {
     pub fn new(message: String, err_code: u32) -> GeneralError {
         GeneralError {message: message, line: 0, column: 0, err_code: err_code}
     }
+
+    
+}
+
+impl std::fmt::Display for GeneralError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        return write!(f, "({})", self.message);
+    }
 }
 
 // 0からlimitより1少ない数までの値の乱数を返す

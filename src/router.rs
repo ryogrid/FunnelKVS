@@ -50,7 +50,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
         Ok(got_node) => {                
-            got_node.clone()
+            got_node
         }
     };
 

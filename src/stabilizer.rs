@@ -186,8 +186,17 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     
     let ret = endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
     //{
-    // TODO: (rustr) 故障ノードが発生しない前提であれば get_node_by_addressがエラーとなることはない・・・はず
-    let successor_info = ret.unwrap();
+
+    let successor_info = match ret{
+        Err(err) => {
+            self_node_ref = self_node.lock().unwrap();
+            node_info::recovery_succ(&mut self_node_ref, &deep_cloned_self_node.successor_info_list[0], &err);
+            return Err(chord_util::GeneralError::new(err.message, err.err_code));
+        }
+        Ok(got_node) => {                
+            got_node
+        }
+    };
 
 // TODO: (rustr)実システム化する際にコメントアウトした。check_predecessor呼び出し時に呼び出し元は
 //              自身のNodeInfoのロックを解放するようにするので、問題ないはず
@@ -293,7 +302,16 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
             // 新たなsuccessorに対して自身がpredecessorでないか確認を要請し必要であれ
             // ば情報を更新してもらう
-            let new_successor_info = endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str).unwrap();
+            let new_successor_info = match endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str){
+                Err(err) => {
+                    self_node_ref = self_node.lock().unwrap();
+                    node_info::recovery_succ(&mut self_node_ref, &deep_cloned_self_node.successor_info_list[0], &err);
+                    return Err(chord_util::GeneralError::new(err.message, err.err_code));
+                }
+                Ok(got_node) => {                
+                    got_node
+                }
+            };
 /*
             if deep_cloned_self_node.node_id == deep_cloned_self_node.successor_info_list[0].node_id {
                 //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける

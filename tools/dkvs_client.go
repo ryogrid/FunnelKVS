@@ -125,7 +125,7 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
 	start_addr := "127.0.0.1:11000"
-	//start_addr := "127.0.0.1:8002"=
+	//start_addr := "127.0.0.1:8000"
 
 	succ_addr := start_addr
 	cur_addr := ""

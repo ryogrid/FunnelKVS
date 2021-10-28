@@ -43,7 +43,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
     let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash.address_str) {
         Err(err) => {
             self_node_ref = self_node.lock().unwrap();
-            node_info::recovery_succ(&mut self_node_ref, &n_dash, &err);
+            node_info::handle_downed_node_info(&mut self_node_ref, &n_dash, &err);
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
         Ok(got_node) => {                
@@ -61,7 +61,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
             // + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
             // + chord_util::gen_debug_str_of_data(id).as_str()));
             self_node_ref = self_node.lock().unwrap();
-            node_info::recovery_succ(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
+            node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
         Ok(got_node) => {                
@@ -193,7 +193,7 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
             let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info.address_str){
                 Err(err) => {
                     self_node_ref = self_node.lock().unwrap();
-                    node_info::recovery_succ(&mut self_node_ref, &conved_node_info, &err);
+                    node_info::handle_downed_node_info(&mut self_node_ref, &conved_node_info, &err);
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
                 Ok(got_node) => {                

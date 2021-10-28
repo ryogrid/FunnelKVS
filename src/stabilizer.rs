@@ -187,7 +187,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     let successor_info = match ret{
         Err(err) => {
             self_node_ref = self_node.lock().unwrap();
-            node_info::recovery_succ(&mut self_node_ref, &deep_cloned_self_node.successor_info_list[0], &err);
+            node_info::handle_downed_node_info(&mut self_node_ref, &deep_cloned_self_node.successor_info_list[0], &err);
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
         Ok(got_node) => {                
@@ -219,7 +219,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         match endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
-                node_info::recovery_succ(&mut self_node_ref, &successor_info, &err);
+                node_info::handle_downed_node_info(&mut self_node_ref, &successor_info, &err);
                 return Ok(true);
             }
             Ok(some) => {}
@@ -274,7 +274,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         match endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
-                node_info::recovery_succ(&mut self_node_ref, &successor_info, &err);
+                node_info::handle_downed_node_info(&mut self_node_ref, &successor_info, &err);
                 return Ok(true);
             }
             Ok(some) => {}
@@ -302,7 +302,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             let new_successor_info = match endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str){
                 Err(err) => {
                     self_node_ref = self_node.lock().unwrap();
-                    node_info::recovery_succ(&mut self_node_ref, &deep_cloned_self_node.successor_info_list[0], &err);
+                    node_info::handle_downed_node_info(&mut self_node_ref, &deep_cloned_self_node.successor_info_list[0], &err);
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
                 Ok(got_node) => {                
@@ -320,7 +320,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             match endpoints::rrpc_call__check_predecessor(&new_successor_info, &deep_cloned_self_node){
                 Err(err) => {
                     self_node_ref = self_node.lock().unwrap();
-                    node_info::recovery_succ(&mut self_node_ref, &successor_info, &err);
+                    node_info::handle_downed_node_info(&mut self_node_ref, &new_successor_info, &err);
                     return Ok(true);
                 }
                 Ok(some) => {}
@@ -371,7 +371,7 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
             chord_util::dprint(&("stabilize_finger_table_2_5,NODE_IS_DOWNED,".to_string()
                 + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
 
-            node_info::recovery_succ(&mut self_node_ref, &deep_cloned_self_node, &err);
+            node_info::handle_downed_node_info(&mut self_node_ref, &deep_cloned_self_node, &err);
 
             return Ok(true);
         },

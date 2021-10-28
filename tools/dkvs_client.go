@@ -136,7 +136,7 @@ func check_chain_with_successor_info() {
 		resp_json := http_get_request(succ_addr, endpoint_path)
 		cur_addr, born_id, node_id, succ_addr = extract_addr_and_born_id(resp_json)
 		counter++
-		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter)
+		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter, succ_addr)
 		if succ_addr == start_addr {
 			break
 		}

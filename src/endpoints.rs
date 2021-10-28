@@ -76,17 +76,26 @@ fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
     let client = match reqwest::blocking::Client::builder()
     .timeout(Duration::from_secs(100))
     .build(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => {
+            chord_util::dprint(&("ERROR at http_get_request(1)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(got_client) => got_client
     };
 
     let resp = match client.get(url_str).send(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => { 
+            chord_util::dprint(&("ERROR at http_get_request(2)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(response) => response
     };
 
     let ret = match resp.text(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => {
+            chord_util::dprint(&("ERROR at http_get_request(3)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(text) => text
     };
 
@@ -100,17 +109,26 @@ fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_ut
     let client = match reqwest::blocking::Client::builder()
     .timeout(Duration::from_secs(100))
     .build(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => { 
+            chord_util::dprint(&("ERROR at http_post_request(1)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(got_client) => got_client
     };
 
     let resp = match client.post(url_str).body(json_str).send(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => {
+            chord_util::dprint(&("ERROR at http_post_request(2)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(response) => response        
     };
 
     let ret = match resp.text(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => {
+            chord_util::dprint(&("ERROR at http_post_request(3)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(text) => text
     };
 
@@ -198,7 +216,10 @@ pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node
             Ok(text) => text
         });
     
-    return Ok(true);
+    match req_rslt {
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(resp) => { return Ok(true) }
+    };
 }
 
 #[post("/check_predecessor", data = "<caller_node_ni>")]
@@ -274,12 +295,11 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
     
     let res_text = match req_rslt {
         Err(err) => {
-            chord_util::dprint(&err.message);
-            panic!("error at rrpc_call__closest_preceding_finger");
-        },
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        }
         Ok(text) => {text}
     };
-    println!("res_text: {:?}", res_text);
+    //println!("res_text: {:?}", res_text);
     let ret_ninfo = match match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(&res_text){
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
         Ok(result_ninfo) => result_ninfo
@@ -287,7 +307,7 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
         Ok(ninfo) => ninfo
     };
-    println!("closest_preceding_finger: {:?}", ret_ninfo);
+    //println!("closest_preceding_finger: {:?}", ret_ninfo);
     return Ok(ret_ninfo);
 }
 

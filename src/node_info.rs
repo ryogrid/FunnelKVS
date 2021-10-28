@@ -128,18 +128,52 @@ pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
 
 // RPC呼出しが接続失敗やタイムアウトで終了し、かつ、対象がsuccessorで
 // あった場合にリカバリ処理を行う
-pub fn recovery_succ(self_node: &mut NodeInfo, target_node: &NodeInfo, err: &chord_util::GeneralError){
-    chord_util::dprint(&("recovery_succ called!".to_string()));
-    if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR && target_node.node_id == self_node.successor_info_list[0].node_id {
-        // finger_tableを適当な位置から辿ってsuccessorに設定する
-        for ninfo_ref_option in self_node.finger_table[3..10].iter().rev(){
-            match ninfo_ref_option {
+pub fn handle_downed_node_info(self_node: &mut NodeInfo, target_node: &NodeInfo, err: &chord_util::GeneralError){
+    chord_util::dprint(&("handle_downed_node_info called!".to_string()));
+
+    //successorについて
+    let old_successor_id = self_node.successor_info_list[0].node_id;
+    if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR 
+        && target_node.node_id == self_node.successor_info_list[0].node_id {
+
+        // finger_tableを先頭から辿ってsuccessorに設定可能なものがあれば設定する
+        for idx in 0..(gval::ID_SPACE_BITS as usize) {
+            match &self_node.finger_table[idx] {
+                    None => { continue; }
+                    Some(ninfo) => {
+                        if ninfo.node_id != self_node.node_id && ninfo.node_id != old_successor_id{
+                            chord_util::dprint(&("assign new successor!".to_string() + " from " + chord_util::gen_debug_str_of_node(&self_node.successor_info_list[0]).as_str() + " to " + chord_util::gen_debug_str_of_node(ninfo).as_str()));
+                            self_node.successor_info_list[0] = (*ninfo).clone();
+                            break;
+                        }
+                    }
+            };
+        }
+    }
+
+    // predecessorについて
+    if self_node.predecessor_info.len() != 0 {
+        if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR 
+            && target_node.node_id == self_node.predecessor_info[0].node_id {
+            // predecessorであった場合は predecessor のまま設定しておくと都合が悪いので
+            // お役御免とする
+            self_node.predecessor_info.clear();
+        }    
+    }
+
+    // finger tableの情報について
+    if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR {
+        // finger_tableを先頭から辿ってダウンが判明したノードがいたらNoneに設定する
+        for idx in 0..(gval::ID_SPACE_BITS as usize) {
+            match &self_node.finger_table[idx] {
                 None => { continue; }
                 Some(ninfo) => {
-                    self_node.successor_info_list[0] = (*ninfo).clone();
-                    break;
+                    if ninfo.node_id == target_node.node_id {
+                        self_node.finger_table[idx] = None;
+                    }
                 }
-            }
+            };
         }
     }
 }
+

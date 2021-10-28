@@ -1,57 +1,5 @@
-/*
-# coding:utf-8
-
-import copy
-
-from . import gval
-from .chord_util import ChordUtil
-import threading
-
-# メモ: オブジェクトをdictのキーとして使用可能としてある
-class NodeInfo:
-
-    def __init__(self):
-        self.node_id: int = -1
-        self.address_str: str = ""
-
-        # デバッグ用のID
-        # 何ノード目として生成されたかの値
-        # TODO: 実システムでは開発中（というか、スクリプトで順にノード起動していくような形）でないと
-        #       利用できないことは念頭おいて置く必要あり NodeInfo#born_id
-        self.born_id: int = -1
-
-        # 以下の2つはNodeInfoオブジェクトを保持.
-        # ある時点で取得したものが保持されており、変化する場合のあるフィールド
-        # の内容は最新の内容となっているとは限らないため注意が必要.
-        # そのような情報が必要な場合はChordNodeオブジェクトから参照し、
-        # 必要であれば、その際に下のフィールドにdeepcopyを設定しなおさ
-        # なければならない.
-
-        # 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
-        # ように制御する
-        self.successor_info_list: List[NodeInfo] = []
-        # join後はNoneになることのないように制御される
-        self.predecessor_info: Optional[NodeInfo] = None
-
-        # predecessor_info と successor_info_list のそれぞれに対応する
-        # ロック変数(re-entrantロック)
-        self.lock_of_pred_info : threading.RLock = threading.RLock()
-        self.lock_of_succ_infos : threading.RLock = threading.RLock()
-
-        # stored_data, master2data_idx、master_node_dict 全てのフィールドに対する
-        # ロック変数(re-entrantロック)
-        self.lock_of_datastore : threading.RLock = threading.RLock()
-
-        # NodeInfoオブジェクトを要素として持つリスト
-        # インデックスの小さい方から狭い範囲が格納される形で保持する
-        # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
-        # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
-        self.finger_table: List[Optional[NodeInfo]] = [None] * gval.ID_SPACE_BITS
-*/
-
 use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use serde::{Serialize, Deserialize};
 
 use crate::gval;
@@ -62,7 +10,6 @@ use crate::endpoints;
 use crate::data_store;
 use crate::router;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 #[derive(Serialize, Deserialize)]
@@ -178,3 +125,55 @@ pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
         self_node_ref.predecessor_info[0] = node_info;
     }
 }
+
+// RPC呼出しが接続失敗やタイムアウトで終了し、かつ、対象がsuccessorで
+// あった場合にリカバリ処理を行う
+pub fn handle_downed_node_info(self_node: &mut NodeInfo, target_node: &NodeInfo, err: &chord_util::GeneralError){
+    chord_util::dprint(&("handle_downed_node_info called!".to_string()));
+
+    //successorについて
+    let old_successor_id = self_node.successor_info_list[0].node_id;
+    if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR 
+        && target_node.node_id == self_node.successor_info_list[0].node_id {
+
+        // finger_tableを末尾から辿ってsuccessorに設定可能なものがあれば設定する
+        for idx in 0..(gval::ID_SPACE_BITS as usize) {
+            match &self_node.finger_table[idx] {
+                    None => { continue; }
+                    Some(ninfo) => {
+                        if ninfo.node_id != self_node.node_id && ninfo.node_id != old_successor_id{
+                            chord_util::dprint(&("assign new successor!".to_string() + " from " + chord_util::gen_debug_str_of_node(&self_node.successor_info_list[0]).as_str() + " to " + chord_util::gen_debug_str_of_node(ninfo).as_str()));
+                            self_node.successor_info_list[0] = (*ninfo).clone();
+                            break;
+                        }
+                    }
+            };
+        }
+    }
+
+    // predecessorについて
+    if self_node.predecessor_info.len() != 0 {
+        if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR 
+            && target_node.node_id == self_node.predecessor_info[0].node_id {
+            // predecessorであった場合は predecessor のまま設定しておくと都合が悪いので
+            // お役御免とする
+            self_node.predecessor_info.clear();
+        }    
+    }
+
+    // finger tableの情報について
+    if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR {
+        // finger_tableを先頭から辿ってダウンが判明したノードがいたらNoneに設定する
+        for idx in 0..(gval::ID_SPACE_BITS as usize) {
+            match &self_node.finger_table[idx] {
+                None => { continue; }
+                Some(ninfo) => {
+                    if ninfo.node_id == target_node.node_id {
+                        self_node.finger_table[idx] = None;
+                    }
+                }
+            };
+        }
+    }
+}
+

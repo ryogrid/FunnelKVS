@@ -106,7 +106,6 @@ class DataStore:
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 
 use crate::gval;
 use crate::chord_node;
@@ -120,12 +119,10 @@ pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";
 pub const DATA_STORE_OP_DIRECT_STORE : &str = "DIRECT_STORE";
 pub const DATA_STORE_OP_DIRECT_REMOVE : &str = "DIRECT_REMOVE";
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 #[derive(Debug, Clone)]
 pub struct DataStore {
-//    pub existing_node : ArRmRs<chord_node::ChordNode>,
     // Keyはハッシュを通されたものなので元データの値とは異なる
     stored_data : HashMap<String, chord_util::DataIdAndValue>,
 }

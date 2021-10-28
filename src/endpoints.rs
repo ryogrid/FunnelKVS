@@ -53,7 +53,6 @@ use std::sync::{Arc, Mutex};
 use std::cell::{RefCell, Ref, RefMut};
 use std::time::Duration;
 
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rocket_contrib::json::Json;
 use rocket::State;
 use rocket::config::{Config, Environment};
@@ -69,24 +68,34 @@ use crate::chord_util;
 use crate::data_store;
 use crate::router;
 use crate::stabilizer;
-//use crate::taskqueue;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // urlは "http://から始まるものにすること"
 fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
-    let client = reqwest::blocking::Client::builder()
-    .timeout(Duration::from_secs(10))
-    .build().unwrap();
+    let client = match reqwest::blocking::Client::builder()
+    .timeout(Duration::from_secs(100))
+    .build(){
+        Err(err) => {
+            chord_util::dprint(&("ERROR at http_get_request(1)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
+        Ok(got_client) => got_client
+    };
 
     let resp = match client.get(url_str).send(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => { 
+            chord_util::dprint(&("ERROR at http_get_request(2)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(response) => response
     };
 
     let ret = match resp.text(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => {
+            chord_util::dprint(&("ERROR at http_get_request(3)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(text) => text
     };
 
@@ -97,17 +106,29 @@ fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
 // json_str は JSONの文字列表現をそのまま渡せばよい
 fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_util::GeneralError> {
     //let client = reqwest::blocking::Client::new();
-    let client = reqwest::blocking::Client::builder()
-    .timeout(Duration::from_secs(10))
-    .build().unwrap();
+    let client = match reqwest::blocking::Client::builder()
+    .timeout(Duration::from_secs(100))
+    .build(){
+        Err(err) => { 
+            chord_util::dprint(&("ERROR at http_post_request(1)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
+        Ok(got_client) => got_client
+    };
 
     let resp = match client.post(url_str).body(json_str).send(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => {
+            chord_util::dprint(&("ERROR at http_post_request(2)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(response) => response        
     };
 
     let ret = match resp.text(){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Err(err) => {
+            chord_util::dprint(&("ERROR at http_post_request(3)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
         Ok(text) => text
     };
 
@@ -190,9 +211,15 @@ pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node
     //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor"),
-        serde_json::to_string(caller_node_ni).unwrap());
+        match serde_json::to_string(caller_node_ni){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
     
-    return Ok(true);
+    match req_rslt {
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(resp) => { return Ok(true) }
+    };
 }
 
 #[post("/check_predecessor", data = "<caller_node_ni>")]
@@ -206,7 +233,10 @@ pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, prede
 
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/set_routing_infos_force"),
-        serde_json::to_string(&rpc_arg).unwrap());
+        match serde_json::to_string(&rpc_arg){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
 
     return Ok(true);
 }
@@ -221,11 +251,21 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> R
     //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/find_successor"),
-        serde_json::to_string(&id).unwrap());
+        match serde_json::to_string(&id){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
     
-    let req_rslt_ref = &req_rslt.unwrap();
+    let req_rslt_ref = &(match req_rslt{
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(ninfo) => ninfo
+    });
+
     //println!("req_rslt_ref at find_successor: {:?}", req_rslt_ref);
-    let ret_ninfo = serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(req_rslt_ref).unwrap();
+    let ret_ninfo = match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(req_rslt_ref){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(ninfo) => ninfo
+    };
     //println!("find_successor: {:?}", ret_ninfo);
     return ret_ninfo;
 }
@@ -248,23 +288,31 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
     //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger"),
-        serde_json::to_string(&id).unwrap());
+        match serde_json::to_string(&id){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
     
     let res_text = match req_rslt {
         Err(err) => {
-            chord_util::dprint(&err.message);
-            panic!("error at rrpc_call__closest_preceding_finger");
-        },
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        }
         Ok(text) => {text}
     };
-    println!("res_text: {:?}", res_text);
-    let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&res_text).unwrap();
-    println!("closest_preceding_finger: {:?}", ret_ninfo);
+    //println!("res_text: {:?}", res_text);
+    let ret_ninfo = match match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(&res_text){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(result_ninfo) => result_ninfo
+    }{
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(ninfo) => ninfo
+    };
+    //println!("closest_preceding_finger: {:?}", ret_ninfo);
     return Ok(ret_ninfo);
 }
 
 #[post("/closest_preceding_finger", data = "<id>")]
-pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<node_info::NodeInfo> {
+pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
     return Json(router::closest_preceding_finger(Arc::clone(&self_node), id.0));
 }
 
@@ -272,7 +320,15 @@ pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo
     //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
     //println!("get_node_info: {:?}", *address);
     let req_rslt = http_get_request(&("http://".to_string() + address.as_str() + "/get_node_info"));
-    let ret_ninfo = serde_json::from_str::<node_info::NodeInfo>(&req_rslt.unwrap()).unwrap();
+    let ret_ninfo = match serde_json::from_str::<node_info::NodeInfo>(&(
+        match req_rslt{
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        }
+    )){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+        Ok(ninfo) => ninfo
+    };
     //println!("get_node_info: {:?}", ret_ninfo);
     return Ok(ret_ninfo);
 }
@@ -297,6 +353,7 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
     let config = Config::build(Environment::Production)
     .address(bind_addr)
     .port(bind_port_num as u16)
+    .workers(30)
     .finalize()
     .unwrap();
 

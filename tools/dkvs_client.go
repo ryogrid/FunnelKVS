@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -123,8 +124,8 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
-	start_addr := "127.0.0.1:10000"
-	//start_addr := "127.0.0.1:8002"=
+	start_addr := "127.0.0.1:11000"
+	//start_addr := "127.0.0.1:8000"
 
 	succ_addr := start_addr
 	cur_addr := ""
@@ -135,7 +136,7 @@ func check_chain_with_successor_info() {
 		resp_json := http_get_request(succ_addr, endpoint_path)
 		cur_addr, born_id, node_id, succ_addr = extract_addr_and_born_id(resp_json)
 		counter++
-		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter)
+		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter, succ_addr)
 		if succ_addr == start_addr {
 			break
 		}
@@ -146,7 +147,7 @@ func check_chain_with_successor_info() {
 
 func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {
 	err := exec.Command(
-		"../target/debug/rust_dkvs",
+		"rust_dkvs.bat", //"../target/debug/rust_dkvs",
 		strconv.Itoa(born_id),
 		bind_addr,
 		strconv.Itoa(bind_port),
@@ -159,22 +160,40 @@ func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr stri
 }
 
 func setup_nodes(num int) {
-	cur_port := 10000
+	start_port := 11000
+	cur_port := start_port
 	for ii := 0; ii < num; ii++ {
-		start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")
-		fmt.Printf("%d nodes launched.\n", ii+1)
-		time.Sleep(time.Second * 2)
+		start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", start_port, "./")
+		//start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")		fmt.Printf("%d nodes launched.\n", ii+1)
+		fmt.Printf("launched born_id=%d\n", ii+1)
+		time.Sleep(time.Second * 3)
 	}
 }
 
 func main() {
 	// TODO: 必要になったら引数処理できるようにする https://qiita.com/nakaryooo/items/2d0befa2c1cf347800c3
 
+	op := flag.String("op", "setup-nodes", "setup chord network")
+	arg1 := flag.String("arg1", "30", "argument if operation needs it")
+	flag.Parse()
+
+	switch *op {
+	case "setup-nodes":
+		node_num, _ := strconv.Atoi(*arg1)
+		setup_nodes(node_num)
+		break
+	case "check-chain":
+		check_chain_with_successor_info()
+		break
+	default:
+		fmt.Println("dkvs_client -op=<operation-name> -arg1=<argument if needed>")
+	}
+
 	//test_get_request_which_has_query_string()
 	//test_post_request_deserialize()
 	//test_process_exec()
 	//test_get_request_Result_type_return()
-	setup_nodes(40)
-	check_chain_with_successor_info()
+	//setup_nodes(40)
+	//check_chain_with_successor_info()
 	fmt.Println("finished!")
 }

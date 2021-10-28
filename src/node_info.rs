@@ -136,7 +136,7 @@ pub fn handle_downed_node_info(self_node: &mut NodeInfo, target_node: &NodeInfo,
     if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR 
         && target_node.node_id == self_node.successor_info_list[0].node_id {
 
-        // finger_tableを先頭から辿ってsuccessorに設定可能なものがあれば設定する
+        // finger_tableを末尾から辿ってsuccessorに設定可能なものがあれば設定する
         for idx in 0..(gval::ID_SPACE_BITS as usize) {
             match &self_node.finger_table[idx] {
                     None => { continue; }

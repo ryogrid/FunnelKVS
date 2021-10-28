@@ -293,6 +293,9 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             // 自身の認識するsuccessorの情報を更新する
 
             self_node_ref = self_node.lock().unwrap();
+            chord_util::dprint(&("stabilize_successor_SET_SUCCESSOR,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ", from "
+            + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + " to "
+            + chord_util::gen_debug_str_of_node(&successor_info.predecessor_info[0]).as_str()));
             self_node_ref.successor_info_list[0] = successor_info.predecessor_info[0].clone();
             deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
             drop(self_node_ref);
@@ -407,6 +410,20 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
             + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
         return Ok(true);
     }
+
+    // predecessorの生死チェックを行い、ダウンしていた場合 未設定状態に戻して return する
+    // (本来 check_predecessor でやる処理ではないと思われるが、finger tableの情報を用いて
+    // ノードダウン時の対処を行う場合に、このコードがないとうまくいかなそうなのでここで処理)
+    match endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.predecessor_info[0].address_str){
+        Err(err) => {
+            self_node_ref = self_node.lock().unwrap();
+            node_info::handle_downed_node_info(&mut self_node_ref, &deep_cloned_self_node.predecessor_info[0], &err);
+            return Ok(true);
+        }
+        Ok(some) => {}        
+    }
+
+
 
     chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
             + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));

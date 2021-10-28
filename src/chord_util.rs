@@ -9,7 +9,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rand::Rng;
 use chrono::{Local, DateTime, Date};
 use serde::{Serialize, Deserialize};
@@ -22,7 +21,6 @@ use crate::router;
 use crate::endpoints;
 use crate::data_store;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // TODO: (rustr)ディープコピーを取得するメソッドを定義しておきたい at DataIdAndValue

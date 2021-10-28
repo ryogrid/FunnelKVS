@@ -37,10 +37,8 @@ pub mod chord_util;
 pub mod stabilizer;
 pub mod router;
 pub mod data_store;
-//pub mod taskqueue;
 pub mod endpoints;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc, thread};
@@ -54,8 +52,6 @@ use std::collections::HashMap;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-
-use parking_lot::{ReentrantMutex, ReentrantMutexGuard, const_reentrant_mutex};
   
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()

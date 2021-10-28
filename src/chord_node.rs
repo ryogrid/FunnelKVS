@@ -304,8 +304,6 @@ use std::cell::{RefMut, RefCell, Ref};
 use std::borrow::Borrow;
 use std::sync::atomic::Ordering;
 
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
-
 use crate::gval;
 use crate::node_info;
 use crate::chord_util;
@@ -314,7 +312,6 @@ use crate::router;
 use crate::data_store;
 use crate::endpoints;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";

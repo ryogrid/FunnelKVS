@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use serde::{Serialize, Deserialize};
 
 use crate::gval;
@@ -11,7 +10,6 @@ use crate::endpoints;
 use crate::data_store;
 use crate::router;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 #[derive(Serialize, Deserialize)]

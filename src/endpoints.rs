@@ -53,7 +53,6 @@ use std::sync::{Arc, Mutex};
 use std::cell::{RefCell, Ref, RefMut};
 use std::time::Duration;
 
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
 use rocket_contrib::json::Json;
 use rocket::State;
 use rocket::config::{Config, Environment};
@@ -69,9 +68,7 @@ use crate::chord_util;
 use crate::data_store;
 use crate::router;
 use crate::stabilizer;
-//use crate::taskqueue;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // urlは "http://から始まるものにすること"

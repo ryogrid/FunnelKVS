@@ -3,8 +3,6 @@ use std::cell::{RefMut, RefCell, Ref};
 use std::sync::atomic::Ordering;
 use std::borrow::{Borrow, BorrowMut};
 
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
-
 use crate::gval;
 use crate::chord_node;
 use crate::node_info;
@@ -13,7 +11,6 @@ use crate::endpoints;
 use crate::data_store;
 use crate::router;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 /*

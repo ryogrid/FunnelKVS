@@ -4,8 +4,6 @@ use std::cell::{RefMut, RefCell, Ref};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use parking_lot::{ReentrantMutex, const_reentrant_mutex};
-
 use crate::gval;
 //use crate::chord_node::ChordNode;
 use crate::node_info;
@@ -14,7 +12,6 @@ use crate::stabilizer;
 use crate::endpoints;
 use crate::data_store;
 
-//type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // id（int）で識別されるデータを担当するノードの名前解決を行う

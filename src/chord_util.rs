@@ -56,8 +56,6 @@ impl GeneralError {
     pub fn new(message: String, err_code: u32) -> GeneralError {
         GeneralError {message: message, line: 0, column: 0, err_code: err_code}
     }
-
-    
 }
 
 impl std::fmt::Display for GeneralError {
@@ -88,14 +86,6 @@ pub fn hash_str_to_int(input_str : &String) -> u32 {
     let hash_val_u32 = hash_val_u64 as u32;
 
     return hash_val_u32;
-/*    
-    // TODO: ID_SPACE_BITS ビットで表現できる符号なし整数をID空間とする.
-    //       通常、ID_SPACE_BITS は sha1 で 160 となるが、この検証コードでは
-    //       ハッシュ関数を用いなくても問題の起きない実装となっているため、より小さい
-    //       ビット数で表現可能な IDスペース 内に収まる値を乱数で求めて返す
-    let rand_val: u32 = get_rnd_int_with_limit(gval::ID_SPACE_RANGE);
-    return rand_val;
-*/
 }
 
 pub fn get_unixtime_in_nanos() -> i32{
@@ -164,9 +154,9 @@ pub fn calc_distance_between_nodes_right_mawari(base_id : u32, target_id : u32) 
         slided_target_id = (gval::ID_MAX as i64) + (slided_target_id as i64);
     }
 
-    // 0を跨いだ場合の考慮はされているのであとは単純に値の大きな方から小さな方との差
+    // 0を跨いだ場合の考慮はされているので、あとは単純に値の大きな方から小さな方との差
     // が結果となる. ここでは slided_base_id は 0 であり、slided_target_id は必ず正の値
-    // となっているので、 slided_base_idの値を返せばよい
+    // となっているので、 slided_target_idの値を返せばよい
 
     return slided_target_id as u32;
 }
@@ -190,7 +180,6 @@ pub fn dprint(print_str : &String) {
     let local_naive = local.naive_local();
     println!("{:?},{}", local_naive, print_str);
 }
-
 
 pub fn gen_debug_str_of_node(node_info : &node_info::NodeInfo) -> String {
     return node_info.born_id.to_string() + &",".to_string() + &format!("{:X}", node_info.node_id) + &",".to_string()

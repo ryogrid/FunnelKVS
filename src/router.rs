@@ -14,9 +14,7 @@ use crate::data_store;
 
 type ArMu<T> = Arc<Mutex<T>>;
 
-// id（int）で識別されるデータを担当するノードの名前解決を行う
-// Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
-// TODO: AppropriateExp, DownedExp, InternalExp at find_successor
+// idで識別されるデータを担当するノードの名前解決を行う
 pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -31,15 +29,12 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
         }
         Ok(ninfo) => ninfo
     };
-    //let n_dash_ninfo = n_dash.lock().unwrap();
 
     chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                         + chord_util::gen_debug_str_of_node(&n_dash).as_str() + ","
                         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","
                         + chord_util::gen_debug_str_of_data(id).as_str()));
 
-    //println!("n_dash after find_predecessor: {:?}", n_dash);
-    // ここでn_dashのsuccessor_info_listを参照してしまっているがn_dashはそこの情報も埋まっているので一応問題無い
     let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash.address_str) {
         Err(err) => {
             self_node_ref = self_node.lock().unwrap();
@@ -50,16 +45,9 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
             got_node
         }
     };
-
-    //println!("asked_n_dash_info at find_predecessor: {:?}", asked_n_dash_info);
     
     match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str) {
         Err(err) => {
-            // ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-            // ここでは何も対処しない
-            // chord_util::dprint(&("find_successor_4,FOUND_NODE_IS_DOWNED,".to_string()
-            // + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
-            // + chord_util::gen_debug_str_of_data(id).as_str()));
             self_node_ref = self_node.lock().unwrap();
             node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
@@ -70,7 +58,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
     };
 }
  
-// id(int)　の前で一番近い位置に存在するノードを探索する
+// id の前で一番近い位置に存在するノードを探索する
 pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let mut n_dash: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
     let mut n_dash_found: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
@@ -78,26 +66,18 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
     chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&exnode_ni_ref).as_str()));
     
     // n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
-    // TODO: direct access to node_id and successor_info_list of n_dash at find_predecessor
     loop {
         // 1周目でも実質的に同じ値が入るようになっているので問題ない
         n_dash = n_dash_found;
-/*
-        // TODO: (rustr)ブラウザからのアドレス解決をすると、n_dashのsuccessor_info_listが空だとエラーになる
-        //              対処を入れてみる
-        let ndash_addr = n_dash.address_str.clone();
-        drop(n_dash);
-        n_dash = endpoints::rrpc_call__get_node_info(&ndash_addr).unwrap();
-*/
+
         //while文の書き換えの形でできたif文
         if chord_util::exist_between_two_nodes_right_mawari(n_dash.node_id, n_dash.successor_info_list[0].node_id, id) {
             println!("check loop break at find_predecessor {:?} {:?}", n_dash.node_id, n_dash.successor_info_list[0].node_id);
             break;
         }
-        // TODO: x direct access to node_info of n_dash at find_predecessor
+
         chord_util::dprint(&("find_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
-        // TODO: closest_preceding_finger call at find_predecessor
 
         n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, id){
             Err(err) => {
@@ -106,12 +86,10 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
             Ok(ninfo) => ninfo
         };
 
-        // TODO: x direct access to node_info of n_dash_found and n_dash at find_predecessor
         if n_dash_found.node_id == n_dash.node_id {
             // 見つかったノードが、n_dash と同じで、変わらなかった場合
             // 同じを経路表を用いて探索することになり、結果は同じになり無限ループと
             // なってしまうため、探索は継続せず、探索結果として n_dash (= n_dash_found) を返す
-            // TODO: x direct access to node_info of n_dash at find_predecessor
             chord_util::dprint(&("find_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
                                 + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
             return Ok(n_dash_found.clone());
@@ -119,9 +97,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
 
         // closelst_preceding_finger は id を通り越してしまったノードは返さない
         // という前提の元で以下のチェックを行う
-        // TODO: x direct access to node_info of n_dash at find_predecessor
         let distance_old = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, n_dash.node_id);
-        // TODO: x direct access to node_info of n_dash_found at find_predecessor
         let distance_found = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, n_dash_found.node_id);
         let distance_data_id = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, id);
         if distance_found < distance_old && !(distance_old >= distance_data_id) {
@@ -133,14 +109,12 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
             // ため、上記の条件が常に成り立ってしまう. 従って、その場合は例外とする（n_dashが更新される場合は、更新されたn_dashのnode_idが
             // 探索対象のデータのid を通り越すことは無い）
 
-            // TODO: x direct access to node_info of n_dash at find_predecessor
             chord_util::dprint(&("find_predecessor_4,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
                                 + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
 
             return Ok(n_dash.clone());
         }
 
-        // TODO: x direct access to node_info of n_dash and n_dash_found at find_predecessor
         chord_util::dprint(&("find_predecessor_5_n_dash_updated,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&n_dash).as_str() + "->"
                             + chord_util::gen_debug_str_of_node(&n_dash_found).as_str()));
@@ -153,7 +127,6 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
 }
 
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-// ni_ref -> existing_nodeのもの
 pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     // 範囲の広いエントリから探索していく
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
@@ -167,7 +140,6 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
     drop(self_node_ref);
 
     for node_info in (&deep_cloned_self_node).finger_table.iter().rev() {
-        // 注: Noneなエントリも存在し得る
         let conved_node_info = match node_info {
             None => {
                 chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str()));
@@ -200,17 +172,6 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
                     return Ok(got_node);
                 }
             };
-
-            // match gnba_rslt {
-            //     //Ok(node_opt) => { return Arc::clone(&node_opt);},
-            //     //Ok(node_opt) => { return node_info::partial_clone_from_ref_strong(&node_opt);},
-            //     Ok(node_opt) => { return node_opt;},
-            //     Err(_err) => {
-            //         // err.err_code == chord_util::ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM || err.err_code == chord_util::ERR_CODE_NODE_IS_DOWNED
-            //         // ここでは何も対処しない
-            //         continue;
-            //     }
-            // };
         }
     }
 
@@ -219,7 +180,6 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
     // どんなに範囲を狭めても探索対象のIDを超えてしまうノードしか存在しなかった場合
     // 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という
     // ことになる
-    //return Arc::clone(&existing_node);
     return Ok(deep_cloned_self_node);
 }
 

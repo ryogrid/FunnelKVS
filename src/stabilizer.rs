@@ -57,13 +57,10 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // ミリ秒精度のUNIXTIMEからChordネットワーク上でのIDを決定する
     new_node_ref.born_id = born_id;
     new_node_ref.address_str = (*self_node_address).clone();
-    //new_node_ref.node_id = chord_util::hash_str_to_int(&new_node_ref.address_str);
     new_node_ref.node_id = chord_util::hash_str_to_int(&(chord_util::get_unixtime_in_nanos().to_string()));
 
     let mut deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
     let mut is_second_node:bool = false;
-
-    //println!("address_str at join: {:?}", new_node_ref.address_str);
 
     if born_id == 1 { 
         // first_node の場合
@@ -82,10 +79,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
 
     drop(new_node_ref);    
 
-    //println!("join {:?}", tyukai_node_address);
-    // 実装上例外は発生しない.
-    // また実システムでもダウンしているノードの情報が与えられることは想定しない
-    // TODO: (rustr)RPC呼出しに置き換える必要あり
+    // ダウンしているノードの情報が与えられることは想定しない
     let tyukai_node = endpoints::rrpc_call__get_node_info(tyukai_node_address).unwrap();
 
     // 仲介ノードに自身のsuccessorになるべきノードを探してもらう
@@ -103,8 +97,6 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     new_node_ref = new_node.lock().unwrap();
     if tyukai_node.node_id == tyukai_node.successor_info_list[0].node_id {
         // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
-
-        //predecessor = tyukai_node;
 
         // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
         // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
@@ -129,7 +121,6 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
         
         return;
     }else{
-        //new_node_ref.successor_info_list.push(successor.clone());
         drop(new_node_ref);
     }
 
@@ -142,7 +133,6 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     new_node_ref.finger_table[0] = Some(new_node_ref.successor_info_list[0].clone());
 
     // successorと、successorノードの情報だけ適切なものとする
-    // TODO: check_predecessor call at join
 
     drop(new_node_ref);
     match endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node){
@@ -155,7 +145,6 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     };
 }
 
-// TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
 pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
     let mut self_node_ref = self_node.lock().unwrap();
     let mut deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -182,7 +171,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     // の参照を得る
     
     let ret = endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.successor_info_list[0].address_str);
-    //{
 
     let successor_info = match ret{
         Err(err) => {
@@ -194,22 +182,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             got_node
         }
     };
-
-// TODO: (rustr)実システム化する際にコメントアウトした。check_predecessor呼び出し時に呼び出し元は
-//              自身のNodeInfoのロックを解放するようにするので、問題ないはず
-/*        
-        // 2ノードで環が構成されている場合に、お互いがstabilize_successorを呼び出した場合にデッドロック
-        // してしまうケースを避けるための考慮
-        if self_node_ni_refmut.node_id == self_node_ni_refmut.successor_info_list[0].node_id {
-            // predecessor と successorが同一であり、firstノードの場合は上の方で既に抜けているので
-            // 2ノードの場合
-
-            chord_util::dprint(&("stabilize_successor_1_7,".to_string() + chord_util::gen_debug_str_of_node(Some(self_node_ni_refmut)).as_str() + ","
-            + chord_util::gen_debug_str_of_node(Some(&self_node_ni_refmut.successor_info_list[0])).as_str()));
-
-            return Ok(true);
-        }
-*/
 
     if successor_info.predecessor_info.len() == 0 {
         //is_successor_has_no_pred = true;
@@ -227,15 +199,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
         return Ok(true);
     }
-        
-/*
-        if deep_cloned_self_node.node_id == successor_info.node_id {
-            //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
-            chord_util::dprint(&("WARN!!!".to_string()));
-            return Ok(true);
-        }
-*/
-    //}
 
     chord_util::dprint(&("stabilize_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                     + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
@@ -258,16 +221,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         // 自身がsuccessorにとっての正しいpredecessorでないか確認を要請し必要であれば
         // 情報を更新してもらう
         // 事前チェックによって避けられるかもしれないが、常に実行する
-        //let successor_obj = endpoints::rrpc__get_node_info(&successor_info.address_str).unwrap();
 
-/*        
-        if deep_cloned_self_node.address_str == successor_info.address_str {
-            //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
-            //抜けないと多重borrowでpanicしてしまうので
-            chord_util::dprint(&("WARN!!!".to_string()));
-            return Ok(true);
-        }
-*/
         chord_util::dprint(&("stabilize_successor_5,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
 
@@ -279,7 +233,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
             }
             Ok(some) => {}
         };
-        //check_predecessor(Arc::clone(&successor_obj), (*self_node_ni_refmut).clone());
 
         let distance_unknown = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, pred_id_of_successor);
         let distance_me = chord_util::calc_distance_between_nodes_left_mawari(successor_info.node_id, deep_cloned_self_node.node_id);
@@ -312,14 +265,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
                     got_node
                 }
             };
-/*
-            if deep_cloned_self_node.node_id == deep_cloned_self_node.successor_info_list[0].node_id {
-                //何故か、自身がsuccessorリストに入ってしまっているのでとりあえず抜ける
-                //抜けないと多重borrowでpanicしてしまうので
-                chord_util::dprint(&("WARN!!!".to_string()));
-                return Ok(true);
-            }
-*/
+
             match endpoints::rrpc_call__check_predecessor(&new_successor_info, &deep_cloned_self_node){
                 Err(err) => {
                     self_node_ref = self_node.lock().unwrap();
@@ -343,8 +289,6 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 // FingerTableに関するstabilize処理を行う
 // 一回の呼び出しで1エントリを更新する
 // FingerTableのエントリはこの呼び出しによって埋まっていく
-// TODO: InternalExp at stabilize_finger_table
-// TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
 pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -364,9 +308,6 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
     self_node_ref = self_node.lock().unwrap();
     match find_rslt {
         Err(err) => {
-            // ret.err_code == ErrorCode.AppropriateNodeNotFoundException_Code || ret.err_code == ErrorCode.InternalControlFlowException_CODE
-            //  || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-
             // 適切な担当ノードを得ることができなかった
             // 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
             // ことであるので、更新対象のエントリには None を設定しておく
@@ -392,7 +333,6 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
 
 // caller_node が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
 // 本メソッドはstabilize処理の中で用いられる
-// TODO: 注 -> (rustr) このメソッドの呼び出し時はself_nodeの中身への別の参照は存在しない状態としておくこと
 pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -423,18 +363,8 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
         Ok(some) => {}        
     }
 
-
-
     chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
             + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
-
-    // TODO: (rustr) まだノードダウンの考慮は不要
-    // // この時点で認識している predecessor がノードダウンしていないかチェックする
-    // let is_pred_alived = match chord_util::is_node_alive(&self_node_ni_refmut.predecessor_info[0].address_str) {
-    //     Err(_e) => false, // err_code == ErrorCode.InternalControlFlowException_CODE
-    //     Ok(is_alive) => is_alive
-    // };
-    // if is_pred_alived {
     
     self_node_ref = self_node.lock().unwrap();
     let distance_check = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id, caller_node_ni.node_id);
@@ -454,9 +384,6 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
                 + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + ","
                 + chord_util::gen_debug_str_of_node(&self_node_ref.predecessor_info[0]).as_str()));
     }
-    // } else { // predecessorがダウンしていた場合は無条件でチェックを求められたノードをpredecessorに設定する
-    //     self_node_ni_refmut.set_pred_info(caller_node_ni.clone());
-    // }
 
     return Ok(true);
 }

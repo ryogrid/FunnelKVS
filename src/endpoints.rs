@@ -136,7 +136,6 @@ fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_ut
 }
 
 #[get("/")]
-//fn index() -> &'static str {
 fn index() -> Json<node_info::NodeInfo> {
     let mut node_info = node_info::NodeInfo::new();
     
@@ -147,14 +146,11 @@ fn index() -> Json<node_info::NodeInfo> {
     node_info.successor_info_list.push(node_info.clone());    
     node_info.predecessor_info = vec![];
     node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
-    //node_info.finger_table = vec![];
 
-    //"Hello, world!"
     Json(node_info)
 }
 
 #[get("/result-type")]
-//fn index() -> &'static str {
 fn result_type() -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
     let mut node_info = node_info::NodeInfo::new();
     
@@ -165,9 +161,7 @@ fn result_type() -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> 
     node_info.successor_info_list.push(node_info.clone());    
     node_info.predecessor_info = vec![];
     node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
-    //node_info.finger_table = vec![];
 
-    //"Hello, world!"
     Json(Ok(node_info))
 }
 
@@ -185,9 +179,7 @@ fn get_param_test(param1: String, param2: String) -> Json<node_info::NodeInfo> {
     node_info.successor_info_list.push(node_info.clone());    
     node_info.predecessor_info = vec![];
     node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
-    //node_info.finger_table = vec![];
 
-    //"Hello, world!"
     Json(node_info)
 }
 
@@ -204,11 +196,7 @@ pub fn deserialize_test(self_node: State<ArMu<node_info::NodeInfo>>, data_store:
 //               実際に処理を行う側は正規のputかレプリカの配布かを判別できるフラグを追加する形で
 //               1つのメソッドにまとめてしまって良いかと思う
 
-// TODO: ひとまずRPC化して結合するまでは、grpc__xxx は NodeInfoの完全な実体（完全なClone）を受けて
-//       それらが内部で読んでいる関数には受けた実体を ArMu_new!(xxx) でラップして渡す、とすればいい気がする・・・
-
 pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
-    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor"),
         match serde_json::to_string(caller_node_ni){
@@ -228,7 +216,6 @@ pub fn rrpc__check_predecessor(self_node: State<ArMu<node_info::NodeInfo>>, call
 }
 
 pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
-    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
     let rpc_arg = SetRoutingInfosForce::new(predecessor_info, successor_info_0, ftable_enry_0);
 
     let req_rslt = http_post_request(
@@ -248,7 +235,6 @@ pub fn rrpc__set_routing_infos_force(self_node: State<ArMu<node_info::NodeInfo>>
 }
 
 pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/find_successor"),
         match serde_json::to_string(&id){
@@ -261,31 +247,21 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> R
         Ok(ninfo) => ninfo
     });
 
-    //println!("req_rslt_ref at find_successor: {:?}", req_rslt_ref);
     let ret_ninfo = match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(req_rslt_ref){
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
         Ok(ninfo) => ninfo
     };
-    //println!("find_successor: {:?}", ret_ninfo);
+
     return ret_ninfo;
 }
 
-// id（int）で識別されるデータを担当するノードの名前解決を行う
-// Attention: 適切な担当ノードを得ることができなかった場合、FindNodeFailedExceptionがraiseされる
-//            finger_tableに値が埋められた NodeInfoへの参照を渡すこと
-// TODO: AppropriateExp, DownedExp, InternalExp at find_successor
-//pub fn rrpc__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+// idで識別されるデータを担当するノードの名前解決を行う
 #[post("/find_successor", data = "<id>")]
 pub fn rrpc__find_successor(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
     return Json(router::find_successor(Arc::clone(&self_node), id.0));
 }
 
-// Attention: finger_tableに値が埋められた NodeInfoへの参照を渡すこと
-// pub fn grpc__closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> node_info::NodeInfo {
-//     return router::closest_preceding_finger(Arc::clone(&self_node), id);
-// }
 pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger"),
         match serde_json::to_string(&id){
@@ -299,7 +275,7 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
         }
         Ok(text) => {text}
     };
-    //println!("res_text: {:?}", res_text);
+
     let ret_ninfo = match match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(&res_text){
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
         Ok(result_ninfo) => result_ninfo
@@ -307,7 +283,7 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
         Ok(ninfo) => ninfo
     };
-    //println!("closest_preceding_finger: {:?}", ret_ninfo);
+
     return Ok(ret_ninfo);
 }
 
@@ -317,8 +293,6 @@ pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>
 }
 
 pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
-    //TODO: (rustr) 通信エラーなどの場合のハンドリングは後で
-    //println!("get_node_info: {:?}", *address);
     let req_rslt = http_get_request(&("http://".to_string() + address.as_str() + "/get_node_info"));
     let ret_ninfo = match serde_json::from_str::<node_info::NodeInfo>(&(
         match req_rslt{
@@ -329,7 +303,7 @@ pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
         Ok(ninfo) => ninfo
     };
-    //println!("get_node_info: {:?}", ret_ninfo);
+
     return Ok(ret_ninfo);
 }
 
@@ -378,7 +352,6 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
         )
        .launch();
 }
-
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]

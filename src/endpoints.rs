@@ -302,6 +302,39 @@ pub fn rrpc__put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<
     return Json(chord_node::put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key, rpc_args.0.val));
 }
 
+#[post("/global_get", data = "<key_str>")]
+pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
+    return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
+}
+
+#[post("/get", data = "<key_str>")]
+pub fn rrpc__get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
+    return Json(chord_node::get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
+}
+
+#[post("/global_delete", data = "<key_str>")]
+pub fn rrpc__global_delete(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(chord_node::global_delete(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
+}
+
+// ブラウザから試すためのエンドポイント
+#[get("/global_put_simple?<key>&<val>")]
+pub fn rrpc__global_put_simple(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key: String, val: String) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), key, val));
+}
+
+// ブラウザから試すためのエンドポイント
+#[get("/global_get_simple?<key>")]
+pub fn rrpc__global_get_simple(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key: String) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
+    return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), key));
+}
+
+// ブラウザから試すためのエンドポイント
+#[get("/global_delete_simple?<key>")]
+pub fn rrpc__global_delete_simple(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key: String) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(chord_node::global_delete(Arc::clone(&self_node), Arc::clone(&data_store), key));
+}
+
 pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
     let req_rslt = http_get_request(&("http://".to_string() + address.as_str() + "/get_node_info"));
     let ret_ninfo = match serde_json::from_str::<node_info::NodeInfo>(&(

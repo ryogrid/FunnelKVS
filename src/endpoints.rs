@@ -298,18 +298,18 @@ pub fn rrpc_call__global_put(self_node: &node_info::NodeInfo, key_str: String, v
 }
 
 #[post("/global_put", data = "<rpc_args>")]
-pub fn rrpc__global_put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, rpc_args: Json<Put>) -> Json<Result<bool, chord_util::GeneralError>> {
-    return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key, rpc_args.0.val));
+pub fn rrpc__global_put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, rpc_args: Json<GlobalPut>) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key_str, rpc_args.0.val_str));
 }
 
 // TODO: (rustr) need implement rrpc_call__put
-pub fn rrpc_call__put(self_node: &node_info::NodeInfo, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub fn rrpc_call__put(self_node: &node_info::NodeInfo, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     panic!();
 }
 
 #[post("/put", data = "<rpc_args>")]
 pub fn rrpc__put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, rpc_args: Json<Put>) -> Json<Result<bool, chord_util::GeneralError>> {
-    return Json(chord_node::put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key, rpc_args.0.val));
+    return Json(chord_node::put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key_id, rpc_args.0.val_str));
 }
 
 // TODO: (rustr) need implement rrpc_call__global_get
@@ -323,13 +323,13 @@ pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store:
 }
 
 // TODO: (rustr) need implement rrpc_call__get
-pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_id: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     panic!();
 }
 
-#[post("/get", data = "<key_str>")]
-pub fn rrpc__get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
-    return Json(chord_node::get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
+#[post("/get", data = "<key_id>")]
+pub fn rrpc__get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_id: Json<u32>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
+    return Json(chord_node::get(Arc::clone(&self_node), Arc::clone(&data_store), key_id.0));
 }
 
 // TODO: (rustr) need implement rrpc_call__global_delete
@@ -445,19 +445,38 @@ impl SetRoutingInfosForce {
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]
+pub struct GlobalPut {
+    key_str: String,
+    val_str: String
+}
+
+impl GlobalPut {
+    pub fn new(
+        key_str: String,
+        val_str: String) -> GlobalPut
+    {
+        GlobalPut {
+            key_str: key_str, 
+            val_str: val_str
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Put {
-    key: String,
-    val: String
+    key_id: u32,
+    val_str: String
 }
 
 impl Put {
     pub fn new(
-        key: String,
-        val: String) -> Put
+        key_id: u32,
+        val_str: String) -> Put
     {
         Put {
-            key: key, 
-            val: val
+            key_id: key_id, 
+            val_str: val_str
         }
     }
 }

@@ -87,7 +87,6 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
         + chord_util::gen_debug_str_of_node(&tyukai_node).as_str()));    
     let successor = endpoints::rrpc_call__find_successor(&tyukai_node, deep_cloned_new_node.node_id).unwrap();
 
-    // TODO: (rustr) for debug
     if deep_cloned_new_node.node_id == successor.node_id {
         chord_util::dprint(&("join_2_5,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_new_node).as_str() + ","
                         + chord_util::gen_debug_str_of_node(&tyukai_node).as_str() + ","

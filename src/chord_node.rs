@@ -103,8 +103,49 @@ lazy_static! {
 
 // TODO: (rustr) need implement global_put
 pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    panic!();
-    //return Err(chord_util::GeneralError::new("".to_strin, chord_util::ERR_CODE_NOT_IMPLEMENTED));    
+    let self_node_ref = self_node.lock().unwrap();
+    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    drop(self_node_ref);
+
+    let data_id = chord_util::hash_str_to_int(&key_str);
+    for idx in 0..(gval::REPLICA_NUM + 1) {
+        let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
+        let ret = endpoints::rrpc_call__find_successor(&deep_cloned_self_node, data_id);
+/*
+    if (ret.is_ok):
+        target_node: 'ChordNode' = cast('ChordNode', ret.result)
+        # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
+        # 初期化しておく
+        ChordNode.need_put_retry_data_id = -1
+    else:  # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+        # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
+        # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
+        ChordNode.need_put_retry_data_id = data_id
+        ChordNode.need_put_retry_node = self
+        ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_data(data_id))
+        return False
+*/
+
+        let success = endpoints::rrpc_call__put(&deep_cloned_self_node, data_id, value_str)
+    }
+
+// TODO: (rustr)リトライ処理はひとまず後回し
+/*    
+    if success != true {
+        ChordNode.need_put_retry_data_id = data_id
+        ChordNode.need_put_retry_node = self
+        ChordUtil.dprint("global_put_2,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_data(data_id))
+        return False
+    }
+*/
+
+    chod_util::dprint("global_put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                    + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
+                    + ChordUtil.gen_debug_str_of_data(data_id))
+
+    return Ok(true);
 }
 
 /*
@@ -141,7 +182,7 @@ def global_put(self, data_id : int, value_str : str) -> bool:
 */
 
 // TODO: (rustr) need implement put
-pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     panic!();
     //return Err(chord_util::GeneralError::new("".to_strin, chord_util::ERR_CODE_NOT_IMPLEMENTED));    
 }
@@ -186,6 +227,9 @@ def put(self, data_id : int, value_str : str) -> bool:
 
     return True
 */    
+
+// TODO: (rustr) key_str に対応するIDにレプリカの数として期待する数から逆算したID差分値を
+//               期待する数だけ順に足しながらループで取得を試みるよう処理を書き換える
 
 // TODO: (rustr) need implement global_get
 pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
@@ -297,7 +341,7 @@ def global_get(self, data_id : int) -> str:
 */
 
 // TODO: (rustr) need implement get
-pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     panic!();
     //return Err(chord_util::GeneralError::new("".to_strin, chord_util::ERR_CODE_NOT_IMPLEMENTED));    
 }

@@ -19,6 +19,9 @@ pub const ID_SPACE_RANGE : u32 = 0xFFFFFFFF; // 0を含めての数である点�
 //pub const ID_MAX : u32 = ID_SPACE_RANGE - 1;
 pub const ID_MAX : u32 = 0xFFFFFFFF - 1;
 
+// マスターデータ相当のものは含まない
+pub const REPLICA_NUM : u32 = 6;
+pub const REPLICA_ID_DISTANCE : u32 =  0xFFFFFFFF / 8;
 /*
 pub const ENABLE_DATA_STORE_OPERATION_DPRINT : bool = false;
 pub const ENABLE_ROUTING_INFO_DPRINT : bool = true;

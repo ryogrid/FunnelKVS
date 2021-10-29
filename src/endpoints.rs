@@ -292,6 +292,16 @@ pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>
     return Json(router::closest_preceding_finger(Arc::clone(&self_node), id.0));
 }
 
+#[post("/global_put", data = "<rpc_args>")]
+pub fn rrpc__global_put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, rpc_args: Json<Put>) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key, rpc_args.0.val));
+}
+
+#[post("/put", data = "<rpc_args>")]
+pub fn rrpc__put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, rpc_args: Json<Put>) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(chord_node::put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key, rpc_args.0.val));
+}
+
 pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
     let req_rslt = http_get_request(&("http://".to_string() + address.as_str() + "/get_node_info"));
     let ret_ninfo = match serde_json::from_str::<node_info::NodeInfo>(&(
@@ -311,6 +321,7 @@ pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo
 pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>) -> Json<node_info::NodeInfo> {
     return Json(chord_util::get_node_info(Arc::clone(&self_node)));
 }
+
 
 // ブラウザからアドレス解決を試すためのエンドポイント
 // 与えられた0から100の整数の100分の1をID空間のサイズ（最大値）にかけた
@@ -371,6 +382,25 @@ impl SetRoutingInfosForce {
             predecessor_info: predecessor_info, 
             successor_info_0: successor_info_0,
             ftable_enry_0: ftable_enry_0
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+pub struct Put {
+    key: String,
+    val: String
+}
+
+impl Put {
+    pub fn new(
+        key: String,
+        val: String) -> Put
+    {
+        Put {
+            key: key, 
+            val: val
         }
     }
 }

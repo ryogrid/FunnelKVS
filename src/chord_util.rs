@@ -38,6 +38,7 @@ impl DataIdAndValue {
 }
 
 // GeneralError型で利用するエラーコード
+pub const ERR_CODE_NOT_IMPLEMENTED : u32 = 0;
 pub const ERR_CODE_NODE_IS_DOWNED : u32 = 1;
 pub const ERR_CODE_APPROPRIATE_NODE_NOT_FOND : u32 = 2;
 pub const ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM : u32 = 3;

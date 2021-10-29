@@ -292,9 +292,19 @@ pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>
     return Json(router::closest_preceding_finger(Arc::clone(&self_node), id.0));
 }
 
+// TODO: (rustr) need implement rrpc_call__global_put
+pub fn rrpc_call__global_put(self_node: &node_info::NodeInfo, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+    panic!();
+}
+
 #[post("/global_put", data = "<rpc_args>")]
 pub fn rrpc__global_put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, rpc_args: Json<Put>) -> Json<Result<bool, chord_util::GeneralError>> {
     return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key, rpc_args.0.val));
+}
+
+// TODO: (rustr) need implement rrpc_call__put
+pub fn rrpc_call__put(self_node: &node_info::NodeInfo, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+    panic!();
 }
 
 #[post("/put", data = "<rpc_args>")]
@@ -302,14 +312,29 @@ pub fn rrpc__put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<
     return Json(chord_node::put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key, rpc_args.0.val));
 }
 
+// TODO: (rustr) need implement rrpc_call__global_get
+pub fn rrpc_call__global_get(self_node: &node_info::NodeInfo, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+    panic!();
+}
+
 #[post("/global_get", data = "<key_str>")]
 pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
     return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
 }
 
+// TODO: (rustr) need implement rrpc_call__get
+pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+    panic!();
+}
+
 #[post("/get", data = "<key_str>")]
 pub fn rrpc__get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
     return Json(chord_node::get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
+}
+
+// TODO: (rustr) need implement rrpc_call__global_delete
+pub fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, key_str: String) -> Result<bool, chord_util::GeneralError> {
+    panic!();
 }
 
 #[post("/global_delete", data = "<key_str>")]
@@ -354,7 +379,6 @@ pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo
 pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>) -> Json<node_info::NodeInfo> {
     return Json(chord_util::get_node_info(Arc::clone(&self_node)));
 }
-
 
 // ブラウザからアドレス解決を試すためのエンドポイント
 // 与えられた0から100の整数の100分の1をID空間のサイズ（最大値）にかけた

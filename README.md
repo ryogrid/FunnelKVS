@@ -36,7 +36,13 @@
     - http://[node addr]:[node_port]/global_put_simple?key=[string only includes ascii character]&val=[string only includes ascii character]
     - http://[node addr]:[node_port]/global_get_simple?key=[string only includes ascii character]
     - http://[node addr]:[node_port]/global_delete_simple?key=[string only includes ascii character]
-  - for using from some program (use http POST request) 
+  - for using from some program (use http POST request to send JSON text)   
+    - http://[node addr]:[node_port]/global_put  
+  　  - body at POST -> { "key_str" : [utf8 string], "val_str" : [ut8 string] }  
+    - http://[node addr]:[node_port]/global_put  
+  　  - body at POST -> { "key_str" : [utf8 string] }  
+    - http://[node addr]:[node_port]/global_delete  
+      - body at POST -> { "key_str" : [utf8 string] }  
 ## Simulator of distributed KVS (chord_sim dir)
 - design verification with simulator wrote by **Python** (**verification is finished**)
   - you can simulate distributed kvs working  behavior. on the simulation put, get, stabilize, join operations are issued continuously under node down occuring condition.

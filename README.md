@@ -3,7 +3,7 @@
 - TODO list (Japanese, includes finished tasks)
   - https://gist.github.com/ryogrid/9b1f340babfbb6cdc9d03e57b7834e71
 
-## Distributed KVS (**currently I'm working on**)
+## Distributed KVS
 - Architecture (Japanese)
   - https://github.com/ryogrid/rust_dkvs/blob/master/ARCHITECTURE.md
 - Referenced site (about REST API implementation. first one is Japanese) 

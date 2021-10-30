@@ -292,9 +292,28 @@ pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>
     return Json(router::closest_preceding_finger(Arc::clone(&self_node), id.0));
 }
 
-// TODO: (rustr) need implement rrpc_call__global_put
 pub fn rrpc_call__global_put(self_node: &node_info::NodeInfo, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    panic!();
+    let rpc_arg = GlobalPut::new(key_str, val_str);
+
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/global_put"),
+        match serde_json::to_string(&rpc_arg){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
+    
+    let res_text = match req_rslt {
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(text) => text
+    };
+
+    match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(result) => result
+    }{
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(is_exist) => { return Ok(is_exist); }
+    }
 }
 
 #[post("/global_put", data = "<rpc_args>")]
@@ -302,9 +321,28 @@ pub fn rrpc__global_put(self_node: State<ArMu<node_info::NodeInfo>>, data_store:
     return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key_str, rpc_args.0.val_str));
 }
 
-// TODO: (rustr) need implement rrpc_call__put
 pub fn rrpc_call__put(self_node: &node_info::NodeInfo, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    panic!();
+    let rpc_arg = Put::new(key_id, val_str);
+
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/put"),
+        match serde_json::to_string(&rpc_arg){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
+    
+    let res_text = match req_rslt {
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(text) => text
+    };
+
+    match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(result) => result
+    }{
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(is_exist) => { return Ok(is_exist) }
+    }
 }
 
 #[post("/put", data = "<rpc_args>")]
@@ -314,7 +352,29 @@ pub fn rrpc__put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<
 
 // TODO: (rustr) need implement rrpc_call__global_get
 pub fn rrpc_call__global_get(self_node: &node_info::NodeInfo, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-    panic!();
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/global_get"),
+        match serde_json::to_string(&key_str){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
+    
+    let res_text = match req_rslt {
+        Err(err) => {
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        }
+        Ok(text) => {text}
+    };
+
+    let ret_iv = match match serde_json::from_str::<Result<chord_util::DataIdAndValue, chord_util::GeneralError>>(&res_text){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(result_iv) => result_iv
+    }{
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(data_iv) => data_iv
+    };
+
+    return Ok(ret_iv);
 }
 
 #[post("/global_get", data = "<key_str>")]
@@ -322,9 +382,30 @@ pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store:
     return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
 }
 
-// TODO: (rustr) need implement rrpc_call__get
 pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-    panic!();
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/get"),
+        match serde_json::to_string(&key_id){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
+    
+    let res_text = match req_rslt {
+        Err(err) => {
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        }
+        Ok(text) => {text}
+    };
+
+    let ret_iv = match match serde_json::from_str::<Result<chord_util::DataIdAndValue, chord_util::GeneralError>>(&res_text){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(result_iv) => result_iv
+    }{
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(data_iv) => data_iv
+    };
+
+    return Ok(ret_iv);
 }
 
 #[post("/get", data = "<key_id>")]
@@ -332,9 +413,30 @@ pub fn rrpc__get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<
     return Json(chord_node::get(Arc::clone(&self_node), Arc::clone(&data_store), key_id.0));
 }
 
-// TODO: (rustr) need implement rrpc_call__global_delete
 pub fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, key_str: String) -> Result<bool, chord_util::GeneralError> {
-    panic!();
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/global_delete"),
+        match serde_json::to_string(&key_str){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
+    
+    let res_text = match req_rslt {
+        Err(err) => {
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        }
+        Ok(text) => {text}
+    };
+
+    let is_exist = match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(result_bool) => result_bool
+    }{
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(wrapped_bool) => wrapped_bool
+    };
+
+    return Ok(is_exist);
 }
 
 #[post("/global_delete", data = "<key_str>")]

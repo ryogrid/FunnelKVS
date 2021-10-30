@@ -100,11 +100,14 @@ lazy_static! {
 }
 */
 
+
 pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
     drop(self_node_ref);
 
+    // 更新に失敗するレプリカがあった場合、それはノードダウンであると（本当にそうか確実ではないが）前提をおいて、
+    // 続くレプリカの更新は継続する
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
@@ -112,7 +115,8 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
-                return Err(err);
+                //return Err(err);
+                continue;
             }
             Ok(ninfo) => ninfo
         };
@@ -144,7 +148,8 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
-                return Err(err);
+                continue;
+                //return Err(err);
             }
             Ok(is_exist) => is_exist
         };

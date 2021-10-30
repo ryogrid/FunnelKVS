@@ -205,7 +205,6 @@ def global_put(self, data_id : int, value_str : str) -> bool:
     return True
 */
 
-// TODO: (rustr) need implement put
 pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -249,20 +248,21 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         + val_str.clone().as_str())
     );
 
-    let data_store_ref = data_store.lock().unwrap();
-    data_store_ref.store_new_data(key_id, &val_str);
-    //self.data_store.distribute_replica()
+    let mut data_store_ref = data_store.lock().unwrap();
+    let ret = data_store_ref.store_new_data(key_id, val_str.clone());
     drop(data_store_ref);
 
     chord_util::dprint(
             &("put_4,".to_string()
             + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
             + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
-            + val_str.clone().as_str())
+            + val_str.clone().as_str() + ","
+            + ret.to_string().as_str())
     );
 
-    return Ok(true);
+    return Ok(ret);
 }
+
 /*    
 def put(self, data_id : int, value_str : str) -> bool:
     ChordUtil.dprint("put_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
@@ -423,7 +423,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
             + idx.to_string().as_str()
         ));        
-    /*
+/*
     if (ret.is_ok):
         target_node: 'ChordNode' = cast('ChordNode', ret.result)
         # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
@@ -437,7 +437,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                         + ChordUtil.gen_debug_str_of_data(data_id))
         return False
-    */
+*/
 
         let data_iv = match endpoints::rrpc_call__get(&replica_node, target_id){
             Err(err) => {
@@ -459,8 +459,8 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         };
     }
 
-    // TODO: (rustr)リトライ処理はひとまず後回し
-    /*    
+// TODO: (rustr)リトライ処理はひとまず後回し
+/*    
     if success != true {
         ChordNode.need_put_retry_data_id = data_id
         ChordNode.need_put_retry_node = self
@@ -468,7 +468,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
                         + ChordUtil.gen_debug_str_of_data(data_id))
         return False
     }
-    */
+*/
 
     return Err(chord_util::GeneralError::new("QUERIED DATA NOT FOUND".to_string(), chord_util::ERR_CODE_QUERIED_DATA_NOT_FOUND));
 }
@@ -578,9 +578,68 @@ def global_get(self, data_id : int) -> str:
 
 // TODO: (rustr) need implement get
 pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-    panic!();
-    //return Err(chord_util::GeneralError::new("".to_strin, chord_util::ERR_CODE_NOT_IMPLEMENTED));    
+    let self_node_ref = self_node.lock().unwrap();
+    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    drop(self_node_ref);
+
+    chord_util::dprint(
+                    &("get_1,".to_string() 
+                    + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+                    + chord_util::gen_debug_str_of_data(key_id).as_str())
+    );
+
+    // 担当範囲（predecessorのidと自身のidの間）のデータであるかチェックする
+    // そこに収まっていなかった場合、一定時間後リトライが行われるようエラーを返す
+    // リクエストを受けるという実装も可能だが、stabilize処理で predecessor が生きて
+    // いるノードとなるまで下手にデータを持たない方が、データ配置の整合性を壊すリスクが
+    // 減りそうな気がするので、そうする
+    if self_node_deep_cloned.predecessor_info.len() == 0 {
+        return Err(chord_util::GeneralError::new("predecessor is None".to_string(), chord_util::ERR_CODE_PRED_IS_NONE));
+    }
+
+    chord_util::dprint(
+        &("get_2,".to_string()
+        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+        + chord_util::gen_debug_str_of_data(key_id).as_str())
+    );
+
+    // Chordネットワークを右回りにたどった時に、データの id (key_id) が predecessor の node_id から
+    // 自身の node_id の間に位置する場合、そのデータは自身の担当だが、そうではない場合
+    if chord_util::exist_between_two_nodes_right_mawari(
+        self_node_deep_cloned.predecessor_info[0].node_id,
+        self_node_deep_cloned.node_id, 
+        key_id) == false {
+            return Err(chord_util::GeneralError::new("passed data is out of my tantou range".to_string(), chord_util::ERR_CODE_NOT_TANTOU));
+    }
+
+    chord_util::dprint(
+        &("get_3,".to_string()
+        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+        + chord_util::gen_debug_str_of_data(key_id).as_str())
+    );
+
+    let data_store_ref = data_store.lock().unwrap();
+    let ret_val = match data_store_ref.get(key_id){
+        Err(err) => {
+            return Err(err);
+        }
+        Ok(data_iv) => data_iv
+    };
+
+    //data_store_ref.store_new_data(key_id, &val_str);
+    //self.data_store.distribute_replica()
+    drop(data_store_ref);
+
+    chord_util::dprint(
+            &("get_4,".to_string()
+            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+            + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
+            + ret_val.value_data.clone().as_str())
+    );
+
+    return Ok(ret_val);
 }
+
 /*    
 # 得られた value の文字列を返す
 def get(self, data_id : int, for_recovery = False) -> str:

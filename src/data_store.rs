@@ -115,9 +115,11 @@ use crate::stabilizer;
 use crate::router;
 use crate::endpoints;
 
+/*
 pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
 pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";
 pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OP_FAILED_DUE_TO_FINDING_NODE_FAIL";
+*/
 
 /*
 pub const DATA_STORE_OP_DIRECT_STORE : &str = "DIRECT_STORE";
@@ -138,7 +140,54 @@ impl DataStore {
         let sd = HashMap::new();
         DataStore {stored_data : sd}
     }
-}
 
-// TODO: (rustr) 引数にArMu型でラップされたDataStoreオブジェクトをとる形で
-//               stored_dataを引数を操作するよう、なんちゃってカプセル化する
+    pub fn store_new_data(& mut self, data_id: u32, value_str: String) -> bool {
+        let iv_entry = chord_util::DataIdAndValue::new(data_id, value_str.clone());
+        match self.stored_data.insert(data_id.to_string(), iv_entry){
+            None => { return false; }
+            Some(_old_val) => { return true; }
+        };
+    }
+/*
+    # DataStoreクラスオブジェクトのデータ管理の枠組みに従った、各関連フィールドの一貫性を維持したまま
+    # データ追加・更新処理を行うアクセサメソッド
+    # master_node引数を指定しなかった場合は、self.existing_node.node_info をデータのマスターの情報として格納する
+    def store_new_data(self, data_id : int, value_str : str):
+        # ログの量が多くなりすぎるのでコメントアウトしておく
+        # ChordUtil.dprint("store_new_data_1," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
+        #                  + ChordUtil.gen_debug_str_of_data(data_id))
+
+        with self.existing_node.node_info.lock_of_datastore:
+            di_entry = DataIdAndValue(data_id=data_id, value_data=value_str)
+
+            # デバッグプリント
+            ChordUtil.dprint_data_storage_operations(self.existing_node.node_info,
+                                                     DataStore.DATA_STORE_OP_DIRECT_STORE,
+                                                     data_id
+                                                     )
+
+            self.stored_data[str(data_id)] = di_entry
+            # デバッグのためにグローバル変数の形で管理されているデータのロケーション情報を更新する
+            ChordUtil.add_data_placement_info(data_id, self.existing_node.node_info)
+*/
+            
+    pub fn get(&self, data_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError>{
+        match self.stored_data.get(&data_id.to_string()){
+            None => {
+                return Err(chord_util::GeneralError::new("GET REQUESTED DATA IS NOT FOUND".to_string(), chord_util::ERR_CODE_DATA_TO_GET_NOT_FOUND));
+            }
+            Some(data_iv) => {
+                return Ok(chord_util::iv_clone_from_ref(&data_iv));
+            }
+        }
+    }
+/*    
+    # 存在しないKeyが与えられた場合 KeyErrorがraiseされる
+    def get(self, data_id : int) -> PResult[Optional[DataIdAndValue]]:
+        with self.existing_node.node_info.lock_of_datastore:
+            try:
+                return PResult.Ok(self.stored_data[str(data_id)])
+            except KeyError:
+                return PResult.Err(None, ErrorCode.KeyError_CODE)
+*/
+}

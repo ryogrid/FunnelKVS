@@ -623,7 +623,12 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         Err(err) => {
             return Err(err);
         }
-        Ok(data_iv) => data_iv
+        Ok(data_iv) => {
+            if data_iv.val_str == data_store::DELETED_ENTRY_MARKING_STR.to_string() {
+                return Err(chord_util::GeneralError::new(data_store::DELETED_ENTRY_MARKING_STR.to_string(), chord_util::ERR_CODE_DATA_TO_GET_IS_DELETED));
+            }
+            data_iv
+        }
     };
 
     //data_store_ref.store_new_data(key_id, &val_str);
@@ -634,7 +639,7 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
             &("get_4,".to_string()
             + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
             + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
-            + ret_val.value_data.clone().as_str())
+            + ret_val.val_str.clone().as_str())
     );
 
     return Ok(ret_val);
@@ -690,10 +695,18 @@ def get(self, data_id : int, for_recovery = False) -> str:
     return ret_value_str
 */
 
-// TODO: (rustr) need implement global_delete
 pub fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<bool, chord_util::GeneralError> {
-    panic!();
-    //return Err(chord_util::GeneralError::new("".to_strin, chord_util::ERR_CODE_NOT_IMPLEMENTED));    
+    match global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.clone()){
+        Err(err) => { return Err(err); }
+        Ok(data_iv) => {
+            match global_put(Arc::clone(&self_node), Arc::clone(&data_store), key_str, data_store::DELETED_ENTRY_MARKING_STR.to_string()){
+                Err(err) => { return Err(err); }
+                Ok(is_exist) => {
+                    return Ok(is_exist);
+                }
+            }
+        }
+    }
 }
 
 /*    

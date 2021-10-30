@@ -28,12 +28,12 @@ type ArMu<T> = Arc<Mutex<T>>;
 #[derive(Debug, Clone)]
 pub struct DataIdAndValue {
     pub data_id : u32,
-    pub value_data : String
+    pub val_str : String
 }
 
 impl DataIdAndValue {
-    pub fn new(data_id : u32, value_data : String) -> DataIdAndValue {
-        DataIdAndValue {data_id : data_id, value_data : value_data}
+    pub fn new(data_id : u32, val_str : String) -> DataIdAndValue {
+        DataIdAndValue {data_id : data_id, val_str : val_str}
     }
 }
 
@@ -46,7 +46,8 @@ pub const ERR_CODE_HTTP_REQUEST_ERR : u32 = 4;
 pub const ERR_CODE_PRED_IS_NONE: u32 = 5;
 pub const ERR_CODE_NOT_TANTOU: u32 = 6;
 pub const ERR_CODE_QUERIED_DATA_NOT_FOUND: u32 = 7;
-pub const ERR_CODE_DATA_TO_GET_NOT_FOUND: u32 = 7;
+pub const ERR_CODE_DATA_TO_GET_NOT_FOUND: u32 = 8;
+pub const ERR_CODE_DATA_TO_GET_IS_DELETED: u32 = 9;
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]
@@ -202,5 +203,5 @@ pub fn get_node_info(self_node: ArMu<node_info::NodeInfo>) -> node_info::NodeInf
 }
 
 pub fn iv_clone_from_ref(iv_ref: &DataIdAndValue) -> DataIdAndValue {
-    return DataIdAndValue::new(iv_ref.data_id, iv_ref.value_data.clone());
+    return DataIdAndValue::new(iv_ref.data_id, iv_ref.val_str.clone());
 }

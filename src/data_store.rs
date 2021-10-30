@@ -115,9 +115,15 @@ use crate::stabilizer;
 use crate::router;
 use crate::endpoints;
 
+pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
 pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";
+pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OP_FAILED_DUE_TO_FINDING_NODE_FAIL";
+
+/*
 pub const DATA_STORE_OP_DIRECT_STORE : &str = "DIRECT_STORE";
 pub const DATA_STORE_OP_DIRECT_REMOVE : &str = "DIRECT_REMOVE";
+*/
+
 
 type ArMu<T> = Arc<Mutex<T>>;
 

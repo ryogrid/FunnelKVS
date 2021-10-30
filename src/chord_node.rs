@@ -69,12 +69,11 @@ use crate::endpoints;
 
 type ArMu<T> = Arc<Mutex<T>>;
 
-pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
-pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL";
-
+/*
 // global_get内で探索した担当ノードにgetをかけて、データを持っていないと
 // レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
 pub const GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES : i32 = 5;
+*/
 
 /*
 // global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
@@ -101,16 +100,30 @@ lazy_static! {
 }
 */
 
-// TODO: (rustr) need implement global_put
 pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    let self_node_ref = self_node.lock().unwrap();
-    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    let mut self_node_ref = self_node.lock().unwrap();
+    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
     drop(self_node_ref);
 
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let ret = endpoints::rrpc_call__find_successor(&deep_cloned_self_node, data_id);
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, data_id){
+            Err(err) => {
+                self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                return Err(err);
+            }
+            Ok(ninfo) => ninfo
+        };
+
+        chord_util::dprint(&("global_put_1,".to_string() 
+            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
+            + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
+            + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
+            + idx.to_string().as_str()
+        ));        
 /*
     if (ret.is_ok):
         target_node: 'ChordNode' = cast('ChordNode', ret.result)
@@ -127,7 +140,22 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         return False
 */
 
-        let success = endpoints::rrpc_call__put(&deep_cloned_self_node, data_id, value_str)
+        let is_exist = match endpoints::rrpc_call__put(&replica_node, data_id, val_str.clone()){
+            Err(err) => {
+                self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                return Err(err);
+            }
+            Ok(is_exist) => is_exist
+        };
+
+        chord_util::dprint(&("global_put_2,".to_string() 
+            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
+            + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
+            + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
+            + idx.to_string().as_str()
+        ));
     }
 
 // TODO: (rustr)リトライ処理はひとまず後回し
@@ -140,10 +168,6 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         return False
     }
 */
-
-    chod_util::dprint("global_put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(data_id))
 
     return Ok(true);
 }
@@ -183,8 +207,61 @@ def global_put(self, data_id : int, value_str : str) -> bool:
 
 // TODO: (rustr) need implement put
 pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    panic!();
-    //return Err(chord_util::GeneralError::new("".to_strin, chord_util::ERR_CODE_NOT_IMPLEMENTED));    
+    let self_node_ref = self_node.lock().unwrap();
+    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    drop(self_node_ref);
+
+    chord_util::dprint(
+                    &("put_1,".to_string() 
+                    + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+                    + chord_util::gen_debug_str_of_data(key_id).as_str())
+    );
+
+    // 担当範囲（predecessorのidと自身のidの間）のデータであるかチェックする
+    // そこに収まっていなかった場合、一定時間後リトライが行われるようエラーを返す
+    // リクエストを受けるという実装も可能だが、stabilize処理で predecessor が生きて
+    // いるノードとなるまで下手にデータを持たない方が、データ配置の整合性を壊すリスクが
+    // 減りそうな気がするので、そうする
+    if self_node_deep_cloned.predecessor_info.len() == 0 {
+        return Err(chord_util::GeneralError::new("predecessor is None".to_string(), chord_util::ERR_CODE_PRED_IS_NONE));
+    }
+
+    chord_util::dprint(
+        &("put_2,".to_string()
+        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+        + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
+        + val_str.clone().as_str())
+    );
+
+    // Chordネットワークを右回りにたどった時に、データの id (key_id) が predecessor の node_id から
+    // 自身の node_id の間に位置する場合、そのデータは自身の担当だが、そうではない場合
+    if chord_util::exist_between_two_nodes_right_mawari(
+        self_node_deep_cloned.predecessor_info[0].node_id,
+        self_node_deep_cloned.node_id, 
+        key_id) == false {
+            return Err(chord_util::GeneralError::new("passed data is out of my tantou range".to_string(), chord_util::ERR_CODE_NOT_TANTOU));
+    }
+
+    chord_util::dprint(
+        &("put_3,".to_string()
+        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+        + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
+        + val_str.clone().as_str())
+    );
+
+    let data_store_ref = data_store.lock().unwrap();
+    data_store_ref.store_new_data(key_id, &val_str);
+    //self.data_store.distribute_replica()
+    drop(data_store_ref);
+
+    chord_util::dprint(
+            &("put_4,".to_string()
+            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+            + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
+            + val_str.clone().as_str())
+    );
+
+    return Ok(true);
 }
 /*    
 def put(self, data_id : int, value_str : str) -> bool:
@@ -228,13 +305,172 @@ def put(self, data_id : int, value_str : str) -> bool:
     return True
 */    
 
-// TODO: (rustr) key_str に対応するIDにレプリカの数として期待する数から逆算したID差分値を
-//               期待する数だけ順に足しながらループで取得を試みるよう処理を書き換える
 
-// TODO: (rustr) need implement global_get
+// 得られた value の文字列を返す
+// データの取得に失敗した場合は ERR_CODE_QUERIED_DATA_NOT_FOUND をエラーとして返す
+// 取得対象のデータが削除済みのデータであった場合は DELETED_ENTRY_MARKING_STR が正常値として返る
 pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-    panic!();
-    //return Err(chord_util::GeneralError::new("".to_strin, chord_util::ERR_CODE_NOT_IMPLEMENTED));    
+/*
+    ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                    + ChordUtil.gen_debug_str_of_data(data_id))
+
+                    ret = self.router.find_successor(data_id)
+    if (ret.is_ok):
+        target_node: 'ChordNode' = cast('ChordNode', ret.result)
+        got_value_str = target_node.endpoints.grpc__get(data_id)
+    else:
+        # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE
+        # || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+
+        # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
+
+        # リトライに必要な情報をクラス変数に設定しておく
+        ChordNode.need_getting_retry_data_id = data_id
+        ChordNode.need_getting_retry_node = self
+
+        ChordUtil.dprint("global_get_0_1,FIND_NODE_FAILED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_data(data_id))
+        # 処理を終える
+        return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
+
+    is_data_got_on_recovery = False
+    # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
+    # 一定数の predecessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
+    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+        tried_node_num = 0
+        # 最初は処理の都合上、最初にgetをかけたノードを設定する
+        cur_predecessor : 'ChordNode' = target_node
+        while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
+            ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                            + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                            + got_value_str + "," + str(tried_node_num))
+
+            got_value_str, tmp_cur_predecessor =  cur_predecessor.endpoints.grpc__global_get_recover_prev(data_id)
+            if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+                is_data_got_on_recovery = True
+                break
+            else:
+                tried_node_num += 1
+
+            if tmp_cur_predecessor != None:
+                cur_predecessor = cast('ChordNode', tmp_cur_predecessor)
+
+    # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
+    # 一定数の successor を辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
+    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+        tried_node_num = 0
+        # 最初は処理の都合上、最初にgetをかけたノードを設定する
+        cur_successor = target_node
+        while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
+            ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                            + ChordUtil.gen_debug_str_of_data(data_id) + ","
+                            + got_value_str + "," + str(tried_node_num))
+
+            got_value_str, tmp_cur_successor =  cur_successor.endpoints.grpc__global_get_recover_succ(data_id)
+            if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+                is_data_got_on_recovery = True
+                break
+            else:
+                tried_node_num += 1
+
+            if tmp_cur_successor != None:
+                cur_successor = cast('ChordNode', tmp_cur_successor)
+
+    # リトライを試みたであろう時の処理
+    if ChordNode.need_getting_retry_data_id != -1:
+        if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+            # リトライに成功した
+            ChordUtil.dprint("global_get_2_6,retry of global_get is succeeded")
+            # リトライは不要なためクリア
+            ChordNode.need_getting_retry_data_id = -1
+            ChordNode.need_getting_retry_node = None
+        else:
+            # リトライに失敗した（何もしない）
+            ChordUtil.dprint("global_get_2_7,retry of global_get is failed")
+            pass
+
+    # 取得に失敗した場合はリトライに必要な情報をクラス変数に設定しておく
+    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
+        ChordNode.need_getting_retry_data_id = data_id
+        ChordNode.need_getting_retry_node = self
+
+    if is_data_got_on_recovery == True:
+        # リカバリ処理でデータを取得した場合は自身のデータストアにもその値を保持しておく
+        self.data_store.store_new_data(data_id, got_value_str)
+*/
+    // TODO: (rustr) リトライ処理の実装 at global_get
+
+    let mut self_node_ref = self_node.lock().unwrap();
+    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    drop(self_node_ref);
+
+    let data_id = chord_util::hash_str_to_int(&key_str);
+    for idx in 0..(gval::REPLICA_NUM + 1) {
+        let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, data_id){
+            Err(err) => {
+                self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                return Err(err);
+            }
+            Ok(ninfo) => ninfo
+        };
+
+        chord_util::dprint(&("global_get_1,".to_string() 
+            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
+            + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
+            + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
+            + idx.to_string().as_str()
+        ));        
+    /*
+    if (ret.is_ok):
+        target_node: 'ChordNode' = cast('ChordNode', ret.result)
+        # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
+        # 初期化しておく
+        ChordNode.need_put_retry_data_id = -1
+    else:  # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
+        # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
+        # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
+        ChordNode.need_put_retry_data_id = data_id
+        ChordNode.need_put_retry_node = self
+        ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_data(data_id))
+        return False
+    */
+
+        let data_iv = match endpoints::rrpc_call__get(&replica_node, target_id){
+            Err(err) => {
+                self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                continue;
+                //return Err(err);
+            }
+            Ok(data_iv) => { 
+                    chord_util::dprint(&("global_get_2,".to_string() 
+                    + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+                    + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
+                    + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
+                    + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
+                    + idx.to_string().as_str()
+                ));
+                return Ok(data_iv); 
+            }
+        };
+    }
+
+    // TODO: (rustr)リトライ処理はひとまず後回し
+    /*    
+    if success != true {
+        ChordNode.need_put_retry_data_id = data_id
+        ChordNode.need_put_retry_node = self
+        ChordUtil.dprint("global_put_2,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
+                        + ChordUtil.gen_debug_str_of_data(data_id))
+        return False
+    }
+    */
+
+    return Err(chord_util::GeneralError::new("QUERIED DATA NOT FOUND".to_string(), chord_util::ERR_CODE_QUERIED_DATA_NOT_FOUND));
 }
 
 /*    

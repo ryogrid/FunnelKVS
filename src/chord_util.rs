@@ -43,6 +43,9 @@ pub const ERR_CODE_NODE_IS_DOWNED : u32 = 1;
 pub const ERR_CODE_APPROPRIATE_NODE_NOT_FOND : u32 = 2;
 pub const ERR_CODE_INTERNAL_CONTROL_FLOW_PROBLEM : u32 = 3;
 pub const ERR_CODE_HTTP_REQUEST_ERR : u32 = 4;
+pub const ERR_CODE_PRED_IS_NONE: u32 = 5;
+pub const ERR_CODE_NOT_TANTOU: u32 = 6;
+pub const ERR_CODE_QUERIED_DATA_NOT_FOUND: u32 = 7;
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]

@@ -323,7 +323,7 @@ pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store:
 }
 
 // TODO: (rustr) need implement rrpc_call__get
-pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_id: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     panic!();
 }
 
@@ -415,7 +415,15 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
                 rrpc__find_successor,
                 rrpc__closest_preceding_finger,                
                 rrpc__get_node_info,
-                rrpc__resolve_id_val
+                rrpc__resolve_id_val,
+                rrpc__global_put,
+                rrpc__put,
+                rrpc__global_get,
+                rrpc__get,
+                rrpc__global_delete,
+                rrpc__global_put_simple,
+                rrpc__global_get_simple,
+                rrpc__global_delete_simple
             ]
         )
        .launch();

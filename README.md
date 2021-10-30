@@ -19,12 +19,24 @@
   - care of data coherence is not strong yet...
   - **running test under node downs and joins is pranned** 
 
-- this can be executed like below (**currently development stage is almost same as simulator yet**)
+- this can be executed like below
   - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
   - $ rustup override set nightly
   - $ rustup update && cargo update
-  - $ cargo run
-  
+  - $ cargo run [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
+    - **node launch example is below**
+      - **born_id of first node must be 1** but born id of other node is free except for 1
+    - $ cargo run 1 127.0.0.1 11000 127.0.0.1 10999 ./  
+    - $ cargo run 2 127.0.0.1 11001 127.0.0.1 11000 ./
+    - $ cargo run 3 127.0.0.1 11002 127.0.0.1 11000 ./
+    - ....
+
+- REST interfaces
+  - for easy testing with browser or something (use http GET request)
+    - http://[node addr]:[node_port]/global_put_simple?key=[string only includes ascii character]&val=[string only includes ascii character]
+    - http://[node addr]:[node_port]/global_get_simple?key=[string only includes ascii character]
+    - http://[node addr]:[node_port]/global_delete_simple?key=[string only includes ascii character]
+  - for using from some program (use http POST request) 
 ## Simulator of distributed KVS (chord_sim dir)
 - design verification with simulator wrote by **Python** (**verification is finished**)
   - you can simulate distributed kvs working  behavior. on the simulation put, get, stabilize, join operations are issued continuously under node down occuring condition.

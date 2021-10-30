@@ -25,7 +25,8 @@
   - $ rustup update && cargo update
   - $ cargo run [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
     - **node launch example is below**
-      - **born_id of first node must be 1** but born id of other node is free except for 1
+      - **born_id of first node must be 1** but born_id of other node is free except for "1"
+        - "1" can be used by first node only 
       - **IP address and port number has no restriction but each node should be able to communicate directly with other nodes**
     - $ cargo run 1 127.0.0.1 11000 127.0.0.1 10999 ./  
     - $ cargo run 2 127.0.0.1 11001 127.0.0.1 11000 ./

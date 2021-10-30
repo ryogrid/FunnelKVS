@@ -10,6 +10,15 @@
   - https://qiita.com/yukinarit/items/c5128e67d168b4f39983  
   - https://rocket.rs/v0.4/guide/getting-started/
 
+- Fault torelance
+  - data replication is implemented
+  - implementation for keeping network helth exists
+  - not perfect yet...
+
+- Data coherence
+  - care of data coherence is not strong yet...
+  - **running test under node downs and joins is pranned** 
+
 - this can be executed like below (**currently development stage is almost same as simulator yet**)
   - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
   - $ rustup override set nightly

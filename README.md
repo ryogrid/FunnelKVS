@@ -15,7 +15,7 @@
   - implementation for keeping network helth exists
   - not perfect yet...
 
-- Data coherence
+- Data consistency
   - care of data coherence is not strong yet...
   - **running test under node downs and joins is pranned** 
 

@@ -81,7 +81,7 @@ func test_process_exec() {
 	//fmt.Printf("%s\n", out)
 }
 
-func http_get_request(addr_and_port string, path_str string) map[string]interface{} {
+func http_get_request(addr_and_port string, path_str string) (map[string]interface{}, error) {
 	url := "http://" + addr_and_port + path_str
 	// TODO: クエリストリングでパラメータを渡す際にURIエンコードが行われるか確認して
 	//       されないようであればされるようにする（方法を確認しておく）必要あり
@@ -89,7 +89,7 @@ func http_get_request(addr_and_port string, path_str string) map[string]interfac
 
 	client := new(http.Client)
 	resp, _ := client.Do(req)
-	defer resp.Body.Close()
+	//defer resp.Body.Close()
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
 
@@ -99,7 +99,12 @@ func http_get_request(addr_and_port string, path_str string) map[string]interfac
 		fmt.Println(err)
 	}
 
-	return decoded_data.(map[string]interface{})
+	err := resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return decoded_data.(map[string]interface{}), nil
 	//fmt.Println(decoded_data)
 	/*
 		// 表示
@@ -124,7 +129,9 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
-	start_addr := "192.168.3.13:11000"
+	const bind_ip_addr = "127.0.0.1"
+	start_port := 11000
+	start_addr := bind_ip_addr + ":" + strconv.Itoa(start_port)
 	//start_addr := "127.0.0.1:11000"
 	//start_addr := "127.0.0.1:8000"
 
@@ -133,8 +140,15 @@ func check_chain_with_successor_info() {
 	born_id := -1.0
 	node_id := -1.0
 	counter := 0
+	is_success_reqest := false
 	for true {
-		resp_json := http_get_request(succ_addr, endpoint_path)
+		resp_json, err := http_get_request(succ_addr, endpoint_path)
+		if err != nil && is_success_reqest == false {
+			start_port += 1
+			succ_addr = bind_ip_addr + ":" + strconv.Itoa(start_port)
+			continue
+		}
+		is_success_reqest = true
 		cur_addr, born_id, node_id, succ_addr = extract_addr_and_born_id(resp_json)
 		counter++
 		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter, succ_addr)

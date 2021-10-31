@@ -88,8 +88,11 @@ func http_get_request(addr_and_port string, path_str string) (map[string]interfa
 	req, _ := http.NewRequest("GET", url, nil)
 
 	client := new(http.Client)
-	resp, _ := client.Do(req)
-	//defer resp.Body.Close()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
 
@@ -99,22 +102,7 @@ func http_get_request(addr_and_port string, path_str string) (map[string]interfa
 		fmt.Println(err)
 	}
 
-	err := resp.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return decoded_data.(map[string]interface{}), nil
-	//fmt.Println(decoded_data)
-	/*
-		// 表示
-		for _, data := range decode_data.([]interface{}) {
-			var d = data.(map[string]interface{})
-			fmt.Printf("%d : %s\n", int(d["id"].(float64)), d["name"])
-		}
-	*/
-
-	//	fmt.Println(string(byteArray))
+	return decoded_data.(map[string]interface{}), err
 }
 
 func extract_addr_and_born_id(input_json map[string]interface{}) (string, float64, float64, string) {
@@ -127,9 +115,10 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 	return ret_addr, ret_born_id, ret_node_id, ret_succ_addr
 }
 
+const bind_ip_addr = "127.0.0.1"
+
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
-	const bind_ip_addr = "127.0.0.1"
 	start_port := 11000
 	start_addr := bind_ip_addr + ":" + strconv.Itoa(start_port)
 	//start_addr := "127.0.0.1:11000"
@@ -178,10 +167,7 @@ func setup_nodes(num int) {
 	start_port := 11000
 	cur_port := start_port
 	for ii := 0; ii < num; ii++ {
-		start_a_node(ii+1, "192.168.3.13", cur_port+ii, "192.168.3.13", start_port, "./")
-		//start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", start_port, "./")
-		//start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")
-		//fmt.Printf("%d nodes launched.\n", ii+1)
+		start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, start_port, "./")
 		fmt.Printf("launched born_id=%d\n", ii+1)
 		time.Sleep(time.Second * 3)
 	}

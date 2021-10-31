@@ -16,15 +16,17 @@
   - not perfect yet...
 
 - Data consistency
-  - care of data coherence is not strong yet...
-  - **running test under node downs and joins is pranned** 
+  - care for data consistency is not strong yet...
+  - First, **running test under node downs and joins is pranned** 
 
-- this can be executed like below
+- How to execute node daemon
   - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
   - $ rustup override set nightly
   - $ rustup update && cargo update
   - $ cargo run [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
-    - **node launch example is below**
+
+- Setup KVS system
+    - **launch example o node daemon which composes KVS system is below**
       - **born_id of first node must be 1** but born_id of other node is free except for "1"
         - "1" can be used by first node only 
       - **IP address and port number has no restriction but each node should be able to communicate directly with other nodes**
@@ -33,12 +35,12 @@
     - $ cargo run 3 127.0.0.1 11002 127.0.0.1 11000 ./
     - ....
 
-- REST interfaces
-  - for easy testing with browser or something (use http GET request)
+- REST interfaces which is offered by KVS system
+  - for easy testing with Web browser or something (use http GET request)
     - http://[node addr]:[node_port]/global_put_simple?key=[string only includes ascii character]&val=[string only includes ascii character]
     - http://[node addr]:[node_port]/global_get_simple?key=[string only includes ascii character]
     - http://[node addr]:[node_port]/global_delete_simple?key=[string only includes ascii character]
-  - for using from some program (use http POST request to send JSON text)
+  - for using from code (use http POST request to send JSON text)
     - **charactor code of body part must be UTF-8**
     - http://[node addr]:[node_port]/global_put  
   　  - body at POST -> { "key_str" : "[string]", "val_str" : "[string]" }  
@@ -46,6 +48,7 @@
   　  - body at POST -> "[string]"  
     - http://[node addr]:[node_port]/global_delete  
       - body at POST -> "[string]" 
+
 ## Simulator of distributed KVS (chord_sim dir)
 - design verification with simulator wrote by **Python** (**verification is finished**)
   - you can simulate distributed kvs working  behavior. on the simulation put, get, stabilize, join operations are issued continuously under node down occuring condition.

@@ -115,6 +115,7 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                drop(self_node_ref);
                 //return Err(err);
                 continue;
             }
@@ -148,6 +149,7 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                drop(self_node_ref);
                 continue;
                 //return Err(err);
             }
@@ -448,6 +450,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                drop(self_node_ref);
                 continue;
                 //return Err(err);
             }

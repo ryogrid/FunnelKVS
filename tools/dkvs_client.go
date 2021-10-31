@@ -124,7 +124,8 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
-	start_addr := "127.0.0.1:11000"
+	start_addr := "192.168.3.13:11000"
+	//start_addr := "127.0.0.1:11000"
 	//start_addr := "127.0.0.1:8000"
 
 	succ_addr := start_addr
@@ -163,8 +164,10 @@ func setup_nodes(num int) {
 	start_port := 11000
 	cur_port := start_port
 	for ii := 0; ii < num; ii++ {
-		start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", start_port, "./")
-		//start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")		fmt.Printf("%d nodes launched.\n", ii+1)
+		start_a_node(ii+1, "192.168.3.13", cur_port+ii, "192.168.3.13", start_port, "./")
+		//start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", start_port, "./")
+		//start_a_node(ii+1, "127.0.0.1", cur_port+ii, "127.0.0.1", cur_port+ii-1, "./")
+		//fmt.Printf("%d nodes launched.\n", ii+1)
 		fmt.Printf("launched born_id=%d\n", ii+1)
 		time.Sleep(time.Second * 3)
 	}

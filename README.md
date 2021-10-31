@@ -12,11 +12,11 @@
 
 - Fault torelance
   - data replication is implemented
-  - implementation for keeping network helth exists
-  - not perfect yet...
+  - functionality for keeping network healthy is implemented
+  - but not enough yet...
 
 - Data consistency
-  - care for data consistency is not strong yet...
+  - care for data consistency is not enough yet...
   - First, **running test under node downs and joins is pranned** 
 
 - How to execute node daemon

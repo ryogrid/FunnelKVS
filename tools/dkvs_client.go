@@ -116,22 +116,27 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 }
 
 const bind_ip_addr = "127.0.0.1"
+const check_node_limit = 150
 
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
 	start_port := 11000
 	start_addr := bind_ip_addr + ":" + strconv.Itoa(start_port)
-	//start_addr := "127.0.0.1:11000"
-	//start_addr := "127.0.0.1:8000"
 
 	succ_addr := start_addr
 	cur_addr := ""
 	born_id := -1.0
 	node_id := -1.0
 	counter := 0
+	request_count := 0
 	is_success_reqest := false
 	for true {
 		resp_json, err := http_get_request(succ_addr, endpoint_path)
+		request_count++
+		if request_count == check_node_limit {
+			fmt.Println("Error: travarse times may exceeded launched nodes!")
+			break
+		}
 		if err != nil && is_success_reqest == false {
 			start_port += 1
 			succ_addr = bind_ip_addr + ":" + strconv.Itoa(start_port)
@@ -145,8 +150,6 @@ func check_chain_with_successor_info() {
 			break
 		}
 	}
-
-	//http_get_request("127.0.0.1:8002", "/get_node_info")
 }
 
 func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {

@@ -26,7 +26,7 @@
   - $ cargo run [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
 
 - Setup KVS system
-    - **launch example o node daemon which composes KVS system is below**
+    - **launch example of node daemon which composes KVS system is below**
       - **born_id of first node must be 1** but born_id of other node is free except for "1"
         - "1" can be used by first node only 
       - **IP address and port number has no restriction but each node should be able to communicate directly with other nodes**

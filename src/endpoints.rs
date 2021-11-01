@@ -185,16 +185,11 @@ fn get_param_test(param1: String, param2: String) -> Json<node_info::NodeInfo> {
 
 #[post("/deserialize", data = "<node_info>")]
 pub fn deserialize_test(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, node_info: Json<node_info::NodeInfo>) -> String {
-    // TODO: (rustr) 複数の引数をとるようなことがしたければ、それらを含むStructを定義するしか無さそう
     println!("{:?}", self_node.lock().unwrap());
     println!("{:?}", node_info.address_str);
     println!("{:?}", node_info);
     format!("Accepted post request! {:?}", node_info.0)
 }
-
-// TODO: (rustr) 分散KVS化する際は、putのレプリカ配るだけ版みたいなものを実装する必要あり
-//               実際に処理を行う側は正規のputかレプリカの配布かを判別できるフラグを追加する形で
-//               1つのメソッドにまとめてしまって良いかと思う
 
 pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let req_rslt = http_post_request(
@@ -350,7 +345,6 @@ pub fn rrpc__put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<
     return Json(chord_node::put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key_id, rpc_args.0.val_str));
 }
 
-// TODO: (rustr) need implement rrpc_call__global_get
 pub fn rrpc_call__global_get(self_node: &node_info::NodeInfo, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/global_get"),

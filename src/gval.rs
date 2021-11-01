@@ -22,6 +22,13 @@ pub const ID_MAX : u32 = 0xFFFFFFFF - 1;
 // マスターデータ相当のものは含まない
 pub const REPLICA_NUM : u32 = 6;
 pub const REPLICA_ID_DISTANCE : u32 =  0xFFFFFFFF / 8;
+
+// successor_info_listに保持するNodeInfoオブジェクトの要素数
+// 30ノード規模を想定し、ln(32) = 6 から、6としている
+pub const SUCCESSOR_INFO_LIST_LEN : i32 = 6;
+
+// 何回のstabilize_successor呼出しごとにsuccessor_info_list埋めを行うか
+pub const FILL_SUCC_LIST_INTERVAL_TIMES : i32 = 5;
 /*
 pub const ENABLE_DATA_STORE_OPERATION_DPRINT : bool = false;
 pub const ENABLE_ROUTING_INFO_DPRINT : bool = true;

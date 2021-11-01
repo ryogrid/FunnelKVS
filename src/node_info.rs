@@ -126,29 +126,40 @@ pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
     }
 }
 
-// RPC呼出しが接続失敗やタイムアウトで終了し、かつ、対象がsuccessorで
-// あった場合にリカバリ処理を行う
+// RPC呼出しが接続失敗やタイムアウトで終了した場合、保持しているルーティングに関する情報の各々について
+// 反映する
 pub fn handle_downed_node_info(self_node: &mut NodeInfo, target_node: &NodeInfo, err: &chord_util::GeneralError){
     chord_util::dprint(&("handle_downed_node_info called!".to_string()));
 
     //successorについて
-    let old_successor_id = self_node.successor_info_list[0].node_id;
-    if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR 
-        && target_node.node_id == self_node.successor_info_list[0].node_id {
+    //let old_successor_id = self_node.successor_info_list[0].node_id;
+    // if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR 
+    //     && target_node.node_id == self_node.successor_info_list[0].node_id {
+    if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR {
 
-        // finger_tableを末尾から辿ってsuccessorに設定可能なものがあれば設定する
-        for idx in 0..(gval::ID_SPACE_BITS as usize) {
-            match &self_node.finger_table[idx] {
-                    None => { continue; }
-                    Some(ninfo) => {
-                        if ninfo.node_id != self_node.node_id && ninfo.node_id != old_successor_id{
-                            chord_util::dprint(&("assign new successor!".to_string() + " from " + chord_util::gen_debug_str_of_node(&self_node.successor_info_list[0]).as_str() + " to " + chord_util::gen_debug_str_of_node(ninfo).as_str()));
-                            self_node.successor_info_list[0] = (*ninfo).clone();
-                            break;
-                        }
-                    }
-            };
+        // // finger_tableを末尾から辿ってsuccessorに設定可能なものがあれば設定する
+        // for idx in 0..(gval::ID_SPACE_BITS as usize) {
+        //     match &self_node.finger_table[idx] {
+        //             None => { continue; }
+        //             Some(ninfo) => {
+        //                 if ninfo.node_id != self_node.node_id && ninfo.node_id != old_successor_id{
+        //                     chord_util::dprint(&("assign new successor!".to_string() + " from " + chord_util::gen_debug_str_of_node(&self_node.successor_info_list[0]).as_str() + " to " + chord_util::gen_debug_str_of_node(ninfo).as_str()));
+        //                     self_node.successor_info_list[0] = (*ninfo).clone();
+        //                     break;
+        //                 }
+        //             }
+        //     };
+        // }
+
+        // successor_info_listを先頭から確認しダウンが判明したノード以外を残す
+        let mut new_succ_info_list: Vec<NodeInfo> = vec![];
+        for ninfo in &self_node.successor_info_list {
+            if ninfo.node_id != self_node.node_id && ninfo.node_id != target_node.node_id {
+                chord_util::dprint(&("insert new successor!,".to_string() + chord_util::gen_debug_str_of_node(ninfo).as_str()));
+                new_succ_info_list.push((*ninfo).clone());
+            }
         }
+        self_node.successor_info_list = new_succ_info_list;
     }
 
     // predecessorについて
@@ -175,5 +186,7 @@ pub fn handle_downed_node_info(self_node: &mut NodeInfo, target_node: &NodeInfo,
             };
         }
     }
+
+    // TODO: (rustr) successor_info_listからもダウンと分かったノードは取り除くようにする
 }
 

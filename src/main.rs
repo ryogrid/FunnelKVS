@@ -128,8 +128,14 @@ fn main() {
 
         std::thread::sleep(std::time::Duration::from_millis(500 as u64));
 
+        let mut counter = 0;
         let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
             stabilizer::stabilize_successor(Arc::clone(&node_info_arc_succ_th));
+            counter += 1;
+            if counter % gval::FILL_SUCC_LIST_INTERVAL_TIMES == 0 {
+                // successor_info_listの0番要素以降を規定数まで埋める（埋まらない場合もある）
+                stabilizer::fill_succ_info_list(Arc::clone(&node_info_arc_succ_th));
+            }
             std::thread::sleep(std::time::Duration::from_millis(100 as u64));
         });
     

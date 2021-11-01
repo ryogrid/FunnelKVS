@@ -285,6 +285,79 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
     return Ok(true);
 }
 
+// successor_info_listのインデックス1より後ろを規定数まで埋める
+// 途中でエラーとなった場合は、規定数に届いていなくとも処理を中断する
+pub fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{    
+    let mut self_node_ref = self_node.lock().unwrap();
+    chord_util::dprint(&("fill_succ_info_list_0,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
+
+    let self_node_id = self_node_ref.node_id;
+    let mut next_succ_id = self_node_ref.node_id;
+    
+    let first_succ = self_node_ref.successor_info_list[0].clone();
+    //let mut next_succ_info = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    drop(self_node_ref);    
+    let mut next_succ_info = match endpoints::rrpc_call__get_node_info(&first_succ.address_str) {
+        Err(err) => {
+            self_node_ref = self_node.lock().unwrap();
+            node_info::handle_downed_node_info(&mut self_node_ref, &first_succ, &err);
+            // 後続を辿れないので、リスト埋めは中止してreturnする
+            return Err(err);
+        }
+        Ok(ninfo) => ninfo
+    };
+    
+    let mut idx_counter = 1;
+    for times in 1..(gval::SUCCESSOR_INFO_LIST_LEN){
+        next_succ_id = next_succ_info.node_id;
+        next_succ_info = node_info::partial_clone_from_ref_strong(&next_succ_info.successor_info_list[0]);
+        if next_succ_info.node_id == self_node_id || next_succ_info.node_id == next_succ_id {
+            // next_succ_infoがself_nodeと同一もしくは、1つ前の位置のノードを指していた場合
+            // 後続を辿っていく処理がループを構成してしまうため抜ける
+            self_node_ref = self_node.lock().unwrap();
+            chord_util::dprint(
+                &("fill_succ_info_list_1,".to_string() 
+                + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+                + chord_util::gen_debug_str_of_node(&next_succ_info).as_str() + ","
+                + self_node_ref.successor_info_list.len().to_string().as_str()
+            ));
+            return Ok(true);
+        }
+        self_node_ref = self_node.lock().unwrap();
+        if self_node_ref.successor_info_list.len() < (idx_counter + 1) {            
+            self_node_ref.successor_info_list.push(next_succ_info.clone());
+            chord_util::dprint(
+                &("fill_succ_info_list_2,".to_string() 
+                + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+                + chord_util::gen_debug_str_of_node(&next_succ_info).as_str() + ","
+                + self_node_ref.successor_info_list.len().to_string().as_str()
+            ));
+        }else{
+            self_node_ref.successor_info_list[idx_counter] = next_succ_info.clone();
+            chord_util::dprint(
+                &("fill_succ_info_list_3,".to_string() 
+                + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+                + chord_util::gen_debug_str_of_node(&next_succ_info).as_str() + ","
+                + self_node_ref.successor_info_list.len().to_string().as_str() + ","
+                + idx_counter.to_string().as_str()
+            ));           
+        }
+        idx_counter += 1;
+        drop(self_node_ref);
+        next_succ_info = match endpoints::rrpc_call__get_node_info(&next_succ_info.address_str) {
+            Err(err) => {
+                self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &next_succ_info, &err);
+                // 後続を辿れないので、リスト埋めは中止してreturnする
+                return Err(err);
+            }
+            Ok(ninfo) => ninfo
+        };
+    }
+
+    return Ok(true);
+}
+
 // FingerTableに関するstabilize処理を行う
 // 一回の呼び出しで1エントリを更新する
 // FingerTableのエントリはこの呼び出しによって埋まっていく

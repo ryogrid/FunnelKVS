@@ -137,10 +137,15 @@ func check_chain_with_successor_info() {
 			fmt.Println("Error: travarse times may exceeded launched nodes!")
 			break
 		}
-		if err != nil && is_success_reqest == false {
-			start_port += 1
-			succ_addr = bind_ip_addr + ":" + strconv.Itoa(start_port)
-			continue
+		if err != nil {
+			if is_success_reqest == false {
+				start_port += 1
+				succ_addr = bind_ip_addr + ":" + strconv.Itoa(start_port)
+				continue
+			} else {
+				fmt.Println("Error: successor should downed and information of successor is not recovered.")
+				break
+			}
 		}
 		is_success_reqest = true
 		cur_addr, born_id, node_id, succ_addr = extract_addr_and_born_id(resp_json)

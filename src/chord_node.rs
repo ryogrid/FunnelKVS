@@ -586,7 +586,6 @@ def global_get(self, data_id : int) -> str:
     return got_value_str
 */
 
-// TODO: (rustr) need implement get
 pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);

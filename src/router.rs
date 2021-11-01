@@ -5,7 +5,6 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use crate::gval;
-//use crate::chord_node::ChordNode;
 use crate::node_info;
 use crate::chord_util;
 use crate::stabilizer;

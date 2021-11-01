@@ -69,38 +69,6 @@ use crate::endpoints;
 
 type ArMu<T> = Arc<Mutex<T>>;
 
-/*
-// global_get内で探索した担当ノードにgetをかけて、データを持っていないと
-// レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
-pub const GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES : i32 = 5;
-*/
-
-/*
-// global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
-// なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
-pub static mut need_getting_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
-
-lazy_static! {
-    pub static ref need_getting_retry_node : ArRmRs<Option<ChordNode>> 
-        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
-}
-
-// global_put が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
-// なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
-pub static mut need_put_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
-
-lazy_static! {
-    pub static ref need_put_retry_data_value : ArRmRs<String> 
-        = Arc::new(const_reentrant_mutex(RefCell::new("".to_string())));
-}
-
-lazy_static! {
-    pub static ref need_put_retry_node : ArRmRs<Option<ChordNode>> 
-        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
-}
-*/
-
-
 pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -129,21 +97,6 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
             + idx.to_string().as_str()
         ));        
-/*
-    if (ret.is_ok):
-        target_node: 'ChordNode' = cast('ChordNode', ret.result)
-        # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
-        # 初期化しておく
-        ChordNode.need_put_retry_data_id = -1
-    else:  # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-        # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
-        # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
-        ChordNode.need_put_retry_data_id = data_id
-        ChordNode.need_put_retry_node = self
-        ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id))
-        return False
-*/
 
         let is_exist = match endpoints::rrpc_call__put(&replica_node, data_id, val_str.clone()){
             Err(err) => {
@@ -165,52 +118,8 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         ));
     }
 
-// TODO: (rustr)リトライ処理はひとまず後回し
-/*    
-    if success != true {
-        ChordNode.need_put_retry_data_id = data_id
-        ChordNode.need_put_retry_node = self
-        ChordUtil.dprint("global_put_2,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id))
-        return False
-    }
-*/
-
     return Ok(true);
 }
-
-/*
-def global_put(self, data_id : int, value_str : str) -> bool:
-    ret = self.router.find_successor(data_id)
-    if (ret.is_ok):
-        target_node: 'ChordNode' = cast('ChordNode', ret.result)
-        # リトライは不要であったため、リトライ用情報の存在を判定するフィールドを
-        # 初期化しておく
-        ChordNode.need_put_retry_data_id = -1
-    else:  # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-        # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
-        # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
-        ChordNode.need_put_retry_data_id = data_id
-        ChordNode.need_put_retry_node = self
-        ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id))
-        return False
-
-    success = target_node.endpoints.grpc__put(data_id, value_str)
-    if not success:
-        ChordNode.need_put_retry_data_id = data_id
-        ChordNode.need_put_retry_node = self
-        ChordUtil.dprint("global_put_2,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id))
-        return False
-
-    # TODO: x direct access to node_info of target_node at global_put
-    ChordUtil.dprint("global_put_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(data_id))
-
-    return True
-*/
 
 pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let self_node_ref = self_node.lock().unwrap();
@@ -270,142 +179,10 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
     return Ok(ret);
 }
 
-/*    
-def put(self, data_id : int, value_str : str) -> bool:
-    ChordUtil.dprint("put_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(data_id))
-
-    if self.is_alive == False:
-        # 処理の合間でkillされてしまっていた場合の考慮
-        # 何もしないで終了する
-        ChordUtil.dprint("put_0_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
-        return False
-
-    # 担当範囲（predecessorのidと自身のidの間）のデータであるかのチェック処理を加える
-    # そこに収まっていなかった場合、一定時間後リトライが行われるようエラーを返す.
-    # リクエストを受けるという実装も可能だが、stabilize処理で predecessor が生きて
-    # いるノードとなるまで下手にデータを持たない方が、データ配置の整合性を壊すリスクが
-    # 減りそうな気がするので、そうする
-    if self.node_info.predecessor_info == None:
-        return False
-    # Chordネットワークを右回りにたどった時に、データの id (data_id) が predecessor の node_id から
-    # 自身の node_id の間に位置する場合、そのデータは自身の担当だが、そうではない場合
-    if not ChordUtil.exist_between_two_nodes_right_mawari(cast(NodeInfo,self.node_info.predecessor_info).node_id, self.node_info.node_id, data_id):
-        return False
-
-    if self.node_info.lock_of_succ_infos.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-        # 今回は失敗としてしまう
-        ChordUtil.dprint("put_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + "LOCK_ACQUIRE_TIMEOUT")
-        return False
-    try:
-        with self.node_info.lock_of_datastore:
-            self.data_store.store_new_data(data_id, value_str)
-            self.data_store.distribute_replica()
-    finally:
-        self.node_info.lock_of_succ_infos.release()
-
-    ChordUtil.dprint("put_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(data_id) + "," + value_str)
-
-    return True
-*/    
-
-
 // 得られた value の文字列を返す
 // データの取得に失敗した場合は ERR_CODE_QUERIED_DATA_NOT_FOUND をエラーとして返す
 // 取得対象のデータが削除済みのデータであった場合は DELETED_ENTRY_MARKING_STR が正常値として返る
 pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-/*
-    ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(data_id))
-
-                    ret = self.router.find_successor(data_id)
-    if (ret.is_ok):
-        target_node: 'ChordNode' = cast('ChordNode', ret.result)
-        got_value_str = target_node.endpoints.grpc__get(data_id)
-    else:
-        # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE
-        # || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-
-        # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
-
-        # リトライに必要な情報をクラス変数に設定しておく
-        ChordNode.need_getting_retry_data_id = data_id
-        ChordNode.need_getting_retry_node = self
-
-        ChordUtil.dprint("global_get_0_1,FIND_NODE_FAILED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id))
-        # 処理を終える
-        return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
-
-    is_data_got_on_recovery = False
-    # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
-    # 一定数の predecessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
-    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        tried_node_num = 0
-        # 最初は処理の都合上、最初にgetをかけたノードを設定する
-        cur_predecessor : 'ChordNode' = target_node
-        while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
-            ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                            + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                            + got_value_str + "," + str(tried_node_num))
-
-            got_value_str, tmp_cur_predecessor =  cur_predecessor.endpoints.grpc__global_get_recover_prev(data_id)
-            if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-                is_data_got_on_recovery = True
-                break
-            else:
-                tried_node_num += 1
-
-            if tmp_cur_predecessor != None:
-                cur_predecessor = cast('ChordNode', tmp_cur_predecessor)
-
-    # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
-    # 一定数の successor を辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
-    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        tried_node_num = 0
-        # 最初は処理の都合上、最初にgetをかけたノードを設定する
-        cur_successor = target_node
-        while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
-            ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                            + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                            + got_value_str + "," + str(tried_node_num))
-
-            got_value_str, tmp_cur_successor =  cur_successor.endpoints.grpc__global_get_recover_succ(data_id)
-            if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-                is_data_got_on_recovery = True
-                break
-            else:
-                tried_node_num += 1
-
-            if tmp_cur_successor != None:
-                cur_successor = cast('ChordNode', tmp_cur_successor)
-
-    # リトライを試みたであろう時の処理
-    if ChordNode.need_getting_retry_data_id != -1:
-        if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-            # リトライに成功した
-            ChordUtil.dprint("global_get_2_6,retry of global_get is succeeded")
-            # リトライは不要なためクリア
-            ChordNode.need_getting_retry_data_id = -1
-            ChordNode.need_getting_retry_node = None
-        else:
-            # リトライに失敗した（何もしない）
-            ChordUtil.dprint("global_get_2_7,retry of global_get is failed")
-            pass
-
-    # 取得に失敗した場合はリトライに必要な情報をクラス変数に設定しておく
-    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        ChordNode.need_getting_retry_data_id = data_id
-        ChordNode.need_getting_retry_node = self
-
-    if is_data_got_on_recovery == True:
-        # リカバリ処理でデータを取得した場合は自身のデータストアにもその値を保持しておく
-        self.data_store.store_new_data(data_id, got_value_str)
-*/
-    // TODO: (rustr) リトライ処理の実装 at global_get
 
     let mut self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -469,122 +246,8 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         };
     }
 
-// TODO: (rustr)リトライ処理はひとまず後回し
-/*    
-    if success != true {
-        ChordNode.need_put_retry_data_id = data_id
-        ChordNode.need_put_retry_node = self
-        ChordUtil.dprint("global_put_2,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id))
-        return False
-    }
-*/
-
     return Err(chord_util::GeneralError::new("QUERIED DATA NOT FOUND".to_string(), chord_util::ERR_CODE_QUERIED_DATA_NOT_FOUND));
 }
-
-/*    
-# 得られた value の文字列を返す
-# データの取得に失敗した場合は ChordNode.QUERIED_DATA_NOT_FOUND_STR を返す
-# 取得対象のデータが削除済みのデータであった場合は DataStore.DELETED_ENTRY_MARKING_STR を返す
-# TODO: 現状の実装では、データの取得に失敗した場合、そのエントリが過去にputされていないためなのか、システム側の都合による
-#       ものなのかは区別がつかない.
-#       実システムでは一定回数リトライを行い、それでもダメな場合は ChordNode.QUERIED_DATA_NOT_FOUND_STR を返すという
-#       形にしなければならない at global_get
-def global_get(self, data_id : int) -> str:
-    ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(data_id))
-
-                    ret = self.router.find_successor(data_id)
-    if (ret.is_ok):
-        target_node: 'ChordNode' = cast('ChordNode', ret.result)
-        got_value_str = target_node.endpoints.grpc__get(data_id)
-    else:
-        # ret.err_code == ErrorCode.AppropriateNodeNotFoundException_CODE || ret.err_code == ErrorCode.InternalControlFlowException_CODE
-        # || ret.err_code == ErrorCode.NodeIsDownedException_CODE
-
-        # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
-
-        # リトライに必要な情報をクラス変数に設定しておく
-        ChordNode.need_getting_retry_data_id = data_id
-        ChordNode.need_getting_retry_node = self
-
-        ChordUtil.dprint("global_get_0_1,FIND_NODE_FAILED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id))
-        # 処理を終える
-        return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
-
-    is_data_got_on_recovery = False
-    # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
-    # 一定数の predecessorを辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
-    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        tried_node_num = 0
-        # 最初は処理の都合上、最初にgetをかけたノードを設定する
-        cur_predecessor : 'ChordNode' = target_node
-        while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
-            ChordUtil.dprint("global_get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                            + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                            + got_value_str + "," + str(tried_node_num))
-
-            got_value_str, tmp_cur_predecessor =  cur_predecessor.endpoints.grpc__global_get_recover_prev(data_id)
-            if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-                is_data_got_on_recovery = True
-                break
-            else:
-                tried_node_num += 1
-
-            if tmp_cur_predecessor != None:
-                cur_predecessor = cast('ChordNode', tmp_cur_predecessor)
-
-    # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
-    # 一定数の successor を辿ってそれぞれにも data_id に対応するデータを持っていないか問い合わせるようにする
-    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        tried_node_num = 0
-        # 最初は処理の都合上、最初にgetをかけたノードを設定する
-        cur_successor = target_node
-        while tried_node_num < ChordNode.GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES:
-            ChordUtil.dprint("global_get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                            + ChordUtil.gen_debug_str_of_data(data_id) + ","
-                            + got_value_str + "," + str(tried_node_num))
-
-            got_value_str, tmp_cur_successor =  cur_successor.endpoints.grpc__global_get_recover_succ(data_id)
-            if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-                is_data_got_on_recovery = True
-                break
-            else:
-                tried_node_num += 1
-
-            if tmp_cur_successor != None:
-                cur_successor = cast('ChordNode', tmp_cur_successor)
-
-    # リトライを試みたであろう時の処理
-    if ChordNode.need_getting_retry_data_id != -1:
-        if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-            # リトライに成功した
-            ChordUtil.dprint("global_get_2_6,retry of global_get is succeeded")
-            # リトライは不要なためクリア
-            ChordNode.need_getting_retry_data_id = -1
-            ChordNode.need_getting_retry_node = None
-        else:
-            # リトライに失敗した（何もしない）
-            ChordUtil.dprint("global_get_2_7,retry of global_get is failed")
-            pass
-
-    # 取得に失敗した場合はリトライに必要な情報をクラス変数に設定しておく
-    if got_value_str == ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-        ChordNode.need_getting_retry_data_id = data_id
-        ChordNode.need_getting_retry_node = self
-
-    if is_data_got_on_recovery == True:
-        # リカバリ処理でデータを取得した場合は自身のデータストアにもその値を保持しておく
-        self.data_store.store_new_data(data_id, got_value_str)
-
-    # TODO: x direct access to node_info of target_node at global_get
-    ChordUtil.dprint("global_get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        + ChordUtil.gen_debug_str_of_node(target_node.node_info) + ","
-        + ChordUtil.gen_debug_str_of_data(data_id) + "," + got_value_str)
-    return got_value_str
-*/
 
 pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let self_node_ref = self_node.lock().unwrap();
@@ -640,8 +303,6 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         }
     };
 
-    //data_store_ref.store_new_data(key_id, &val_str);
-    //self.data_store.distribute_replica()
     drop(data_store_ref);
 
     chord_util::dprint(
@@ -653,56 +314,6 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
 
     return Ok(ret_val);
 }
-
-/*    
-# 得られた value の文字列を返す
-def get(self, data_id : int, for_recovery = False) -> str:
-    if self.is_alive == False:
-        # 処理の合間でkillされてしまっていた場合の考慮
-        # 何もしないで終了する
-        ChordUtil.dprint("get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + "REQUEST_RECEIVED_BUT_I_AM_ALREADY_DEAD")
-        return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
-
-    if self.node_info.predecessor_info == None:
-        # まだpredecessorが設定されれていなかった場合の考慮
-        ChordUtil.dprint("get_0_5," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + "REQUEST_RECEIVED_BUT_I_CAN_NOT_KNOW_TANTOU_RANGE")
-        return ChordNode.QUERIED_DATA_NOT_FOUND_STR
-
-    ret = self.data_store.get(data_id)
-    if (ret.is_ok):
-        di_entry: DataIdAndValue = cast(DataIdAndValue, ret.result)
-    else:  # ret.err_code == ErrorCode.KeyError_CODE
-        err_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
-        ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
-        return err_str
-
-    # Chordネットワークを右回りにたどった時に、データの id (data_id) がpredecessorの node_id から
-    # 自身の node_id の間に位置した.
-    # つまり、自身の担当ID範囲であった
-    if ChordUtil.exist_between_two_nodes_right_mawari(cast('NodeInfo', self.node_info.predecessor_info).node_id,
-                                                    self.node_info.node_id,
-                                                    data_id) or for_recovery == True:
-        # 担当ノード（マスター）のデータであったか、担当ノードとしてgetを受け付けたがデータを持っていなかったために
-        # 周囲のノードに当該データを持っていないか問い合わせる処理を行っていた場合
-        ret_value_str = di_entry.value_data
-        ChordUtil.dprint("get_2," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
-    else:
-        # 自身の担当範囲のIDのデータでは無かった
-        # 該当IDのデータを保持していたとしてもレプリカであるので返さずにエラー文字列を返す
-        ret_value_str = self.QUERIED_DATA_NOT_FOUND_STR
-
-        ChordUtil.dprint("get_3," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                        + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
-
-    ChordUtil.dprint("get_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                    + ChordUtil.gen_debug_str_of_data(data_id) + "," + ret_value_str)
-
-    return ret_value_str
-*/
 
 pub fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<bool, chord_util::GeneralError> {
     match global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.clone()){
@@ -717,17 +328,3 @@ pub fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data
         }
     }
 }
-
-/*    
-# 指定されたデータが存在した場合は true を返し、そうでない場合は false を返す
-# TODO: global_getとglobal_putを呼び出しているがそれぞれで発見したノードが異なった場合
-#       を考慮すると、もう少し手のこんだ実装を行わなければならないかもしれない.
-#       また、global_getを何度かリトライすることでデータが見つかる場合が存在することを考える
-#       と、global_getもしくはglobal_putをある程度の回数呼び出す必要があるかもしれないが、
-#       当然、このRPCのレスポンスタイムは大きく落ちるためどうすべきか悩ましい.
-def global_delete(self, data_id : int) -> bool:
-    cur_val = self.global_get(data_id)
-    self.global_put(data_id, DataStore.DELETED_ENTRY_MARKING_STR)
-    return not (cur_val == ChordNode.QUERIED_DATA_NOT_FOUND_STR
-                or cur_val == DataStore.DELETED_ENTRY_MARKING_STR)
-*/

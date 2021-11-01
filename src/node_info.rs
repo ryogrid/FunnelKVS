@@ -15,13 +15,10 @@ type ArMu<T> = Arc<Mutex<T>>;
 #[derive(Serialize, Deserialize)]
 #[derive(Debug)]
 pub struct NodeInfo {
-//    pub existing_node : ArRmRs<chord_node::ChordNode>,
     pub node_id : u32,
     pub address_str: String,
     // デバッグ用のID
     // 何ノード目として生成されたかの値
-    // TODO: 実システムでは開発中（というか、スクリプトで順にノード起動していくような形）でないと
-    //       利用できないことは念頭おいて置く必要あり NodeInfo#born_id
     pub born_id : i32,
     // 以下の2つはNodeInfoオブジェクトを保持.
     // ある時点で取得したものが保持されており、変化する場合のあるフィールド
@@ -29,22 +26,16 @@ pub struct NodeInfo {
     // そのような情報が必要な場合はChordNodeオブジェクトから参照し、
     // 必要であれば、その際に下のフィールドにdeepcopyを設定しなおさ
     // なければならない.
-    //
+
     // 状況に応じて伸縮するが、インデックス0には必ず 非None な要素が入っている
     // ように制御する
     pub successor_info_list: Vec<NodeInfo>,
-    // join後はNoneになることのないように制御される
-    // Option<NodeInfo>だと再帰的定義となってコンパイルエラーとなり、
-    // Arc<Option<NodeInfo>> とすると参照アクセスする時にうまくいかないので
     // 要素数が0もしくは1のVecとして定義する。Noneに対応する状態はlen()の結果が0の時
     // 格納されている要素自体はimmutableとして扱わなければならないので注意
     pub predecessor_info: Vec<NodeInfo>,
     // NodeInfoオブジェクトを要素として持つリスト
     // インデックスの小さい方から狭い範囲が格納される形で保持する
-    // sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
-    // TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
-    
-    pub finger_table: Vec<Option<NodeInfo>>, // = [None] * gval.ID_SPACE_BITS
+    pub finger_table: Vec<Option<NodeInfo>>,
 }
 
 impl NodeInfo {
@@ -84,7 +75,7 @@ impl Clone for NodeInfo {
     }  
 }
 
-// 実装の参照からコピーを作成する
+// 実体の参照からコピーを作成する
 // cloneした場合と異なり、predecessor_info, successor_info_list, finger_table
 // も一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
 pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
@@ -113,7 +104,6 @@ pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
         ret_node_info.predecessor_info.push((*each_ninfo).clone());
     }
 
-    //println!("clone_strong: {:?}", ret_node_info);
     return ret_node_info;    
 }
 
@@ -132,25 +122,7 @@ pub fn handle_downed_node_info(self_node: &mut NodeInfo, target_node: &NodeInfo,
     chord_util::dprint(&("handle_downed_node_info called!".to_string()));
 
     //successorについて
-    //let old_successor_id = self_node.successor_info_list[0].node_id;
-    // if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR 
-    //     && target_node.node_id == self_node.successor_info_list[0].node_id {
     if err.err_code == chord_util::ERR_CODE_HTTP_REQUEST_ERR {
-
-        // // finger_tableを末尾から辿ってsuccessorに設定可能なものがあれば設定する
-        // for idx in 0..(gval::ID_SPACE_BITS as usize) {
-        //     match &self_node.finger_table[idx] {
-        //             None => { continue; }
-        //             Some(ninfo) => {
-        //                 if ninfo.node_id != self_node.node_id && ninfo.node_id != old_successor_id{
-        //                     chord_util::dprint(&("assign new successor!".to_string() + " from " + chord_util::gen_debug_str_of_node(&self_node.successor_info_list[0]).as_str() + " to " + chord_util::gen_debug_str_of_node(ninfo).as_str()));
-        //                     self_node.successor_info_list[0] = (*ninfo).clone();
-        //                     break;
-        //                 }
-        //             }
-        //     };
-        // }
-
         // successor_info_listを先頭から確認しダウンが判明したノード以外を残す
         let mut new_succ_info_list: Vec<NodeInfo> = vec![];
         for ninfo in &self_node.successor_info_list {
@@ -186,7 +158,5 @@ pub fn handle_downed_node_info(self_node: &mut NodeInfo, target_node: &NodeInfo,
             };
         }
     }
-
-    // TODO: (rustr) successor_info_listからもダウンと分かったノードは取り除くようにする
 }
 

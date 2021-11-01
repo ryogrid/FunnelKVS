@@ -13,28 +13,6 @@ use crate::router;
 
 type ArMu<T> = Arc<Mutex<T>>;
 
-/*
-// join が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のjoin処理の際にリトライさせる
-// なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
-lazy_static! {
-    pub static ref need_join_retry_node : ArMu<Option<chord_node::ChordNode>> 
-        = ArMu_new!(None);
-}
-*/
-/*
-need_join_retry_node : Optional['ChordNode'] = None
-*/
-
-/*
-lazy_static! {
-    pub static ref need_join_retry_tyukain_node : ArMu<Option<chord_node::ChordNode>>
-        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
-}
-*/
-/*
-need_join_retry_tyukai_node: Optional['ChordNode'] = None
-*/
-
 // 経路表の情報を他ノードから強制的に設定する.
 // joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
 pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){

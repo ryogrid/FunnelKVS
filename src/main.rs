@@ -61,7 +61,6 @@ fn req_rest_api_test_inner_get() {
 }
 
 fn req_rest_api_test_inner_get_param_test() {
-    //let resp = reqwest::blocking::get("http://localhost:8000/get-param-test/aaaaaa/bbbbbb").unwrap()
     let resp = reqwest::blocking::get("http://localhost:8000/get-param-test?param1=aaaaaa&param2=bbbbbb").unwrap()
     .text();
     //.json::<HashMap<String, String>>().unwrap();

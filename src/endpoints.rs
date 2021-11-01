@@ -471,7 +471,7 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
     let config = Config::build(Environment::Production)
     .address(bind_addr)
     .port(bind_port_num as u16)
-    .workers(30)
+    .workers(5)
     .finalize()
     .unwrap();
 

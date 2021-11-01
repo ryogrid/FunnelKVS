@@ -1,58 +1,3 @@
-/*
-    # global_getで取得しようとしたKeyが探索したノードに存在なかった場合に、当該ノードから
-    # predecessorを辿ってリカバリを試みる処理をくくり出したもの
-    def global_get_recover_prev(self, data_id : int) -> Tuple[str, Optional['ChordNode']]:
-        if self.node_info.lock_of_pred_info.acquire(timeout=gval.LOCK_ACQUIRE_TIMEOUT) == False:
-            ChordUtil.dprint("global_get_recover_prev_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + "LOCK_ACQUIRE_TIMEOUT")
-            return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-        try:
-            if self.node_info.predecessor_info == None:
-                ChordUtil.dprint("global_get_recover_prev_1,predecessor is None")
-                return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-            ret = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
-            if (ret.is_ok):
-                cur_predecessor : 'ChordNode' = cast('ChordNode', ret.result)
-                got_value_str = cur_predecessor.endpoints.grpc__get(data_id, for_recovery=True)
-            else:  # ret.is_ok == False
-                if cast(int,ret.err_code) == ErrorCode.NodeIsDownedException_CODE:
-                    # ここでは何も対処はしない
-                    ChordUtil.dprint("global_get_recover_prev_2,NODE_IS_DOWNED")
-                    return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-                else: #cast(int,ret.err_code) == ErrorCode.InternalControlFlowException_CODE
-                    # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
-                    ChordUtil.dprint("global_get_recover_prev_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
-                    return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-
-            ChordUtil.dprint("global_get_recover_prev_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                             + ChordUtil.gen_debug_str_of_data(data_id))
-            if got_value_str != ChordNode.QUERIED_DATA_NOT_FOUND_STR:
-                # データが円環上でIDが小さくなっていく方向（反時計時計回りの方向）を前方とした場合に
-                # 前方に位置するpredecessorを辿ることでデータを取得することができた
-                # TODO: x direct access to node_info of cur_predecessor at global_get
-                ChordUtil.dprint("global_get_recover_prev_5,"
-                                 + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + "data found at predecessor,"
-                                 + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
-                return got_value_str, cur_predecessor
-            else:
-                # できなかった
-                # TODO: x direct access to node_info of cur_predecessor at global_get
-                ChordUtil.dprint("global_get_recover_prev_6,"
-                                 + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-                                 + "data not found at predecessor,"
-                                 + ChordUtil.gen_debug_str_of_node(cur_predecessor.node_info))
-                return ChordNode.QUERIED_DATA_NOT_FOUND_STR, cur_predecessor
-        finally:
-            self.node_info.lock_of_pred_info.release()
-
-        # 他の例外の発生ででここに到達した
-        return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-
-    def pass_node_info(self) -> 'NodeInfo':
-        return self.node_info.get_partial_deepcopy()
-*/
-
 use std::sync::atomic::{AtomicIsize, AtomicBool};
 use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
@@ -79,7 +24,7 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, data_id){
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, target_id){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
@@ -165,7 +110,7 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
     );
 
     let mut data_store_ref = data_store.lock().unwrap();
-    let ret = data_store_ref.store_new_data(key_id, val_str.clone());
+    let ret = data_store_ref.store_one_iv(key_id, val_str.clone());
     drop(data_store_ref);
 
     chord_util::dprint(
@@ -191,7 +136,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, data_id){
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, target_id){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
@@ -225,7 +170,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         return False
 */
 
-        let data_iv = match endpoints::rrpc_call__get(&replica_node, target_id){
+        let data_iv = match endpoints::rrpc_call__get(&replica_node, data_id){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);

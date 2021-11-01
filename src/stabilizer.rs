@@ -341,7 +341,7 @@ pub fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 // FingerTableのエントリはこの呼び出しによって埋まっていく
 pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
-    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
     //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
 
     chord_util::dprint(&("stabilize_finger_table_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
@@ -353,7 +353,7 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
     println!("update_id: {:?} {:?}", update_id, idx);
 
     drop(self_node_ref);
-    let find_rslt = endpoints::rrpc_call__find_successor(&deep_cloned_self_node, update_id);
+    let find_rslt = endpoints::rrpc_call__find_successor(&self_node_deep_cloned, update_id);
     
     self_node_ref = self_node.lock().unwrap();
     match find_rslt {
@@ -365,7 +365,7 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
             chord_util::dprint(&("stabilize_finger_table_2_5,NODE_IS_DOWNED,".to_string()
                 + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
 
-            node_info::handle_downed_node_info(&mut self_node_ref, &deep_cloned_self_node, &err);
+            node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
 
             return Ok(true);
         },
@@ -383,38 +383,38 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
 
 // caller_node が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
 // 本メソッドはstabilize処理の中で用いられる
-pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
-    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
     drop(self_node_ref);
 
-    chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+    chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
         + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
-        + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
+        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str()));
 
-    if deep_cloned_self_node.predecessor_info.len() == 0 {
+    if self_node_deep_cloned.predecessor_info.len() == 0 {
         // predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
         node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
-        chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+        chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
             + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
+            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str()));
         return Ok(true);
     }
 
     // predecessorの生死チェックを行い、ダウンしていた場合 未設定状態に戻して return する
     // (本来 check_predecessor でやる処理ではないと思われるが、finger tableの情報を用いて
     // ノードダウン時の対処を行う場合に、このコードがないとうまくいかなそうなのでここで処理)
-    match endpoints::rrpc_call__get_node_info(&deep_cloned_self_node.predecessor_info[0].address_str){
+    match endpoints::rrpc_call__get_node_info(&self_node_deep_cloned.predecessor_info[0].address_str){
         Err(err) => {
             self_node_ref = self_node.lock().unwrap();
-            node_info::handle_downed_node_info(&mut self_node_ref, &deep_cloned_self_node.predecessor_info[0], &err);
+            node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned.predecessor_info[0], &err);
             return Ok(true);
         }
         Ok(some) => {}        
     }
 
-    chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
+    chord_util::dprint(&("check_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str()));
     
     self_node_ref = self_node.lock().unwrap();
     let distance_check = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id, caller_node_ni.node_id);
@@ -429,11 +429,44 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, caller_node_ni: n
     if distance_check < distance_cur {
         drop(self_node_ref);
         node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
+
+        // 切り替えたpredecessorに対してデータの委譲を行う
+        let self_id = self_node_deep_cloned.node_id;
+        let new_pred_id = caller_node_ni.node_id;
+        let mut data_store_ref = data_store.lock().unwrap();
+        let delegate_datas: Vec<chord_util::DataIdAndValue>;
+        if self_id > new_pred_id {
+            delegate_datas = data_store_ref.get_and_delete_iv_with_range(new_pred_id..self_id);
+        }else{
+            delegate_datas = data_store_ref.get_and_delete_iv_with_range(self_id..new_pred_id);
+        }
+        drop(data_store_ref);
+
         self_node_ref = self_node.lock().unwrap();
         chord_util::dprint(&("check_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
                 + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + ","
                 + chord_util::gen_debug_str_of_node(&self_node_ref.predecessor_info[0]).as_str()));
+        drop(self_node_ref);
+
+        match endpoints::rrpc_call__pass_datas(&caller_node_ni, delegate_datas){
+            Err(err) => {
+                self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &caller_node_ni, &err);
+                return Ok(true);
+            }
+            Ok(some) => { return Ok(true) }
+        }
     }
+
+    return Ok(true);
+}
+
+// passed_datasで渡されたデータのリストを自身のDataStoreに加える
+// 基本的に、ノード参加が判明した際に他のノードが self_node に対してデータを委譲
+// する際に利用することを想定する
+pub fn pass_datas(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
+    let mut data_store_ref = data_store.lock().unwrap();
+    data_store_ref.store_iv_with_vec(pass_datas);
 
     return Ok(true);
 }

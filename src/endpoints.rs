@@ -155,8 +155,8 @@ pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node
 }
 
 #[post("/check_predecessor", data = "<caller_node_ni>")]
-pub fn rrpc__check_predecessor(self_node: State<ArMu<node_info::NodeInfo>>, caller_node_ni: Json<node_info::NodeInfo>) -> Json<Result<bool, chord_util::GeneralError>> {
-    return Json(stabilizer::check_predecessor(Arc::clone(&self_node), caller_node_ni.0));
+pub fn rrpc__check_predecessor(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, caller_node_ni: Json<node_info::NodeInfo>) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(stabilizer::check_predecessor(Arc::clone(&self_node), Arc::clone(&data_store), caller_node_ni.0));
 }
 
 pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
@@ -354,6 +354,37 @@ pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_id: u32) -> Result<ch
 #[post("/get", data = "<key_id>")]
 pub fn rrpc__get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_id: Json<u32>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
     return Json(chord_node::get(Arc::clone(&self_node), Arc::clone(&data_store), key_id.0));
+}
+
+pub fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
+    let req_rslt = http_post_request(
+        &("http://".to_string() + self_node.address_str.as_str() + "/pass_datas"),
+        match serde_json::to_string(&pass_datas){
+            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+            Ok(text) => text
+        });
+    
+    let res_text = match req_rslt {
+        Err(err) => {
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        }
+        Ok(text) => {text}
+    };
+
+    let ret_bool = match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(result) => result
+    }{
+        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+        Ok(is_successed) => is_successed
+    };
+
+    return Ok(ret_bool);
+}
+
+#[post("/pass_datas", data = "<pass_datas>")]
+pub fn rrpc__pass_datas(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, pass_datas: Json<Vec<chord_util::DataIdAndValue>>) -> Json<Result<bool, chord_util::GeneralError>> {
+    return Json(stabilizer::pass_datas(Arc::clone(&self_node), Arc::clone(&data_store), pass_datas.0));
 }
 
 pub fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, key_str: String) -> Result<bool, chord_util::GeneralError> {

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
+use std::ops::Range;
 
 use crate::gval;
 use crate::chord_node;
@@ -26,7 +27,7 @@ impl DataStore {
         DataStore {stored_data : sd}
     }
 
-    pub fn store_new_data(& mut self, data_id: u32, value_str: String) -> bool {
+    pub fn store_one_iv(& mut self, data_id: u32, value_str: String) -> bool {
         let iv_entry = chord_util::DataIdAndValue::new(data_id, value_str.clone());
         match self.stored_data.insert(data_id.to_string(), iv_entry){
             None => { return false; }
@@ -44,4 +45,33 @@ impl DataStore {
             }
         }
     }
+
+    pub fn remove_one_data(&mut self, key_id: u32){
+        self.stored_data.remove(&key_id.to_string());
+    }
+
+    pub fn store_iv_with_vec(&mut self, iv_vec: Vec<chord_util::DataIdAndValue>){
+        for each_iv in iv_vec {
+            self.store_one_iv(each_iv.data_id, each_iv.val_str);
+        }
+    }
+
+    // データIDの範囲を指定して、その範囲のデータを削除し、同時にそれらのデータのリストを得る
+    pub fn get_and_delete_iv_with_range(&mut self, id_range: Range<u32>) -> Vec<chord_util::DataIdAndValue> {
+        let mut ret_vec: Vec<chord_util::DataIdAndValue> = vec![];
+        for (key, value) in &self.stored_data {
+            let data_id: u32 = key.parse().unwrap();
+            if !(data_id >= id_range.start && data_id <= id_range.end) {
+                ret_vec.push((*value).clone());                
+            }
+            //self.store_one_iv(each_iv.data_id, each_iv.val_str);
+        }
+        // ret_vecに詰めたデータを self.stored_data から削除する
+        for entry in &ret_vec {
+            self.remove_one_data(entry.data_id);
+        }
+
+        return ret_vec;
+    }    
+
 }

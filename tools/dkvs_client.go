@@ -181,6 +181,39 @@ func setup_nodes(num int) {
 	}
 }
 
+func global_put_simple(addr_and_port string, key string, val string) (map[string]interface{}, error) {
+	return http_get_request(addr_and_port, "/global_put_simple?key="+key+"&val="+val)
+}
+
+func global_get_simple(addr_and_port string, key string) (map[string]interface{}, error) {
+	return http_get_request(addr_and_port, "/global_get_simple?key="+key)
+}
+
+// 固定されたテスト用の keyとvalueの組み合わせを global_putする
+func put_test_values(addr_and_port string) {
+	for ii := 0; ii < 50; ii++ {
+		key := strconv.Itoa(ii)
+		val := key
+		fmt.Printf("put request key=%s\n", key)
+		_, err := global_put_simple(addr_and_port, key, val)
+		if err != nil {
+			fmt.Println("global_put_simple request failed:" + err.Error())
+		}
+	}
+}
+
+func get_test_values(addr_and_port string) {
+	for ii := 0; ii < 50; ii++ {
+		key := strconv.Itoa(ii)
+		fmt.Printf("get request key=%s\n", key)
+		resp_json, err := global_get_simple(addr_and_port, key)
+		fmt.Println(resp_json)
+		if err != nil {
+			fmt.Printf("get missed key=%s\n", key)
+		}
+	}
+}
+
 func main() {
 	// TODO: 必要になったら引数処理できるようにする https://qiita.com/nakaryooo/items/2d0befa2c1cf347800c3
 
@@ -195,6 +228,14 @@ func main() {
 		break
 	case "check-chain":
 		check_chain_with_successor_info()
+		break
+	case "put-test-values":
+		addr_and_port := *arg1
+		put_test_values(addr_and_port)
+		break
+	case "get-test-values":
+		addr_and_port := *arg1
+		get_test_values(addr_and_port)
 		break
 	default:
 		fmt.Println("dkvs_client -op=<operation-name> -arg1=<argument if needed>")

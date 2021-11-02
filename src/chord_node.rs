@@ -43,7 +43,7 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             + idx.to_string().as_str()
         ));        
 
-        let is_exist = match endpoints::rrpc_call__put(&replica_node, data_id, val_str.clone()){
+        let is_exist = match endpoints::rrpc_call__put(&replica_node, target_id, val_str.clone()){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
@@ -93,6 +93,7 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         + val_str.clone().as_str())
     );
 
+    
     // Chordネットワークを右回りにたどった時に、データの id (key_id) が predecessor の node_id から
     // 自身の node_id の間に位置する場合、そのデータは自身の担当だが、そうではない場合
     if chord_util::exist_between_two_nodes_right_mawari(
@@ -101,6 +102,7 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         key_id) == false {
             return Err(chord_util::GeneralError::new("passed data is out of my tantou range".to_string(), chord_util::ERR_CODE_NOT_TANTOU));
     }
+
 
     chord_util::dprint(
         &("put_3,".to_string()
@@ -170,7 +172,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         return False
 */
 
-        let data_iv = match endpoints::rrpc_call__get(&replica_node, data_id){
+        let data_iv = match endpoints::rrpc_call__get(&replica_node, target_id){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
@@ -220,6 +222,7 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         + chord_util::gen_debug_str_of_data(key_id).as_str())
     );
 
+/*    
     // Chordネットワークを右回りにたどった時に、データの id (key_id) が predecessor の node_id から
     // 自身の node_id の間に位置する場合、そのデータは自身の担当だが、そうではない場合
     if chord_util::exist_between_two_nodes_right_mawari(
@@ -228,6 +231,7 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         key_id) == false {
             return Err(chord_util::GeneralError::new("passed data is out of my tantou range".to_string(), chord_util::ERR_CODE_NOT_TANTOU));
     }
+*/
 
     chord_util::dprint(
         &("get_3,".to_string()

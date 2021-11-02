@@ -56,15 +56,15 @@ impl DataStore {
         }
     }
 
-    // データIDの範囲を指定して、その範囲のデータを削除し、同時にそれらのデータのリストを得る
-    pub fn get_and_delete_iv_with_range(&mut self, id_range: Range<u32>) -> Vec<chord_util::DataIdAndValue> {
+    // 自身のノードIDとpredecessorのノードIDを指定すると、自身の担当範囲外のデータを削除し、同時に削除したデータ
+    // のリストが返る
+    pub fn get_and_delete_iv_with_pred_self_id(&mut self, pred_id: u32, self_id: u32) -> Vec<chord_util::DataIdAndValue> {
         let mut ret_vec: Vec<chord_util::DataIdAndValue> = vec![];
         for (key, value) in &self.stored_data {
             let data_id: u32 = key.parse().unwrap();
-            if !(data_id >= id_range.start && data_id <= id_range.end) {
+            if chord_util::exist_between_two_nodes_right_mawari(self_id, pred_id, data_id) == true {
                 ret_vec.push((*value).clone());                
             }
-            //self.store_one_iv(each_iv.data_id, each_iv.val_str);
         }
         // ret_vecに詰めたデータを self.stored_data から削除する
         for entry in &ret_vec {

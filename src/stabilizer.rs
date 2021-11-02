@@ -429,8 +429,7 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<
     if distance_check < distance_cur {
         drop(self_node_ref);
         node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
-
-/*        
+/*
         // 切り替えたpredecessorに対してデータの委譲を行う
         let self_id = self_node_deep_cloned.node_id;
         let new_pred_id = caller_node_ni.node_id;
@@ -459,7 +458,6 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<
         }
 */
     }
-
     return Ok(true);
 }
 

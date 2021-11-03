@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
 use std::borrow::Borrow;
 use std::sync::atomic::Ordering;
+use std::collections::HashMap;
 
 use crate::gval;
 use crate::node_info;
@@ -14,7 +15,7 @@ use crate::endpoints;
 
 type ArMu<T> = Arc<Mutex<T>>;
 
-pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
     drop(self_node_ref);
@@ -24,7 +25,7 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, target_id){
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
@@ -43,7 +44,7 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             + idx.to_string().as_str()
         ));        
 
-        let is_exist = match endpoints::rrpc_call__put(&replica_node, target_id, val_str.clone()){
+        let is_exist = match endpoints::rrpc_call__put(&replica_node, Arc::clone(&client_pool), target_id, val_str.clone()){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
@@ -66,7 +67,7 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
     return Ok(true);
 }
 
-pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
     drop(self_node_ref);
@@ -129,7 +130,7 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
 // 得られた value の文字列を返す
 // データの取得に失敗した場合は ERR_CODE_QUERIED_DATA_NOT_FOUND をエラーとして返す
 // 取得対象のデータが削除済みのデータであった場合は DELETED_ENTRY_MARKING_STR が正常値として返る
-pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
 
     let mut self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -138,7 +139,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, target_id){
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
@@ -172,7 +173,7 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         return False
 */
 
-        let data_iv = match endpoints::rrpc_call__get(&replica_node, target_id){
+        let data_iv = match endpoints::rrpc_call__get(&replica_node, Arc::clone(&client_pool), target_id){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
@@ -264,11 +265,11 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
     return Ok(ret_val);
 }
 
-pub fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<bool, chord_util::GeneralError> {
-    match global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.clone()){
+pub fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
+    match global_get(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key_str.clone()){
         Err(err) => { return Err(err); }
         Ok(data_iv) => {
-            match global_put(Arc::clone(&self_node), Arc::clone(&data_store), key_str, data_store::DELETED_ENTRY_MARKING_STR.to_string()){
+            match global_put(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key_str, data_store::DELETED_ENTRY_MARKING_STR.to_string()){
                 Err(err) => { return Err(err); }
                 Ok(is_exist) => {
                     return Ok(is_exist);

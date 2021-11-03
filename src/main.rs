@@ -124,6 +124,7 @@ fn main() {
         // 仲介ノードを介してChordネットワークに参加する
         stabilizer::join(
             Arc::clone(&node_info),
+            Arc::clone(&client_pool),
             &(bind_addr.clone() + ":" + &bind_port_num.to_string()),
             &(tyukai_addr + ":" + &tyukai_port_num.to_string()),
             born_id

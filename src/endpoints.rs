@@ -207,7 +207,7 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: A
 // idで識別されるデータを担当するノードの名前解決を行う
 #[post("/find_successor", data = "<id>")]
 pub fn rrpc__find_successor(self_node: State<ArMu<node_info::NodeInfo>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
-    return Json(router::find_successor(Arc::clone(&self_node), self_node.address_str.as_str(), Arc::clone(&client_pool), id.0));
+    return Json(router::find_successor(Arc::clone(&self_node), Arc::clone(&client_pool), id.0));
 }
 
 pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
@@ -238,7 +238,7 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, clie
 
 #[post("/closest_preceding_finger", data = "<id>")]
 pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
-    return Json(router::closest_preceding_finger(Arc::clone(&self_node), self_node.address_str.as_str(), Arc::clone(&client_pool), id.0));
+    return Json(router::closest_preceding_finger(Arc::clone(&self_node), Arc::clone(&client_pool), id.0));
 }
 
 pub fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
@@ -326,8 +326,8 @@ pub fn rrpc_call__global_get(self_node: &node_info::NodeInfo, client_pool: ArMu<
 }
 
 #[post("/global_get", data = "<key_str>")]
-pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
-    return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
+pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
+    return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key_str.0));
 }
 
 pub fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
@@ -446,13 +446,13 @@ pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>, client_p
 // ブラウザから試すためのエンドポイント
 #[get("/global_put_simple?<key>&<val>")]
 pub fn rrpc__global_put_simple(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>>, key: String, val: String) -> Json<Result<bool, chord_util::GeneralError>> {
-    return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&client_pool), Arc::clone(&data_store), key, val));
+    return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key, val));
 }
 
 // ブラウザから試すためのエンドポイント
 #[get("/global_get_simple?<key>")]
 pub fn rrpc__global_get_simple(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>>, key: String) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
-    return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&data_store), key));
+    return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key));
 }
 
 // ブラウザから試すためのエンドポイント

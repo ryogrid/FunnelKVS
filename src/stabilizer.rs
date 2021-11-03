@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
 use std::sync::atomic::Ordering;
 use std::borrow::{Borrow, BorrowMut};
+use std::collections::HashMap;
 
 use crate::gval;
 use crate::chord_node;
@@ -122,7 +123,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     };
 }
 
-pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
+pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>) -> Result<bool, chord_util::GeneralError>{
     let mut self_node_ref = self_node.lock().unwrap();
     let mut deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
     //println!("P-SELF-S: P: {:?} SELF: {:?} S {:?}", self_node_ref.predecessor_info, *self_node_ref, self_node_ref.successor_info_list);
@@ -265,7 +266,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
 // successor_info_listのインデックス1より後ろを規定数まで埋める
 // 途中でエラーとなった場合は、規定数に届いていなくとも処理を中断する
-pub fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{    
+pub fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>) -> Result<bool, chord_util::GeneralError>{    
     let mut self_node_ref = self_node.lock().unwrap();
     chord_util::dprint(&("fill_succ_info_list_0,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
 
@@ -339,7 +340,7 @@ pub fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 // FingerTableに関するstabilize処理を行う
 // 一回の呼び出しで1エントリを更新する
 // FingerTableのエントリはこの呼び出しによって埋まっていく
-pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {
+pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, idx: i32) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
     //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);

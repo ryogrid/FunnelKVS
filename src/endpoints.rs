@@ -23,6 +23,7 @@ type ArMu<T> = Arc<Mutex<T>>;
 
 // urlは "http://から始まるものにすること"
 fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>) -> Result<String, chord_util::GeneralError> {
+/*
     let mut client_pool_ref = client_pool.lock().unwrap();
     let mut is_reused = false;
     let client_armu = match client_pool_ref.get(&address_str.to_string()){
@@ -58,6 +59,18 @@ fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<
     if is_reused {
         println!("reused client: {:?}", *client);
     }
+*/
+    let client = match reqwest::blocking::Client::builder()
+    .pool_max_idle_per_host(3)
+    .pool_idle_timeout(None)
+    .timeout(Duration::from_secs(10000))
+    .build(){
+        Err(err) => { 
+            chord_util::dprint(&("ERROR at http_post_request(1)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
+        Ok(got_client) => got_client
+    };
 
     let resp = match client.get(url_str).send(){
         Err(err) => { 
@@ -81,6 +94,7 @@ fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<
 // urlは "http://から始まるものにすること"
 // json_str は JSONの文字列表現をそのまま渡せばよい
 fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, json_str: String) -> Result<String, chord_util::GeneralError> {
+/*
     let mut client_pool_ref = client_pool.lock().unwrap();
     let mut is_reused = false;
     let client_armu = match client_pool_ref.get(&address_str.to_string()){
@@ -116,19 +130,19 @@ fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap
     if is_reused {
         println!("reused client: {:?}", *client);
     }
-    
+*/    
 
-    // let client = match reqwest::blocking::Client::builder()
-    // .pool_max_idle_per_host(3)
-    // .pool_idle_timeout(None)
-    // .timeout(Duration::from_secs(10000))
-    // .build(){
-    //     Err(err) => { 
-    //         chord_util::dprint(&("ERROR at http_post_request(1)".to_string() + url_str));
-    //         return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
-    //     },
-    //     Ok(got_client) => got_client
-    // };
+    let client = match reqwest::blocking::Client::builder()
+    .pool_max_idle_per_host(3)
+    .pool_idle_timeout(None)
+    .timeout(Duration::from_secs(10000))
+    .build(){
+        Err(err) => { 
+            chord_util::dprint(&("ERROR at http_post_request(1)".to_string() + url_str));
+            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+        },
+        Ok(got_client) => got_client
+    };
 
     let resp = match client.post(url_str).body(json_str).send(){
         Err(err) => {

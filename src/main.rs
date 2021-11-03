@@ -87,7 +87,8 @@ fn req_rest_api_test() {
     req_rest_api_test_inner_get();
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     //引数処理
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {

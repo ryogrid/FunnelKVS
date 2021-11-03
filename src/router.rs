@@ -16,9 +16,12 @@ type ArMu<T> = Arc<Mutex<T>>;
 
 // idで識別されるデータを担当するノードの名前解決を行う
 pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    let mut self_node_ref = self_node.lock().unwrap();
-    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
-    drop(self_node_ref);
+    let deep_cloned_self_node;
+    {
+        let self_node_ref = self_node.lock().unwrap();
+        deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        //drop(self_node_ref);
+    }
 
     chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                 + chord_util::gen_debug_str_of_data(id).as_str()));
@@ -37,8 +40,10 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<Ha
 
     let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash.address_str, Arc::clone(&client_pool)) {
         Err(err) => {
-            self_node_ref = self_node.lock().unwrap();
-            node_info::handle_downed_node_info(&mut self_node_ref, &n_dash, &err);
+            {
+                let mut self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &n_dash, &err);
+            }
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
         Ok(got_node) => {                
@@ -48,8 +53,10 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<Ha
     
     match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str, Arc::clone(&client_pool)) {
         Err(err) => {
-            self_node_ref = self_node.lock().unwrap();
-            node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
+            {
+                let mut self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
+            }
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
         Ok(got_node) => {                
@@ -135,9 +142,12 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, client_poo
 
     chord_util::dprint(&"closest_preceding_finger_start".to_string());
 
-    let mut self_node_ref = self_node.lock().unwrap();
-    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
-    drop(self_node_ref);
+    let deep_cloned_self_node;
+    {
+        let self_node_ref = self_node.lock().unwrap();
+        deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        //drop(self_node_ref);
+    }
 
     for node_info in (&deep_cloned_self_node).finger_table.iter().rev() {
         let conved_node_info = match node_info {
@@ -164,8 +174,10 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, client_poo
 
             let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info.address_str, Arc::clone(&client_pool)){
                 Err(err) => {
-                    self_node_ref = self_node.lock().unwrap();
-                    node_info::handle_downed_node_info(&mut self_node_ref, &conved_node_info, &err);
+                    {
+                        let mut self_node_ref = self_node.lock().unwrap();
+                        node_info::handle_downed_node_info(&mut self_node_ref, &conved_node_info, &err);
+                    }
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
                 Ok(got_node) => {                

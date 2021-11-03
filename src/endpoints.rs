@@ -24,11 +24,12 @@ type ArMu<T> = Arc<Mutex<T>>;
 // urlは "http://から始まるものにすること"
 fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>) -> Result<String, chord_util::GeneralError> {
     let mut client_pool_ref = client_pool.lock().unwrap();
+    let mut is_reused = false;
     let client_armu = match client_pool_ref.get(&address_str.to_string()){
         None => {            
             let new_client = match reqwest::blocking::Client::builder()
-            .pool_max_idle_per_host(3)
-            .pool_idle_timeout(None)
+            .pool_max_idle_per_host(usize::MAX)
+            .pool_idle_timeout(Duration::from_secs(10000))
             .timeout(Duration::from_secs(10000))
             .build(){
                 Err(err) => {
@@ -46,12 +47,17 @@ fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<
         }
         Some(client_armu) => {
             let tmp_client_armu = Arc::clone(&client_armu);
+            is_reused = true;
             tmp_client_armu
         }
     };
     drop(client_pool_ref);
 
     let client = client_armu.lock().unwrap();
+
+    if is_reused {
+        println!("reused client: {:?}", *client);
+    }
 
     let resp = match client.get(url_str).send(){
         Err(err) => { 
@@ -76,11 +82,12 @@ fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<
 // json_str は JSONの文字列表現をそのまま渡せばよい
 fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, json_str: String) -> Result<String, chord_util::GeneralError> {
     let mut client_pool_ref = client_pool.lock().unwrap();
+    let mut is_reused = false;
     let client_armu = match client_pool_ref.get(&address_str.to_string()){
         None => {            
             let new_client = match reqwest::blocking::Client::builder()
-            .pool_max_idle_per_host(3)
-            .pool_idle_timeout(None)
+            .pool_max_idle_per_host(usize::MAX)
+            .pool_idle_timeout(Duration::from_secs(10000))
             .timeout(Duration::from_secs(10000))
             .build(){
                 Err(err) => {
@@ -98,12 +105,18 @@ fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap
         }
         Some(client_armu) => {
             let tmp_client_armu = Arc::clone(&client_armu);
+            is_reused = true;
             tmp_client_armu
         }
     };
     drop(client_pool_ref);
 
     let client = client_armu.lock().unwrap();
+
+    if is_reused {
+        println!("reused client: {:?}", *client);
+    }
+    
 
     // let client = match reqwest::blocking::Client::builder()
     // .pool_max_idle_per_host(3)
@@ -524,6 +537,10 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
     .address(bind_addr)
     .port(bind_port_num as u16)
     .workers(30)
+    .keep_alive(10000)
+    .read_timeout(10000)
+    .write_timeout(10000)
+    .limits(rocket::config::Limits::new().limit("forms", u64::MAX).limit("json", u64::MAX))
     .finalize()
     .unwrap();
 

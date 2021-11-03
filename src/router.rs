@@ -15,7 +15,7 @@ use crate::data_store;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // idで識別されるデータを担当するノードの名前解決を行う
-pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let deep_cloned_self_node;
     {
         let self_node_ref = self_node.lock().unwrap();
@@ -26,7 +26,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<Ha
     chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                 + chord_util::gen_debug_str_of_data(id).as_str()));
     
-    let n_dash = match find_predecessor(&deep_cloned_self_node, Arc::clone(&client_pool), id){
+    let n_dash = match find_predecessor(&deep_cloned_self_node, Arc::clone(&client_pool), id).await {
         Err(err) => {
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
@@ -38,7 +38,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<Ha
                         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","
                         + chord_util::gen_debug_str_of_data(id).as_str()));
 
-    let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash.address_str, Arc::clone(&client_pool)) {
+    let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash.address_str, Arc::clone(&client_pool)).await {
         Err(err) => {
             {
                 let mut self_node_ref = self_node.lock().unwrap();
@@ -51,7 +51,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<Ha
         }
     };
     
-    match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str, Arc::clone(&client_pool)) {
+    match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str, Arc::clone(&client_pool)).await {
         Err(err) => {
             {
                 let mut self_node_ref = self_node.lock().unwrap();
@@ -66,7 +66,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<Ha
 }
  
 // id の前で一番近い位置に存在するノードを探索する
-pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let mut n_dash: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
     let mut n_dash_found: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
 
@@ -86,7 +86,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: ArMu<H
         chord_util::dprint(&("find_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
 
-        n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, Arc::clone(&client_pool), id){
+        n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, Arc::clone(&client_pool), id).await {
             Err(err) => {
                 return Err(chord_util::GeneralError::new(err.message, err.err_code));
             }
@@ -134,7 +134,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: ArMu<H
 }
 
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     // 範囲の広いエントリから探索していく
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
@@ -172,7 +172,7 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, client_poo
             chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
-            let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info.address_str, Arc::clone(&client_pool)){
+            let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info.address_str, Arc::clone(&client_pool)).await {
                 Err(err) => {
                     {
                         let mut self_node_ref = self_node.lock().unwrap();

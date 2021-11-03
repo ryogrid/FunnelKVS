@@ -197,7 +197,7 @@ pub fn gen_debug_str_of_data(data_id : u32) -> String {
     return format!("{:X}", data_id) + &",".to_string() + &conv_id_to_ratio_str(data_id);
 }
 
-pub fn get_node_info(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::blocking::Client>>>) -> node_info::NodeInfo {
+pub fn get_node_info(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> node_info::NodeInfo {
     let self_node_ref = self_node.lock().unwrap();
     let ret = node_info::partial_clone_from_ref_strong(&self_node_ref);
     return ret;

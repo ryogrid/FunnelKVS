@@ -45,10 +45,10 @@
     - **charactor code of body part must be UTF-8**
     - http://[node addr]:[node_port]/global_put  
   　  - body at POST -> { "key_str" : "[string]", "val_str" : "[string]" }  
-    - http://[node addr]:[node_port]/global_put  
-  　  - body at POST -> "[string]"  
+    - http://[node addr]:[node_port]/global_get  
+  　  - body at POST -> "[key_str as string]"  
     - http://[node addr]:[node_port]/global_delete  
-      - body at POST -> "[string]" 
+      - body at POST -> "[key_str as string]" 
 
 - Utility CLI tool (tools/dkvs_client.go)
   - setup chord network (on local machine)

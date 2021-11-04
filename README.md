@@ -55,7 +55,7 @@
     - $ go run -op=setup-nodes -arg1=[launch nodes num]
   - KVS system network health check
     - $ go run -op=check-chain
-    - if the network is helthy, launched or aliving node (process) is listed without duplication
+    - if the network is helthy, launched or alive nodes (process) are listed without duplication
   - test datas put to KVS
     - $ go run -op=put-test-values -arg1="127.0.0.1:11000"
     - node you specify with arg1 is free. above is example

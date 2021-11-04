@@ -112,11 +112,21 @@ fn main() {
         let node_info = ArMu_new!(node_info::NodeInfo::new());
         let data_store = ArMu_new!(data_store::DataStore::new());
 
+        let node_info_api_serv = Arc::clone(&node_info);
+        let data_store_api_serv = Arc::clone(&data_store);
+        let bind_addr_api_serv = bind_addr.clone();
+
         let node_info_arc_succ_th = Arc::clone(&node_info);
         let data_store_arc_succ_th = Arc::clone(&data_store);
     
         let node_info_arc_ftable_th = Arc::clone(&node_info);
         let data_store_arc_ftable_th = Arc::clone(&data_store);
+
+        std::thread::spawn(move|| {
+            endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), bind_addr_api_serv, bind_port_num);
+        });
+
+        std::thread::sleep(std::time::Duration::from_millis(1500 as u64));
 
         // 仲介ノードを介してChordネットワークに参加する
         stabilizer::join(
@@ -128,6 +138,7 @@ fn main() {
 
         std::thread::sleep(std::time::Duration::from_millis(500 as u64));
 
+
         let mut counter = 0;
         let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
             stabilizer::stabilize_successor(Arc::clone(&node_info_arc_succ_th));
@@ -136,8 +147,8 @@ fn main() {
                 // successor_info_listの0番要素以降を規定数まで埋める（埋まらない場合もある）
                 stabilizer::fill_succ_info_list(Arc::clone(&node_info_arc_succ_th));
             }
-            //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
-            std::thread::sleep(std::time::Duration::from_millis(500 as u64));
+            std::thread::sleep(std::time::Duration::from_millis(100 as u64));
+            //std::thread::sleep(std::time::Duration::from_millis(500 as u64));
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
@@ -153,7 +164,6 @@ fn main() {
         //     req_rest_api_test();
         // });
 
-        endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store), bind_addr, bind_port_num);
 
         let mut thread_handles = vec![];    
         thread_handles.push(stabilize_succ_th_handle);

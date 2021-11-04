@@ -32,7 +32,7 @@ fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
         Ok(got_client) => got_client
     };
 
-    let resp = match client.get(url_str).send(){
+    let resp = match client.get(url_str).header(reqwest::header::CONTENT_TYPE, "application/json").send(){
         Err(err) => { 
             chord_util::dprint(&("ERROR at http_get_request(2)".to_string() + url_str));
             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
@@ -65,7 +65,7 @@ fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_ut
         Ok(got_client) => got_client
     };
 
-    let resp = match client.post(url_str).body(json_str).send(){
+    let resp = match client.post(url_str).header(reqwest::header::CONTENT_TYPE, "application/json").body(json_str).send(){
         Err(err) => {
             chord_util::dprint(&("ERROR at http_post_request(2)".to_string() + url_str));
             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));

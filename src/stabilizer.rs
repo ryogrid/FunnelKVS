@@ -353,8 +353,9 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
     println!("update_id: {:?} {:?}", update_id, idx);
 
     drop(self_node_ref);
-    let find_rslt = endpoints::rrpc_call__find_successor(&self_node_deep_cloned, update_id);
-    
+    //let find_rslt = endpoints::rrpc_call__find_successor(&self_node_deep_cloned, update_id);
+    let find_rslt = router::find_successor(Arc::clone(&self_node), update_id);
+
     self_node_ref = self_node.lock().unwrap();
     match find_rslt {
         Err(err) => {

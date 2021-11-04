@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -118,6 +119,8 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 const bind_ip_addr = "127.0.0.1"
 const check_node_limit = 150
 
+var platform string
+
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
 	start_port := 11000
@@ -158,9 +161,15 @@ func check_chain_with_successor_info() {
 }
 
 func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {
-	// TODO: プラットフォームごとに叩くスクリプトを切り替えたい
+	shortcut_script := ""
+	if platform == "windonws" {
+		shortcut_script = "./rust_dkvs.bat"
+	} else {
+		shortcut_script = "./rust_dkvs.sh"
+	}
+
 	err := exec.Command(
-		"rust_dkvs.bat", //"../target/debug/rust_dkvs",
+		shortcut_script, //"rust_dkvs.bat", //"../target/debug/rust_dkvs",
 		strconv.Itoa(born_id),
 		bind_addr,
 		strconv.Itoa(bind_port),
@@ -178,7 +187,7 @@ func setup_nodes(num int) {
 	for ii := 0; ii < num; ii++ {
 		start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, start_port, "./")
 		fmt.Printf("launched born_id=%d\n", ii+1)
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 5)
 	}
 }
 
@@ -239,7 +248,7 @@ func profile_get_node_info_throughput() {
 }
 
 func main() {
-	// TODO: 必要になったら引数処理できるようにする https://qiita.com/nakaryooo/items/2d0befa2c1cf347800c3
+	platform = runtime.GOOS
 
 	op := flag.String("op", "setup-nodes", "setup chord network")
 	arg1 := flag.String("arg1", "30", "argument if operation needs it")

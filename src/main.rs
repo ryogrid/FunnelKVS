@@ -52,7 +52,9 @@ use std::collections::HashMap;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-  
+
+use pprof::ProfilerGuard;
+
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()
     .text();
@@ -104,6 +106,8 @@ fn main() {
         //TODO: (rustr) ログの出力先ディレクトリのパスも受けられるようにする
         //              ディレクトリがまだ存在しなければここの引数処理の中で作成してしまう
         
+        let guard = pprof::ProfilerGuard::new(100).unwrap();
+
         //TODO: (rustr) ロガーライブラリは初期化時にディレクトリパスも含めて出力先を指定できるものを選びたい
         //              （つまり、ロガーライブラリの初期化もグローバルに一度やればOK、みたいなものであればここでやる）
         println!("born_id={:?}, bind_addr={:?}, bind_port_num={:?}, tyukai_addr={:?}, tyukai_port_num={:?}, log_out_path={:?}", &born_id, &bind_addr, &bind_port_num, &tyukai_addr, &tyukai_port_num, &log_out_path);
@@ -137,6 +141,23 @@ fn main() {
             }
             //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
             std::thread::sleep(std::time::Duration::from_millis(500 as u64));
+
+            // プロファイラの結果を出力
+            if counter == 600 {
+                match guard.report().build() {
+                    Ok(report) => {
+                        let mut file = File::create("profile-" + born_id.to_string() + ".pb").unwrap();
+                        let profile = report.pprof().unwrap();
+
+                        let mut content = Vec::new();
+                        profile.encode(&mut content).unwrap();
+                        file.write_all(&content).unwrap();
+
+                        println!("report: {:?}", report);
+                    }
+                    Err(_) => {}
+                };
+            }
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{

@@ -48,6 +48,7 @@ use std::sync::{Mutex, mpsc};
 use std::sync::atomic::Ordering;
 use std::env;
 use std::collections::HashMap;
+use std::fs::File;
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -147,7 +148,7 @@ fn main() {
             if counter == 600 {
                 match guard.report().build() {
                     Ok(report) => {
-                        let mut file = File::create("profile-".to_string() + born_id + ".pb").unwrap();
+                        let mut file = File::create("profile-".to_string() + born_id.to_string().as_str() + ".pb").unwrap();
                         let profile = report.pprof().unwrap();
 
                         let mut content = Vec::new();

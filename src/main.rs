@@ -135,7 +135,8 @@ fn main() {
                 // successor_info_listの0番要素以降を規定数まで埋める（埋まらない場合もある）
                 stabilizer::fill_succ_info_list(Arc::clone(&node_info_arc_succ_th));
             }
-            std::thread::sleep(std::time::Duration::from_millis(100 as u64));
+            //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
+            std::thread::sleep(std::time::Duration::from_millis(500 as u64));
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{

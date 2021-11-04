@@ -191,7 +191,7 @@ func global_get_simple(addr_and_port string, key string) (map[string]interface{}
 
 // 固定されたテスト用の keyとvalueの組み合わせを global_putする
 func put_test_values(addr_and_port string) {
-	for ii := 0; ii < 50; ii++ {
+	for ii := 0; ii < 30; ii++ {
 		key := strconv.Itoa(ii)
 		val := key
 		fmt.Printf("put request key=%s\n", key)
@@ -203,7 +203,7 @@ func put_test_values(addr_and_port string) {
 }
 
 func get_test_values(addr_and_port string) {
-	for ii := 0; ii < 50; ii++ {
+	for ii := 0; ii < 30; ii++ {
 		key := strconv.Itoa(ii)
 		fmt.Printf("get request key=%s\n", key)
 		resp_json, err := global_get_simple(addr_and_port, key)

@@ -175,7 +175,8 @@ func setup_nodes(num int) {
 	start_port := 11000
 	cur_port := start_port
 	for ii := 0; ii < num; ii++ {
-		start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, start_port, "./")
+		start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, cur_port-1, "./")
+		cur_port++
 		fmt.Printf("launched born_id=%d\n", ii+1)
 		time.Sleep(time.Second * 3)
 	}

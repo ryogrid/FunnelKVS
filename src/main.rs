@@ -54,6 +54,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::*;
 
+use tonic::{transport::Server, Request, Response, Status};
+
+pub mod hello_world {
+    tonic::include_proto!("helloworld");
+}
+
 /*
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()

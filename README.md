@@ -75,9 +75,10 @@
   - $ cd chord_sim_rust
   - $ cargo run
 
-## Runnable platforms (= Rust and Python usable platforms)
-- Windows native
-- MacOS
+## Runnable platforms for KVS system (= We can build node daemon program binary for the platform with Rust dev env)
+- Windows native (dev env is also OK)
+- MacOS (dev env is also OK)
 - Linux (and Windows Subsystem for Linux environment)
-  - probably works...
+  - dev env is also OK
+  - probably ...
 - other UNIX like OS environments (please try!)

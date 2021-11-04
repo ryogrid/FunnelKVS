@@ -203,7 +203,9 @@ func put_test_values(addr_and_port string) {
 }
 
 func get_test_values(addr_and_port string) {
-	for ii := 0; ii < 30; ii++ {
+	num := 30
+	start_unix_time := time.Now().Unix()
+	for ii := 0; ii < num; ii++ {
 		key := strconv.Itoa(ii)
 		fmt.Printf("get request key=%s\n", key)
 		resp_json, err := global_get_simple(addr_and_port, key)
@@ -212,6 +214,27 @@ func get_test_values(addr_and_port string) {
 			fmt.Printf("get missed key=%s\n", key)
 		}
 	}
+	end_unitx_time := time.Now().Unix()
+	time_to_get := float64(end_unitx_time-start_unix_time) / float64(num)
+	fmt.Printf("%f sec/data\n", time_to_get)
+}
+
+func profile_get_node_info_throughput() {
+	num := 50
+	start_unix_time := time.Now().UnixNano()
+	const endpoint_path = "/get_node_info"
+	target_port := 11000
+	target_addr := bind_ip_addr + ":" + strconv.Itoa(target_port)
+	for ii := 0; ii < num; ii++ {
+		_, err := http_get_request(target_addr, endpoint_path)
+		//fmt.Println(resp_json)
+		if err != nil {
+			fmt.Printf("error:%s\n", err)
+		}
+	}
+	end_unitx_time := time.Now().UnixNano()
+	time_to_query := (float64(end_unitx_time-start_unix_time) / float64(num)) / float64(1000)
+	fmt.Printf("%f usec/query\n", time_to_query)
 }
 
 func main() {
@@ -236,6 +259,9 @@ func main() {
 	case "get-test-values":
 		addr_and_port := *arg1
 		get_test_values(addr_and_port)
+		break
+	case "profile-get-node-info":
+		profile_get_node_info_throughput()
 		break
 	default:
 		fmt.Println("dkvs_client -op=<operation-name> -arg1=<argument if needed>")

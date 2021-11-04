@@ -50,7 +50,7 @@
     - http://[node addr]:[node_port]/global_delete  
       - body at POST -> "[string]" 
 
-- Utility CLI tool (tools/dkvs_cli.go)
+- Utility CLI tool (tools/dkvs_client.go)
   - setup chord network (on local machine)
     - $ go run -op=setup-nodes -arg1=[launch nodes num]
   - KVS system network health check

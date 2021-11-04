@@ -163,7 +163,8 @@ fn main() {
         // スレッド終了の待ち合わせ（終了してくるスレッドは基本的に無い）
         for handle in thread_handles {
             handle.join().unwrap();
-        }   
+        }
+
     }
 
 }

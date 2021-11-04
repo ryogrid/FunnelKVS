@@ -159,7 +159,7 @@ func check_chain_with_successor_info() {
 
 func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {
 	err := exec.Command(
-		"rust_dkvs.bat", //"../target/debug/rust_dkvs",
+		"../target/debug/rust_dkvs", //"rust_dkvs.bat"
 		strconv.Itoa(born_id),
 		bind_addr,
 		strconv.Itoa(bind_port),

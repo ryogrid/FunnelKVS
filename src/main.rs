@@ -138,11 +138,6 @@ fn main() {
             }
             //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
             std::thread::sleep(std::time::Duration::from_millis(500 as u64));
-
-            // プロファイル結果を見るために終了する
-            if counter == 100 {
-                panic!("for stopping.");
-            }
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{

@@ -54,6 +54,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use pprof::ProfilerGuard;
+use pprof::protos::Message;
 
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()
@@ -146,7 +147,7 @@ fn main() {
             if counter == 600 {
                 match guard.report().build() {
                     Ok(report) => {
-                        let mut file = File::create("profile-" + born_id.to_string() + ".pb").unwrap();
+                        let mut file = File::create("profile-".to_string() + born_id + ".pb").unwrap();
                         let profile = report.pprof().unwrap();
 
                         let mut content = Vec::new();

@@ -13,7 +13,6 @@
 - Fault torelance
   - data replication is implemented
   - functionality for keeping network healthy is implemented
-  - but not enough yet...
 
 - Data consistency
   - care for data consistency is not enough yet...

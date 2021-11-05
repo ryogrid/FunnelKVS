@@ -162,8 +162,8 @@ func check_chain_with_successor_info() {
 
 func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {
 	shortcut_script := ""
-	if platform == "windonws" {
-		shortcut_script = "./rust_dkvs.bat"
+	if platform == "windows" {
+		shortcut_script = "rust_dkvs.bat"
 	} else {
 		shortcut_script = "./rust_dkvs.sh"
 	}

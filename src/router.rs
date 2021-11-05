@@ -61,7 +61,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
 pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let mut n_dash: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
     let mut n_dash_found: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
-
+    let mut is_first_cpf = true;
     chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&exnode_ni_ref).as_str()));
     
     // n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
@@ -78,12 +78,23 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
         chord_util::dprint(&("find_predecessor_2,".to_string() + chord_util::gen_debug_str_of_node(exnode_ni_ref).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&n_dash).as_str()));
 
-        n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, id){
-            Err(err) => {
-                return Err(chord_util::GeneralError::new(err.message, err.err_code));
-            }
-            Ok(ninfo) => ninfo
-        };
+        // 初回は自ノードへの呼出しなのでRPCのインタフェースを介さずに呼び出しを行う
+        if is_first_cpf {
+            n_dash_found = match closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(exnode_ni_ref)), id) {
+                    Err(err) => {
+                        return Err(chord_util::GeneralError::new(err.message, err.err_code));
+                    }
+                    Ok(ninfo) => ninfo
+            };
+            is_first_cpf = false;
+        } else {
+            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, id){
+                Err(err) => {
+                    return Err(chord_util::GeneralError::new(err.message, err.err_code));
+                }
+                Ok(ninfo) => ninfo
+            };
+        }
 
         if n_dash_found.node_id == n_dash.node_id {
             // 見つかったノードが、n_dash と同じで、変わらなかった場合

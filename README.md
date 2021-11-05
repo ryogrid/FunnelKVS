@@ -26,7 +26,7 @@
 
 - Setup KVS system
     - **launch example of node daemons which compose KVS system**
-      - **you can build KVS system which is composed of multiple machines if you place rust_dkv program binary to the machines and kick these with some tool like SSH**
+      - **you can build KVS system which is composed of multiple machines if you place rust_dkvs program binary to the machines and kick these with some tool like SSH**
         - procedures wrote below are single machine example for easy trying
       - **born_id of first node must be 1** but born_id of other node is free except for "1"
         - "1" can be used by first node only 

@@ -16,7 +16,7 @@
 
 - Data consistency
   - care for data consistency is not enough yet...
-  - First, **running test under node downs and joins is pranned** 
+  - First, **running test under node downs and joins is planned** 
 
 - How to execute node daemon
   - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly

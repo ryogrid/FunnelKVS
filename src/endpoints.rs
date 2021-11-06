@@ -746,6 +746,7 @@ pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo
     return ret_vec;
 }
 
+
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone)]
 pub struct SetRoutingInfosForce{

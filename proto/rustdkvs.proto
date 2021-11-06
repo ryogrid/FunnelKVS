@@ -1,6 +1,5 @@
 syntax = "proto3";
 package rustdkvs;
-import "google/protobuf/any.proto";
 
 message RString {
     string val = 1;

@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::cell::{RefMut, RefCell, Ref};
 use std::borrow::Borrow;
 use std::sync::atomic::Ordering;
+use std::collections::HashMap;
 
 use crate::gval;
 use crate::node_info;
@@ -14,21 +15,26 @@ use crate::endpoints;
 
 type ArMu<T> = Arc<Mutex<T>>;
 
-pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    let mut self_node_ref = self_node.lock().unwrap();
-    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
-    drop(self_node_ref);
+pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+    let self_node_deep_cloned;
+    {
+        let self_node_ref = self_node.lock().unwrap();    
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        //drop(self_node_ref);
+    }
 
     // 更新に失敗するレプリカがあった場合、それはノードダウンであると（本当にそうか確実ではないが）前提をおいて、
     // 続くレプリカの更新は継続する
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, target_id){
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id).await {
             Err(err) => {
-                self_node_ref = self_node.lock().unwrap();
-                node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
-                drop(self_node_ref);
+                {
+                    let mut self_node_ref = self_node.lock().unwrap();
+                    node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                    //drop(self_node_ref);
+                }
                 //return Err(err);
                 continue;
             }
@@ -43,11 +49,13 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             + idx.to_string().as_str()
         ));        
 
-        let is_exist = match endpoints::rrpc_call__put(&replica_node, target_id, val_str.clone()){
+        let is_exist = match endpoints::rrpc_call__put(&replica_node, Arc::clone(&client_pool), target_id, val_str.clone()).await {
             Err(err) => {
-                self_node_ref = self_node.lock().unwrap();
-                node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
-                drop(self_node_ref);
+                {
+                    let mut self_node_ref = self_node.lock().unwrap();
+                    node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
+                    //drop(self_node_ref);
+                }
                 continue;
                 //return Err(err);
             }
@@ -66,10 +74,13 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
     return Ok(true);
 }
 
-pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    let self_node_ref = self_node.lock().unwrap();
-    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
-    drop(self_node_ref);
+pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+    let self_node_deep_cloned;
+    {
+        let self_node_ref = self_node.lock().unwrap();
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        //drop(self_node_ref);
+    }
 
     chord_util::dprint(
                     &("put_1,".to_string() 
@@ -111,9 +122,12 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         + val_str.clone().as_str())
     );
 
-    let mut data_store_ref = data_store.lock().unwrap();
-    let ret = data_store_ref.store_one_iv(key_id, val_str.clone());
-    drop(data_store_ref);
+    let ret;
+    {
+        let mut data_store_ref = data_store.lock().unwrap();
+        ret = data_store_ref.store_one_iv(key_id, val_str.clone());
+        //drop(data_store_ref);
+    }
 
     chord_util::dprint(
             &("put_4,".to_string()
@@ -129,20 +143,24 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
 // 得られた value の文字列を返す
 // データの取得に失敗した場合は ERR_CODE_QUERIED_DATA_NOT_FOUND をエラーとして返す
 // 取得対象のデータが削除済みのデータであった場合は DELETED_ENTRY_MARKING_STR が正常値として返る
-pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-
-    let mut self_node_ref = self_node.lock().unwrap();
-    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
-    drop(self_node_ref);
+pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+    let self_node_deep_cloned;
+    {
+        let self_node_ref = self_node.lock().unwrap();
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        //drop(self_node_ref);
+    }
 
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, target_id){
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id).await {
             Err(err) => {
-                self_node_ref = self_node.lock().unwrap();
-                node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
-                drop(self_node_ref);
+                {
+                    let mut self_node_ref = self_node.lock().unwrap();
+                    node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+                    //drop(self_node_ref);
+                }
                 continue;
                 //return Err(err);
             }
@@ -172,11 +190,13 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         return False
 */
 
-        let data_iv = match endpoints::rrpc_call__get(&replica_node, target_id){
+        let data_iv = match endpoints::rrpc_call__get(&replica_node, Arc::clone(&client_pool), target_id).await {
             Err(err) => {
-                self_node_ref = self_node.lock().unwrap();
-                node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
-                drop(self_node_ref);
+                {
+                    let mut self_node_ref = self_node.lock().unwrap();
+                    node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
+                    //drop(self_node_ref);
+                }
                 continue;
                 //return Err(err);
             }
@@ -197,9 +217,12 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
 }
 
 pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-    let self_node_ref = self_node.lock().unwrap();
-    let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
-    drop(self_node_ref);
+    let self_node_deep_cloned;
+    {
+        let self_node_ref = self_node.lock().unwrap();
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        //drop(self_node_ref);
+    }
 
     chord_util::dprint(
                     &("get_1,".to_string() 
@@ -239,20 +262,22 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         + chord_util::gen_debug_str_of_data(key_id).as_str())
     );
 
-    let data_store_ref = data_store.lock().unwrap();
-    let ret_val = match data_store_ref.get(key_id){
-        Err(err) => {
-            return Err(err);
-        }
-        Ok(data_iv) => {
-            if data_iv.val_str == data_store::DELETED_ENTRY_MARKING_STR.to_string() {
-                return Err(chord_util::GeneralError::new(data_store::DELETED_ENTRY_MARKING_STR.to_string(), chord_util::ERR_CODE_DATA_TO_GET_IS_DELETED));
+    let ret_val;
+    {
+        let data_store_ref = data_store.lock().unwrap();
+        ret_val = match data_store_ref.get(key_id){
+            Err(err) => {
+                return Err(err);
             }
-            data_iv
-        }
-    };
-
-    drop(data_store_ref);
+            Ok(data_iv) => {
+                if data_iv.val_str == data_store::DELETED_ENTRY_MARKING_STR.to_string() {
+                    return Err(chord_util::GeneralError::new(data_store::DELETED_ENTRY_MARKING_STR.to_string(), chord_util::ERR_CODE_DATA_TO_GET_IS_DELETED));
+                }
+                data_iv
+            }
+        };
+        //drop(data_store_ref);
+    }
 
     chord_util::dprint(
             &("get_4,".to_string()
@@ -264,11 +289,11 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
     return Ok(ret_val);
 }
 
-pub fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_str: String) -> Result<bool, chord_util::GeneralError> {
-    match global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.clone()){
+pub async fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
+    match global_get(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key_str.clone()).await {
         Err(err) => { return Err(err); }
         Ok(data_iv) => {
-            match global_put(Arc::clone(&self_node), Arc::clone(&data_store), key_str, data_store::DELETED_ENTRY_MARKING_STR.to_string()){
+            match global_put(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key_str, data_store::DELETED_ENTRY_MARKING_STR.to_string()).await {
                 Err(err) => { return Err(err); }
                 Ok(is_exist) => {
                     return Ok(is_exist);

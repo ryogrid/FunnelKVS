@@ -54,6 +54,14 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use tokio::*;
+
+use tonic::{transport::Server, Request, Response, Status};
+
+pub mod hello_world {
+    tonic::include_proto!("helloworld");
+}
+
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()
     .text();
@@ -72,22 +80,24 @@ fn req_rest_api_test_inner_post() {
     let text = r#"{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[{"node_id":100,"address_str":"kanbayashi","born_id":77,"successor_info_list":[],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"predecessor_info":[],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}],"finger_table":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}"#;
     let arg_node_info = serde_json::from_str::<node_info::NodeInfo>(text).unwrap();
 
-    let client = reqwest::blocking::Client::new();
+    let client = reqwest::Client::new();
     let res = client.post("http://localhost:8000/deserialize")
     .body(serde_json::to_string(&arg_node_info).unwrap())
     .send().unwrap();
 
     println!("{:#?}", res.text());
 }
-
+*/
 fn req_rest_api_test() {    
     println!("client mode!\n");
     //req_rest_api_test_inner_post();
     //req_rest_api_test_inner_get_param_test();
-    req_rest_api_test_inner_get();
+    //req_rest_api_test_inner_get();
 }
 
-fn main() {
+
+#[tokio::main]
+async fn main() {
     //引数処理
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {
@@ -111,6 +121,7 @@ fn main() {
 
         let node_info = ArMu_new!(node_info::NodeInfo::new());
         let data_store = ArMu_new!(data_store::DataStore::new());
+        let client_pool = ArMu_new!(HashMap::<String, ArMu<reqwest::Client>>::new());
 
         let node_info_api_serv = Arc::clone(&node_info);
         let data_store_api_serv = Arc::clone(&data_store);
@@ -118,9 +129,11 @@ fn main() {
 
         let node_info_arc_succ_th = Arc::clone(&node_info);
         let data_store_arc_succ_th = Arc::clone(&data_store);
-    
+        let client_pool_arc_succ_th = Arc::clone(&client_pool);
+        
         let node_info_arc_ftable_th = Arc::clone(&node_info);
         let data_store_arc_ftable_th = Arc::clone(&data_store);
+        let client_pool_arc_ftable_th =  Arc::clone(&client_pool);
 
         std::thread::spawn(move|| {
             endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), bind_addr_api_serv, bind_port_num);
@@ -128,38 +141,42 @@ fn main() {
 
         std::thread::sleep(std::time::Duration::from_millis(1500 as u64));
 
+        println!("here1!\n");        
         // 仲介ノードを介してChordネットワークに参加する
         stabilizer::join(
             Arc::clone(&node_info),
+            Arc::clone(&client_pool),
             &(bind_addr.clone() + ":" + &bind_port_num.to_string()),
             &(tyukai_addr + ":" + &tyukai_port_num.to_string()),
             born_id
-        );
+        ).await;
+        println!("here2!\n");
 
-        std::thread::sleep(std::time::Duration::from_millis(500 as u64));
+        tokio::time::sleep(tokio::time::Duration::from_millis(500 as u64)).await;
 
 
         let mut counter = 0;
-        let stabilize_succ_th_handle = std::thread::spawn(move|| loop{
-            stabilizer::stabilize_successor(Arc::clone(&node_info_arc_succ_th));
+        let stabilize_succ_th_handle = tokio::spawn(async move { loop{
+            stabilizer::stabilize_successor(Arc::clone(&node_info_arc_succ_th), Arc::clone(&client_pool_arc_succ_th)).await;
             counter += 1;
             if counter % gval::FILL_SUCC_LIST_INTERVAL_TIMES == 0 {
                 // successor_info_listの0番要素以降を規定数まで埋める（埋まらない場合もある）
-                stabilizer::fill_succ_info_list(Arc::clone(&node_info_arc_succ_th));
+                stabilizer::fill_succ_info_list(Arc::clone(&node_info_arc_succ_th), Arc::clone(&client_pool_arc_succ_th)).await;
             }
+
             //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
             std::thread::sleep(std::time::Duration::from_millis(500 as u64));
         });
     
-        let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{
+        let stabilize_ftable_th_handle = tokio::spawn(async move { loop {
             for idx in 1..(gval::ID_SPACE_BITS + 1){
-                    stabilizer::stabilize_finger_table(Arc::clone(&node_info_arc_ftable_th), idx as i32);
-                    std::thread::sleep(std::time::Duration::from_millis(50 as u64));
+                    stabilizer::stabilize_finger_table(Arc::clone(&node_info_arc_ftable_th), Arc::clone(&client_pool_arc_ftable_th), idx as i32).await;
+                    tokio::time::sleep(tokio::time::Duration::from_millis(50 as u64)).await;
             }
-        });    
+        }});    
 
         // std::thread::spawn(|| loop{
-        //     std::thread::sleep(std::time::Duration::from_millis((10000) as u64));
+        //     tokio::time::sleep(tokio::time::Duration::from_millis(std::time::Duration::from_millis((10000) as u64));
         //     println!("req_rest_api_test!");
         //     req_rest_api_test();
         // });
@@ -172,7 +189,7 @@ fn main() {
     
         // スレッド終了の待ち合わせ（終了してくるスレッドは基本的に無い）
         for handle in thread_handles {
-            handle.join().unwrap();
+            handle.await;
         }
 
     }

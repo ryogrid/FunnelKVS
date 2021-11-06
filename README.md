@@ -16,7 +16,7 @@
 
 - Data consistency
   - care for data consistency is not enough yet...
-  - First, **running test under node downs and joins is pranned** 
+  - First, **running test under node downs and joins is planned** 
 
 - How to execute node daemon
   - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
@@ -26,7 +26,7 @@
 
 - Setup KVS system
     - **launch example of node daemons which compose KVS system**
-      - **you can build KVS system which is composed of multiple machines if you place rust_dkv program binary to the machines and kick these with some tool like SSH**
+      - **you can build KVS system which is composed of multiple machines if you place rust_dkvs program binary to the machines and kick these with some tool like SSH**
         - procedures wrote below are single machine example for easy trying
       - **born_id of first node must be 1** but born_id of other node is free except for "1"
         - "1" can be used by first node only 
@@ -75,10 +75,13 @@
   - $ cd chord_sim_rust
   - $ cargo run
 
-## Runnable platforms for KVS system (= We can build node daemon program binary for the platform with Rust dev env)
-- Windows native (dev env is also OK)
-- MacOS (dev env is also OK)
+## Runnable platforms for KVS system (= We can build the daemon binary for the platform)
+- Windows native
+  - dev env is also OK
+- MacOS
+  - dev env is also OK
 - Linux (and Windows Subsystem for Linux environment)
   - dev env is also OK
   - probably ...
-- other UNIX like OS environments (please try!)
+- other UNIX like OS environments
+  - please try!

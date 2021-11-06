@@ -6,10 +6,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "rust_dkvs"
+path = "src/main.rs"
+
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 tonic = "0.6.1"
 bytes = "1.1.0"
+protobuf = { version = "2", features = ["with-bytes"] }
 prost = "0.9.0"
 prost-derive = "0.9.0"
 rocket = "0.4.10"

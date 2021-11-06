@@ -58,9 +58,10 @@ use tokio::*;
 
 use tonic::{transport::Server, Request, Response, Status};
 
-pub mod hello_world {
-    tonic::include_proto!("helloworld");
+pub mod rustdkvs {
+    tonic::include_proto!("rustdkvs");
 }
+
 /*
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()
@@ -137,9 +138,10 @@ async fn main() {
         let client_pool_arc_ftable_th =  Arc::clone(&client_pool);
 
         std::thread::spawn(move|| {
-            endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), Arc::clone(&client_pool_api_serv), bind_addr_api_serv, bind_port_num);
+            //endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), Arc::clone(&client_pool_api_serv), bind_addr_api_serv, bind_port_num);
+            endpoints::grpc_api_server_start(bind_addr_api_serv, bind_port_num);
         });
-
+/*
         std::thread::sleep(std::time::Duration::from_millis(1500 as u64));
 
         println!("here1!\n");        
@@ -192,7 +194,6 @@ async fn main() {
         for handle in thread_handles {
             handle.await;
         }
-
+*/        
     }
-
 }

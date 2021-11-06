@@ -1,0 +1,39 @@
+syntax = "proto3";
+package rustdkvs;
+
+message RString {
+    string val = 1;
+}
+
+message UINT32 {
+    uint32 val = 1;
+}
+
+message SetRoutingInfosForce {
+    NodeInfo predecessor_info = 1;
+    NodeInfo successor_info_0 = 2;
+    NodeInfo ftable_enry_0 = 3;
+}
+
+message NodeInfo {
+    uint32 node_id = 1;
+    string address_str = 2;
+    int32 born_id = 3;
+    repeated NodeInfo successor_info_list = 4;
+    repeated NodeInfo predecessor_info = 5;
+    repeated NodeInfo finger_table = 6;
+}
+
+message GlobalPut {
+    string key_str = 1;
+    string val_str = 2;    
+}
+
+message Put {
+    uint32 key_id = 1;
+    string val_str = 2;
+}
+
+service RustDKVS {
+    rpc grpc_call_get_node_info (RString) returns (NodeInfo);
+}

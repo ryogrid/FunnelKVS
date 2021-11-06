@@ -12,6 +12,13 @@ use tokio::runtime::Runtime;
 
 use chord_util::GeneralError;
 
+use tonic::{transport::Server, Request, Response, Status};
+use crate::rustdkvs::rust_dkvs_server::{RustDkvs, RustDkvsServer};
+use crate::rustdkvs::{NodeInfo, Uint32, RString};
+
+#[derive(Debug, Default)]
+pub struct MyRustDKVS {}
+
 use crate::gval;
 use crate::chord_node;
 use crate::node_info;
@@ -557,6 +564,33 @@ pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashM
     return Ok(ret_ninfo);
 }
 
+#[tonic::async_trait]
+impl RustDkvs for MyRustDKVS {
+    async fn grpc_call_get_node_info(
+        &self,
+        request: Request<RString>, // Accept request of type HelloRequest
+    ) -> Result<Response<NodeInfo>, Status> { // Return an instance of type HelloReply
+        println!("Got a request: {:?}", request);
+
+        //chord_util::get_node_info(Arc::clone(&self_node), Arc::clone(&client_pool));
+
+        let empty_ni = node_info::NodeInfo::new();
+
+        // We must use .into_inner() as the fields of gRPC requests and responses are private
+        let reply = crate::rustdkvs::NodeInfo {
+           //message : format!("Hello {}!", request.into_inner().name).into(),
+           node_id : empty_ni.node_id,
+           address_str: empty_ni.address_str,
+           born_id : empty_ni.born_id,
+           successor_info_list: empty_ni.successor_info_list,
+           predecessor_info: empty_ni.predecessor_info,
+           finger_table: empty_ni.finger_table
+        };
+
+        Ok(Response::new(reply)) // Send back our formatted message
+    }
+}
+
 #[get("/get_node_info")]
 pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>) -> Json<node_info::NodeInfo> {
     return Json(chord_util::get_node_info(Arc::clone(&self_node), Arc::clone(&client_pool)));
@@ -614,6 +648,16 @@ pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, client_
     });
     
     return Json(rt.block_on(handle).unwrap().unwrap());
+}
+
+pub async fn grpc_api_server_start(bind_addr: String, bind_port_num: i32) {
+    let addr_port = (bind_addr + bind_port_num.to_string.as_str()).parse().unwrap();
+    let rdkvs_serv = MyRustDKVS::default();
+
+    Server::builder()
+    .add_service(RustDkvsServer::new(rdkvs_serv))
+    .serve(addr_port)
+    .await?;
 }
 
 pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, bind_addr: String, bind_port_num: i32){

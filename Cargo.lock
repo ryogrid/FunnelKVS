@@ -1312,6 +1312,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "protobuf"
+version = "2.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47c327e191621a2158159df97cdbc2e7074bb4e940275e35abf38eb3d2595754"
+dependencies = [
+ "bytes",
+]
+
+[[package]]
 name = "quote"
 version = "0.6.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1545,6 +1554,7 @@ dependencies = [
  "lazy_static",
  "prost",
  "prost-derive",
+ "protobuf",
  "rand",
  "reqwest",
  "rocket",

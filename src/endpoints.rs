@@ -13,6 +13,8 @@ use tokio::runtime::Runtime;
 use chord_util::GeneralError;
 
 use tonic::{transport::Server, Request, Response, Status};
+use prost_types::Any;
+use prost::Message;
 use crate::rustdkvs::rust_dkvs_server::{RustDkvs, RustDkvsServer};
 use crate::rustdkvs::{NodeInfo, Uint32, RString};
 
@@ -577,15 +579,7 @@ impl RustDkvs for MyRustDKVS {
         let empty_ni = node_info::NodeInfo::new();
 
         // We must use .into_inner() as the fields of gRPC requests and responses are private
-        let reply = crate::rustdkvs::NodeInfo {
-           //message : format!("Hello {}!", request.into_inner().name).into(),
-           node_id : empty_ni.node_id,
-           address_str: empty_ni.address_str,
-           born_id : empty_ni.born_id,
-           successor_info_list: empty_ni.successor_info_list,
-           predecessor_info: empty_ni.predecessor_info,
-           finger_table: empty_ni.finger_table
-        };
+        let reply = conv_node_info_to_grpc_one(empty_ni.clone());
 
         Ok(Response::new(reply)) // Send back our formatted message
     }
@@ -651,13 +645,13 @@ pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, client_
 }
 
 pub async fn grpc_api_server_start(bind_addr: String, bind_port_num: i32) {
-    let addr_port = (bind_addr + bind_port_num.to_string.as_str()).parse().unwrap();
+    let addr_port = (bind_addr + bind_port_num.to_string().as_str()).parse().unwrap();
     let rdkvs_serv = MyRustDKVS::default();
 
     Server::builder()
     .add_service(RustDkvsServer::new(rdkvs_serv))
     .serve(addr_port)
-    .await?;
+    .await;
 }
 
 pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, bind_addr: String, bind_port_num: i32){
@@ -702,6 +696,45 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
             ]
         )
        .launch();
+}
+
+pub fn conv_node_info_to_grpc_one(node_info: node_info::NodeInfo) -> NodeInfo {
+    return crate::rustdkvs::NodeInfo {
+        //message : format!("Hello {}!", request.into_inner().name).into(),
+        node_id : node_info.node_id,
+        address_str: node_info.address_str,
+        born_id : node_info.born_id,
+        successor_info_list: conv_node_info_vec_to_grpc_one(node_info.successor_info_list),
+        predecessor_info: conv_node_info_vec_to_grpc_one(node_info.predecessor_info),
+        finger_table: conv_node_info_opvec_to_grpc_one(node_info.finger_table)
+     };
+}
+
+pub fn conv_node_info_vec_to_grpc_one(ni_vec: Vec<node_info::NodeInfo>) -> Vec<NodeInfo> {
+    let mut ret_vec: Vec<NodeInfo> = vec![];
+    for ninfo in ni_vec {
+        ret_vec.push(conv_node_info_to_grpc_one(ninfo));
+    }
+    return ret_vec;
+}
+
+pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo>>) -> Vec<NodeInfo> {
+    let mut ret_vec: Vec<NodeInfo> = vec![];
+    // TODO: (rustr) born_id = -1 な ノードは None として扱うように受け側では逆変換する規約とする
+    for ninfo in ni_opvec {
+        match ninfo {
+            None => {
+                // newした時点で born_id の初期値は -1 である
+                let none_dummy = node_info::NodeInfo::new();
+                ret_vec.push(conv_node_info_to_grpc_one(none_dummy));
+            }
+            Some(ninfo_wrapped) => { 
+                let any: Any;
+                ret_vec.push(conv_node_info_to_grpc_one(ninfo_wrapped));
+            }
+        }
+    }
+    return ret_vec;
 }
 
 #[derive(Serialize, Deserialize)]

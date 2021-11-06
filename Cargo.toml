@@ -16,6 +16,7 @@ tonic = "0.6.1"
 bytes = "1.1.0"
 protobuf = { version = "2", features = ["with-bytes"] }
 prost = "0.9.0"
+prost-types = "0.9.0"
 prost-derive = "0.9.0"
 rocket = "0.4.10"
 rocket_contrib = { version = "0.4.5", features = ["json"] }

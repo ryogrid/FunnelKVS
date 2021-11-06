@@ -1554,6 +1554,7 @@ dependencies = [
  "lazy_static",
  "prost",
  "prost-derive",
+ "prost-types",
  "protobuf",
  "rand",
  "reqwest",

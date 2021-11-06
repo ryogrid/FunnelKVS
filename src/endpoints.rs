@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::cell::{RefCell, Ref, RefMut};
 use std::time::Duration;
 use std::collections::HashMap;
+use std::net::SocketAddr;
 
 use rocket_contrib::json::Json;
 use rocket::State;
@@ -570,8 +571,8 @@ pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashM
 impl RustDkvs for MyRustDKVS {
     async fn grpc_call_get_node_info(
         &self,
-        request: Request<RString>, // Accept request of type HelloRequest
-    ) -> Result<Response<NodeInfo>, Status> { // Return an instance of type HelloReply
+        request: Request<RString>, // Accept request of type RString
+    ) -> Result<Response<NodeInfo>, Status> { // Return an instance of type rustdkvs::NodeInfo
         println!("Got a request: {:?}", request);
 
         //chord_util::get_node_info(Arc::clone(&self_node), Arc::clone(&client_pool));
@@ -645,7 +646,7 @@ pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, client_
 }
 
 pub async fn grpc_api_server_start(bind_addr: String, bind_port_num: i32) {
-    let addr_port = (bind_addr + bind_port_num.to_string().as_str()).parse().unwrap();
+    let addr_port: SocketAddr = (bind_addr + ":" + bind_port_num.to_string().as_str()).parse().unwrap();
     let rdkvs_serv = MyRustDKVS::default();
 
     Server::builder()
@@ -699,6 +700,7 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
 }
 
 pub fn conv_node_info_to_grpc_one(node_info: node_info::NodeInfo) -> NodeInfo {
+    println!("called conv_node_info_to_grpc_one");
     return crate::rustdkvs::NodeInfo {
         //message : format!("Hello {}!", request.into_inner().name).into(),
         node_id : node_info.node_id,
@@ -725,8 +727,15 @@ pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo
         match ninfo {
             None => {
                 // newした時点で born_id の初期値は -1 である
-                let none_dummy = node_info::NodeInfo::new();
-                ret_vec.push(conv_node_info_to_grpc_one(none_dummy));
+                let none_dummy = NodeInfo { 
+                    node_id: 0,
+                    address_str: "".to_string(),
+                    born_id: -1,
+                    predecessor_info: vec![],
+                    successor_info_list: vec![],
+                    finger_table: vec![]
+                };
+                ret_vec.push(none_dummy);
             }
             Some(ninfo_wrapped) => { 
                 let any: Any;

@@ -137,10 +137,11 @@ async fn main() {
         let data_store_arc_ftable_th = Arc::clone(&data_store);
         let client_pool_arc_ftable_th =  Arc::clone(&client_pool);
 
-        std::thread::spawn(move|| {
+        let grpc_serv_handle = tokio::spawn(async move {
             //endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), Arc::clone(&client_pool_api_serv), bind_addr_api_serv, bind_port_num);
-            endpoints::grpc_api_server_start(bind_addr_api_serv, bind_port_num);
+            endpoints::grpc_api_server_start(bind_addr_api_serv, bind_port_num).await;
         });
+        grpc_serv_handle.await;
 /*
         std::thread::sleep(std::time::Duration::from_millis(1500 as u64));
 

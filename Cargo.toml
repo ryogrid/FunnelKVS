@@ -23,6 +23,11 @@ lazy_static = "1.4.0"
 clippy = { version = "*", optional = true }
 rand = "0.8.3"
 chrono = "0.4"
+#pprof = { version = "0.5.1", features = ["protobuf"] }
+
+[profile.release]
+panic = 'abort'
 
 [build-dependencies]
 tonic-build  = "0.6.0"
+

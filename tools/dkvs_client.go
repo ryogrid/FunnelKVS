@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -118,6 +119,8 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 const bind_ip_addr = "127.0.0.1"
 const check_node_limit = 150
 
+var platform string
+
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
 	start_port := 11000
@@ -158,8 +161,15 @@ func check_chain_with_successor_info() {
 }
 
 func start_a_node(born_id int, bind_addr string, bind_port int, tyukai_addr string, tyukai_port int, log_dir string) {
+	shortcut_script := ""
+	if platform == "windows" {
+		shortcut_script = "rust_dkvs.bat"
+	} else {
+		shortcut_script = "./rust_dkvs.sh"
+	}
+
 	err := exec.Command(
-		"rust_dkvs.bat", //"../target/debug/rust_dkvs",
+		shortcut_script, //"rust_dkvs.bat", //"../target/debug/rust_dkvs",
 		strconv.Itoa(born_id),
 		bind_addr,
 		strconv.Itoa(bind_port),
@@ -178,7 +188,7 @@ func setup_nodes(num int) {
 		start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, cur_port-1, "./")
 		cur_port++
 		fmt.Printf("launched born_id=%d\n", ii+1)
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 5)
 	}
 }
 
@@ -192,7 +202,7 @@ func global_get_simple(addr_and_port string, key string) (map[string]interface{}
 
 // 固定されたテスト用の keyとvalueの組み合わせを global_putする
 func put_test_values(addr_and_port string) {
-	for ii := 0; ii < 50; ii++ {
+	for ii := 0; ii < 30; ii++ {
 		key := strconv.Itoa(ii)
 		val := key
 		fmt.Printf("put request key=%s\n", key)
@@ -204,7 +214,9 @@ func put_test_values(addr_and_port string) {
 }
 
 func get_test_values(addr_and_port string) {
-	for ii := 0; ii < 50; ii++ {
+	num := 30
+	start_unix_time := time.Now().Unix()
+	for ii := 0; ii < num; ii++ {
 		key := strconv.Itoa(ii)
 		fmt.Printf("get request key=%s\n", key)
 		resp_json, err := global_get_simple(addr_and_port, key)
@@ -213,10 +225,31 @@ func get_test_values(addr_and_port string) {
 			fmt.Printf("get missed key=%s\n", key)
 		}
 	}
+	end_unitx_time := time.Now().Unix()
+	time_to_get := float64(end_unitx_time-start_unix_time) / float64(num)
+	fmt.Printf("%f sec/data\n", time_to_get)
+}
+
+func profile_get_node_info_throughput() {
+	num := 50
+	start_unix_time := time.Now().UnixNano()
+	const endpoint_path = "/get_node_info"
+	target_port := 11000
+	target_addr := bind_ip_addr + ":" + strconv.Itoa(target_port)
+	for ii := 0; ii < num; ii++ {
+		_, err := http_get_request(target_addr, endpoint_path)
+		//fmt.Println(resp_json)
+		if err != nil {
+			fmt.Printf("error:%s\n", err)
+		}
+	}
+	end_unitx_time := time.Now().UnixNano()
+	time_to_query := (float64(end_unitx_time-start_unix_time) / float64(num)) / float64(1000)
+	fmt.Printf("%f usec/query\n", time_to_query)
 }
 
 func main() {
-	// TODO: 必要になったら引数処理できるようにする https://qiita.com/nakaryooo/items/2d0befa2c1cf347800c3
+	platform = runtime.GOOS
 
 	op := flag.String("op", "setup-nodes", "setup chord network")
 	arg1 := flag.String("arg1", "30", "argument if operation needs it")
@@ -237,6 +270,9 @@ func main() {
 	case "get-test-values":
 		addr_and_port := *arg1
 		get_test_values(addr_and_port)
+		break
+	case "profile-get-node-info":
+		profile_get_node_info_throughput()
 		break
 	default:
 		fmt.Println("dkvs_client -op=<operation-name> -arg1=<argument if needed>")

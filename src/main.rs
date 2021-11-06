@@ -48,10 +48,12 @@ use std::sync::{Mutex, mpsc};
 use std::sync::atomic::Ordering;
 use std::env;
 use std::collections::HashMap;
+use std::fs::File;
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+
 use tokio::*;
 
 use tonic::{transport::Server, Request, Response, Status};
@@ -60,7 +62,6 @@ pub mod hello_world {
     tonic::include_proto!("helloworld");
 }
 
-/*
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()
     .text();
@@ -113,7 +114,7 @@ async fn main() {
         let log_out_path: String = args[6].parse().unwrap();
         //TODO: (rustr) ログの出力先ディレクトリのパスも受けられるようにする
         //              ディレクトリがまだ存在しなければここの引数処理の中で作成してしまう
-        
+
         //TODO: (rustr) ロガーライブラリは初期化時にディレクトリパスも含めて出力先を指定できるものを選びたい
         //              （つまり、ロガーライブラリの初期化もグローバルに一度やればOK、みたいなものであればここでやる）
         println!("born_id={:?}, bind_addr={:?}, bind_port_num={:?}, tyukai_addr={:?}, tyukai_port_num={:?}, log_out_path={:?}", &born_id, &bind_addr, &bind_port_num, &tyukai_addr, &tyukai_port_num, &log_out_path);
@@ -122,6 +123,10 @@ async fn main() {
         let data_store = ArMu_new!(data_store::DataStore::new());
         let client_pool = ArMu_new!(HashMap::<String, ArMu<reqwest::Client>>::new());
 
+        let node_info_api_serv = Arc::clone(&node_info);
+        let data_store_api_serv = Arc::clone(&data_store);
+        let bind_addr_api_serv = bind_addr.clone();
+
         let node_info_arc_succ_th = Arc::clone(&node_info);
         let data_store_arc_succ_th = Arc::clone(&data_store);
         let client_pool_arc_succ_th = Arc::clone(&client_pool);
@@ -129,6 +134,12 @@ async fn main() {
         let node_info_arc_ftable_th = Arc::clone(&node_info);
         let data_store_arc_ftable_th = Arc::clone(&data_store);
         let client_pool_arc_ftable_th =  Arc::clone(&client_pool);
+
+        std::thread::spawn(move|| {
+            endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), bind_addr_api_serv, bind_port_num);
+        });
+
+        std::thread::sleep(std::time::Duration::from_millis(1500 as u64));
 
         println!("here1!\n");        
         // 仲介ノードを介してChordネットワークに参加する
@@ -143,6 +154,7 @@ async fn main() {
 
         tokio::time::sleep(tokio::time::Duration::from_millis(500 as u64)).await;
 
+
         let mut counter = 0;
         let stabilize_succ_th_handle = tokio::spawn(async move { loop{
             stabilizer::stabilize_successor(Arc::clone(&node_info_arc_succ_th), Arc::clone(&client_pool_arc_succ_th)).await;
@@ -151,8 +163,10 @@ async fn main() {
                 // successor_info_listの0番要素以降を規定数まで埋める（埋まらない場合もある）
                 stabilizer::fill_succ_info_list(Arc::clone(&node_info_arc_succ_th), Arc::clone(&client_pool_arc_succ_th)).await;
             }
-            tokio::time::sleep(tokio::time::Duration::from_millis(100 as u64)).await;
-        }});
+
+            //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
+            std::thread::sleep(std::time::Duration::from_millis(500 as u64));
+        });
     
         let stabilize_ftable_th_handle = tokio::spawn(async move { loop {
             for idx in 1..(gval::ID_SPACE_BITS + 1){
@@ -167,7 +181,6 @@ async fn main() {
         //     req_rest_api_test();
         // });
 
-        endpoints::rest_api_server_start(Arc::clone(&node_info), Arc::clone(&data_store), Arc::clone(&client_pool), bind_addr, bind_port_num);
 
         let mut thread_handles = vec![];    
         thread_handles.push(stabilize_succ_th_handle);

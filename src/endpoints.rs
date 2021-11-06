@@ -471,6 +471,8 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
     let config = Config::build(Environment::Production)
     .address(bind_addr)
     .port(bind_port_num as u16)
+    .read_timeout(10000)
+    .write_timeout(10000)
     .workers(30)
     .finalize()
     .unwrap();
@@ -499,7 +501,8 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
                 rrpc__global_delete,
                 rrpc__global_put_simple,
                 rrpc__global_get_simple,
-                rrpc__global_delete_simple
+                rrpc__global_delete_simple,
+                rrpc__pass_datas
             ]
         )
        .launch();

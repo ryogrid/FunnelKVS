@@ -53,6 +53,7 @@ use std::fs::File;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use pprof::ProfilerGuard;
 
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()
@@ -96,6 +97,7 @@ fn main() {
             req_rest_api_test();
         }
     }else if args.len() > 2 {
+        let guard = pprof::ProfilerGuard::new(100).unwrap();
         let born_id: i32 = args[1].parse().unwrap();
         let bind_addr: String = args[2].parse().unwrap();
         let bind_port_num: i32 = args[3].parse().unwrap();
@@ -147,8 +149,16 @@ fn main() {
                 // successor_info_listの0番要素以降を規定数まで埋める（埋まらない場合もある）
                 stabilizer::fill_succ_info_list(Arc::clone(&node_info_arc_succ_th));
             }
-            //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
             std::thread::sleep(std::time::Duration::from_millis(500 as u64));
+            if counter == 600 {
+                if let Ok(report) = guard.report().build() {
+                    let file = File::create("flamegraph-".to_string() + born_id.to_string().as_str() + ".svg").unwrap();
+                    let mut options = pprof::flamegraph::Options::default();
+                    options.image_width = Some(2500);
+                    report.flamegraph_with_options(file, &mut options).unwrap();
+                };
+            }
+            //std::thread::sleep(std::time::Duration::from_millis(500 as u64));
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{

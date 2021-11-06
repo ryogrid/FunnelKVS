@@ -499,7 +499,8 @@ pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: A
                 rrpc__global_delete,
                 rrpc__global_put_simple,
                 rrpc__global_get_simple,
-                rrpc__global_delete_simple
+                rrpc__global_delete_simple,
+                rrpc__pass_datas
             ]
         )
        .launch();

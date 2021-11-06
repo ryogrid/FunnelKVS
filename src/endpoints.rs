@@ -145,7 +145,7 @@ async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<H
         Ok(got_client) => got_client
     };
 
-    let resp = match client.post(url_str)..header(reqwest::header::CONTENT_TYPE, "application/json").body(json_str).send().await {
+    let resp = match client.post(url_str).header(reqwest::header::CONTENT_TYPE, "application/json").body(json_str).send().await {
         Err(err) => {
             chord_util::dprint(&("ERROR at http_post_request(2)".to_string() + url_str));
             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));

@@ -61,7 +61,7 @@ use tonic::{transport::Server, Request, Response, Status};
 pub mod hello_world {
     tonic::include_proto!("helloworld");
 }
-
+/*
 fn req_rest_api_test_inner_get() {
     let resp = reqwest::blocking::get("http://127.0.0.1:8000/").unwrap()
     .text();
@@ -126,6 +126,7 @@ async fn main() {
         let node_info_api_serv = Arc::clone(&node_info);
         let data_store_api_serv = Arc::clone(&data_store);
         let bind_addr_api_serv = bind_addr.clone();
+        let client_pool_api_serv = Arc::clone(&client_pool);
 
         let node_info_arc_succ_th = Arc::clone(&node_info);
         let data_store_arc_succ_th = Arc::clone(&data_store);
@@ -136,7 +137,7 @@ async fn main() {
         let client_pool_arc_ftable_th =  Arc::clone(&client_pool);
 
         std::thread::spawn(move|| {
-            endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), bind_addr_api_serv, bind_port_num);
+            endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), Arc::clone(&client_pool_api_serv), bind_addr_api_serv, bind_port_num);
         });
 
         std::thread::sleep(std::time::Duration::from_millis(1500 as u64));
@@ -166,7 +167,7 @@ async fn main() {
 
             //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
             std::thread::sleep(std::time::Duration::from_millis(500 as u64));
-        });
+        }});
     
         let stabilize_ftable_th_handle = tokio::spawn(async move { loop {
             for idx in 1..(gval::ID_SPACE_BITS + 1){

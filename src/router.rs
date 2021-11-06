@@ -88,7 +88,7 @@ pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: 
 
         // 初回は自ノードへの呼出しなのでRPCのインタフェースを介さずに呼び出しを行う
         if is_first_cpf {
-            n_dash_found = match closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(exnode_ni_ref)), id).await {
+            n_dash_found = match closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(exnode_ni_ref)), Arc::clone(&client_pool), id).await {
                     Err(err) => {
                         return Err(chord_util::GeneralError::new(err.message, err.err_code));
                     }
@@ -96,7 +96,7 @@ pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: 
             };
             is_first_cpf = false;
         } else {
-            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, id).await {
+            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, Arc::clone(&client_pool), id).await {
                 Err(err) => {
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }

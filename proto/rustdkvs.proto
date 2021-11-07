@@ -34,6 +34,17 @@ message Put {
     string val_str = 2;
 }
 
+// TODO: need define DataIDandValue and PassData message
+
 service RustDKVS {
-    rpc grpc_get_node_info (RString) returns (NodeInfo);
+    rpc grpc_test_get_node_info (RString) returns (NodeInfo);
+    // rpc grpc_get_node_info () returns (NodeInfo);
+    // rpc grpc_check_predecessor() returns (bool);
+    // rpc grpc_set_routing_infos_force(SetRoutingInfosForce) returns (bool);
+    // rpc grpc_find_successor(uint32) returns (NodeInfo);
+    // rpc grpc_closest_preceding_finger(uint32) returns (NodeInfo);
+    // rpc grpc_global_put(GlobalPut) returns (bool);
+    // rpc grpc_put(Put) returns (bool);
+    // rpc grpc_global_get(uint32) returns (DataIDandValue);
+    // rpc grpc_get(uint32) returns (DataIDandValue);
 }

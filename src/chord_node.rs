@@ -190,6 +190,8 @@ pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
         return False
 */
 
+        // TODO: (rustr) gRPC化する際は getのRPCで取得した DataIdAndValueの値をチェックし 値が"Error" であれば取得に失敗したものと判断
+        //               するように修正すること
         let data_iv = match endpoints::rrpc_call__get(&replica_node, Arc::clone(&client_pool), target_id).await {
             Err(err) => {
                 {
@@ -236,7 +238,9 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
     // いるノードとなるまで下手にデータを持たない方が、データ配置の整合性を壊すリスクが
     // 減りそうな気がするので、そうする
     if self_node_deep_cloned.predecessor_info.len() == 0 {
-        return Err(chord_util::GeneralError::new("predecessor is None".to_string(), chord_util::ERR_CODE_PRED_IS_NONE));
+        let ret_val = chord_util::DataIdAndValue { data_id: 0, val_str: "Error".to_string() };
+        return Ok(ret_val);
+        //return Err(chord_util::GeneralError::new("predecessor is None".to_string(), chord_util::ERR_CODE_PRED_IS_NONE));
     }
 
     chord_util::dprint(
@@ -267,11 +271,15 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         let data_store_ref = data_store.lock().unwrap();
         ret_val = match data_store_ref.get(key_id){
             Err(err) => {
-                return Err(err);
+                let ret_val = chord_util::DataIdAndValue { data_id: 0, val_str: "Error".to_string() };
+                return Ok(ret_val);
+                //return Err(err);
             }
             Ok(data_iv) => {
                 if data_iv.val_str == data_store::DELETED_ENTRY_MARKING_STR.to_string() {
-                    return Err(chord_util::GeneralError::new(data_store::DELETED_ENTRY_MARKING_STR.to_string(), chord_util::ERR_CODE_DATA_TO_GET_IS_DELETED));
+                    let ret_val = chord_util::DataIdAndValue { data_id: 0, val_str: data_store::DELETED_ENTRY_MARKING_STR.to_string() };
+                    return Ok(ret_val);                    
+                    //return Err(chord_util::GeneralError::new(data_store::DELETED_ENTRY_MARKING_STR.to_string(), chord_util::ERR_CODE_DATA_TO_GET_IS_DELETED));
                 }
                 data_iv
             }

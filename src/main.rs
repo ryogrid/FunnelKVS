@@ -106,7 +106,7 @@ async fn main() {
         if num == 2 { // REST client
             req_rest_api_test();
         }else if num == 3 { // gRPC client
-            endpoints::grpc_call_get_node_info(&"127.0.0.1:11000".to_string()).await; //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>)
+            endpoints::grpc_call_test_get_node_info(&"127.0.0.1:11000".to_string()).await; //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>)
         }
     }else if args.len() > 2 {
         let born_id: i32 = args[1].parse().unwrap();

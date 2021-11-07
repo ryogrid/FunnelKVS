@@ -47,18 +47,18 @@ message Put {
 }
 
 message PassDatas {
-    repeated DataIdAndValues vals = 1;  
+    repeated DataIdAndValue vals = 1;  
 }
 
-message DataIdAndValues {
+message DataIdAndValue {
     uint32 data_id = 1;
     string val_str = 2;
 }
 
 service RustDKVS {
     rpc grpc_test_get_node_info (RString) returns (NodeInfo);
-    // rpc grpc_check_predecessor(VOID) returns (BOOL);
-    // rpc grpc_set_routing_infos_force(SetRoutingInfosForce) returns (BOOL);
+    rpc grpc_check_predecessor(NodeInfo) returns (BOOL);
+    rpc grpc_set_routing_infos_force(SetRoutingInfosForce) returns (BOOL);
     // rpc grpc_find_successor(UINT32) returns (NodeInfo);
     // rpc grpc_closest_preceding_finger(UINT32) returns (NodeInfo);
     // rpc grpc_global_put(GlobalPut) returns (BOOL);

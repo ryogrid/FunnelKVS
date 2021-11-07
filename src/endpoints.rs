@@ -19,7 +19,7 @@ use prost::Message;
 use crate::rustdkvs::rust_dkvs_server::{RustDkvs, RustDkvsServer};
 use crate::rustdkvs::rust_dkvs_client::RustDkvsClient;
 
-use crate::rustdkvs::{NodeInfo, Uint32, RString};
+use crate::rustdkvs::{NodeInfo, Uint32, RString, Void, Bool, DataIdAndValue, PassDatas};
 
 use crate::gval;
 use crate::chord_node;
@@ -606,6 +606,30 @@ impl RustDkvs for MyRustDKVS {
 
         Ok(Response::new(reply)) // Send back our formatted message
     }
+
+    async fn grpc_check_predecessor(
+        &self,
+        request: Request<crate::rustdkvs::NodeInfo>,
+    ) -> Result<Response<Bool>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let reply_tmp = stabilizer::check_predecessor(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), conv_node_info_to_normal_one(request.into_inner())).await.unwrap();
+        let reply = Bool { val: reply_tmp };
+
+        Ok(Response::new(reply))
+    }
+
+    async fn grpc_set_routing_infos_force(
+        &self,
+        request: Request<crate::rustdkvs::SetRoutingInfosForce>,
+    ) -> Result<Response<Bool>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let srif_obj = request.into_inner();
+        stabilizer::set_routing_infos_force(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), conv_node_info_to_normal_one(srif_obj.predecessor_info.unwrap()), conv_node_info_to_normal_one(srif_obj.successor_info_0.unwrap()), conv_node_info_to_normal_one(srif_obj.ftable_enry_0.unwrap()));
+        let reply = Bool { val: true };
+        Ok(Response::new(reply))
+    }    
 }
 
 // #[get("/get_node_info")]
@@ -800,6 +824,30 @@ pub fn conv_node_info_opvec_to_normal_one(ni_opvec: Vec<crate::rustdkvs::NodeInf
             let val = Some(conv_node_info_to_normal_one(ninfo));
             ret_vec.push(val);
         }
+    }
+    return ret_vec;
+}
+
+pub fn conv_iv_to_grpc_one(iv: chord_util::DataIdAndValue) -> crate::rustdkvs::DataIdAndValue {
+    return crate::rustdkvs::DataIdAndValue { data_id: iv.data_id, val_str: iv.val_str};
+}
+
+pub fn conv_iv_vec_to_grpc_one(iv_vec: Vec<chord_util::DataIdAndValue>) -> Vec<crate::rustdkvs::DataIdAndValue> {
+    let mut ret_vec: Vec<crate::rustdkvs::DataIdAndValue> = vec![];
+    for iv in iv_vec {
+        ret_vec.push(conv_iv_to_grpc_one(iv));
+    }
+    return ret_vec;
+}
+
+pub fn conv_iv_to_normal_one(iv: crate::rustdkvs::DataIdAndValue) -> chord_util::DataIdAndValue {
+    return chord_util::DataIdAndValue { data_id: iv.data_id, val_str: iv.val_str};
+}
+
+pub fn conv_iv_vec_to_normal_one(iv_vec: Vec<crate::rustdkvs::DataIdAndValue>) -> Vec<chord_util::DataIdAndValue> {
+    let mut ret_vec: Vec<chord_util::DataIdAndValue> = vec![];
+    for iv in iv_vec {
+        ret_vec.push(conv_iv_to_normal_one(iv));
     }
     return ret_vec;
 }

@@ -35,5 +35,5 @@ message Put {
 }
 
 service RustDKVS {
-    rpc grpc_call_get_node_info (RString) returns (NodeInfo);
+    rpc grpc_get_node_info (RString) returns (NodeInfo);
 }

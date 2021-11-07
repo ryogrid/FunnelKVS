@@ -17,6 +17,8 @@ use tonic::{transport::Server, Request, Response, Status};
 use prost_types::Any;
 use prost::Message;
 use crate::rustdkvs::rust_dkvs_server::{RustDkvs, RustDkvsServer};
+use crate::rustdkvs::rust_dkvs_client::RustDkvsClient;
+
 use crate::rustdkvs::{NodeInfo, Uint32, RString};
 
 #[derive(Debug, Default)]
@@ -551,6 +553,18 @@ pub fn rrpc__global_delete(self_node: State<ArMu<node_info::NodeInfo>>, data_sto
     return Json(rt.block_on(handle).unwrap());
 }
 
+pub async fn grpc_call_get_node_info(address : &String) { //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>){
+    let mut client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await.unwrap(); //?;
+
+    let request = tonic::Request::new(RString {
+        val: "it is sunny!".into()
+    });
+    
+    let response = client.grpc_get_node_info(request).await; //?;
+
+    println!("RESPONSE={:?}", response);    
+}
+
 pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<node_info::NodeInfo, GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + address.as_str() + "/get_node_info");
     let req_rslt = http_get_request(tmp_url_str_ref, address.as_str(), Arc::clone(&client_pool));
@@ -569,7 +583,7 @@ pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashM
 
 #[tonic::async_trait]
 impl RustDkvs for MyRustDKVS {
-    async fn grpc_call_get_node_info(
+    async fn grpc_get_node_info(
         &self,
         request: Request<RString>, // Accept request of type RString
     ) -> Result<Response<NodeInfo>, Status> { // Return an instance of type rustdkvs::NodeInfo

@@ -39,6 +39,11 @@ pub struct MyRustDKVS {
     client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>
 }
 
+pub async fn get_grpc_client(address: &String) -> crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel> {
+    return RustDkvsClient::connect("http://".to_string() + address.as_str()).await.unwrap(); //?;
+}
+
+
 // urlは "http://から始まるものにすること"
 async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<String, chord_util::GeneralError> {
 /*
@@ -181,61 +186,6 @@ async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<H
     return Ok(ret);
 }
 
-// #[get("/")]
-// fn index() -> Json<node_info::NodeInfo> {
-//     let mut node_info = node_info::NodeInfo::new();
-    
-//     node_info.node_id = 100;
-//     node_info.address_str = "kanbayashi".to_string();
-//     node_info.born_id = 77;
-//     node_info.successor_info_list = vec![];
-//     node_info.successor_info_list.push(node_info.clone());    
-//     node_info.predecessor_info = vec![];
-//     node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
-
-//     Json(node_info)
-// }
-
-// #[get("/result-type")]
-// fn result_type() -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
-//     let mut node_info = node_info::NodeInfo::new();
-    
-//     node_info.node_id = 100;
-//     node_info.address_str = "kanbayashi".to_string();
-//     node_info.born_id = 77;
-//     node_info.successor_info_list = vec![];
-//     node_info.successor_info_list.push(node_info.clone());    
-//     node_info.predecessor_info = vec![];
-//     node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
-
-//     Json(Ok(node_info))
-// }
-
-// #[get("/get-param-test?<param1>&<param2>")]
-// fn get_param_test(param1: String, param2: String) -> Json<node_info::NodeInfo> {
-//     let mut node_info = node_info::NodeInfo::new();
-
-//     println!("{:?}", param1);
-//     println!("{:?}", param2);
-    
-//     node_info.node_id = 100;
-//     node_info.address_str = "kanbayashi".to_string();
-//     node_info.born_id = 77;
-//     node_info.successor_info_list = vec![];
-//     node_info.successor_info_list.push(node_info.clone());    
-//     node_info.predecessor_info = vec![];
-//     node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
-
-//     Json(node_info)
-// }
-
-// #[post("/deserialize", data = "<node_info>")]
-// pub fn deserialize_test(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, node_info: Json<node_info::NodeInfo>) -> String {
-//     println!("{:?}", self_node.lock().unwrap());
-//     println!("{:?}", node_info.address_str);
-//     println!("{:?}", node_info);
-//     format!("Accepted post request! {:?}", node_info.0)
-// }
 
 pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor");
@@ -252,17 +202,6 @@ pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, calle
     };        
 }
 
-// #[post("/check_predecessor", data = "<caller_node_ni>")]
-// pub fn rrpc__check_predecessor(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, caller_node_ni: Json<node_info::NodeInfo>) -> Json<Result<bool, chord_util::GeneralError>> {
-//     let rt = Runtime::new().unwrap();
-
-//     let handle = rt.spawn({
-//         stabilizer::check_predecessor(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), caller_node_ni.0)
-//     });
-    
-//     return Json(rt.block_on(handle).unwrap());
-// }
-
 pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
     let rpc_arg = SetRoutingInfosForce::new(predecessor_info, successor_info_0, ftable_enry_0);
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/set_routing_infos_force");
@@ -275,12 +214,6 @@ pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo,
 
     return Ok(true);
 }
-
-// #[post("/set_routing_infos_force", data = "<rpc_args>")]
-// pub fn rrpc__set_routing_infos_force(self_node: State<ArMu<node_info::NodeInfo>>, rpc_args: Json<SetRoutingInfosForce>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>){
-//     let args = rpc_args.0;
-//     return stabilizer::set_routing_infos_force(Arc::clone(&self_node), Arc::clone(&client_pool), args.predecessor_info, args.successor_info_0, args.ftable_enry_0);
-// }
 
 pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/find_successor");
@@ -303,18 +236,6 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
 
     return ret_ninfo;
 }
-
-// // idで識別されるデータを担当するノードの名前解決を行う
-// #[post("/find_successor", data = "<id>")]
-// pub fn rrpc__find_successor(self_node: State<ArMu<node_info::NodeInfo>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
-//     let rt = Runtime::new().unwrap();
-
-//     let handle = rt.spawn({
-//         router::find_successor(Arc::clone(&self_node), Arc::clone(&client_pool), id.0)
-//     });
-    
-//     return Json(rt.block_on(handle).unwrap());
-// }
 
 pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger");
@@ -343,17 +264,6 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
     return Ok(ret_ninfo);
 }
 
-// #[post("/closest_preceding_finger", data = "<id>")]
-// pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
-//     let rt = Runtime::new().unwrap();
-
-//     let handle = rt.spawn({
-//         router::closest_preceding_finger(Arc::clone(&self_node), Arc::clone(&client_pool), id.0)
-//     });
-    
-//     return Json(rt.block_on(handle).unwrap());
-// }
-
 pub async fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let rpc_arg = GlobalPut::new(key_str, val_str);
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_put");
@@ -378,17 +288,6 @@ pub async fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool:
     }
 }
 
-// #[post("/global_put", data = "<rpc_args>")]
-// pub fn rrpc__global_put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, rpc_args: Json<GlobalPut>) -> Json<Result<bool, chord_util::GeneralError>> {
-//     let rt = Runtime::new().unwrap();
-
-//     let handle = rt.spawn({
-//         chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), rpc_args.0.key_str, rpc_args.0.val_str)
-//     });
-    
-//     return Json(rt.block_on(handle).unwrap());    
-// }
-
 pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let rpc_arg = Put::new(key_id, val_str);
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/put");
@@ -412,11 +311,6 @@ pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<H
         Ok(is_exist) => { return Ok(is_exist) }
     }
 }
-
-// #[post("/put", data = "<rpc_args>")]
-// pub fn rrpc__put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, rpc_args: Json<Put>) -> Json<Result<bool, chord_util::GeneralError>> {
-//     return Json(chord_node::put(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), rpc_args.0.key_id, rpc_args.0.val_str));
-// }
 
 pub async fn rrpc_call__global_get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_get");
@@ -445,17 +339,6 @@ pub async fn rrpc_call__global_get(self_node: &node_info::NodeInfo, client_pool:
     return Ok(ret_iv);
 }
 
-// #[post("/global_get", data = "<key_str>")]
-// pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
-//     let rt = Runtime::new().unwrap();
-
-//     let handle = rt.spawn({
-//         chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key_str.0)
-//     });
-    
-//     return Json(rt.block_on(handle).unwrap());    
-// }
-
 pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/get");
     let req_rslt = http_post_request(
@@ -482,11 +365,6 @@ pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<H
 
     return Ok(ret_iv);
 }
-
-// #[post("/get", data = "<key_id>")]
-// pub fn rrpc__get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, key_id: Json<u32>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
-//     return Json(chord_node::get(Arc::clone(&self_node), Arc::clone(&data_store), key_id.0));
-// }
 
 pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/pass_datas");
@@ -515,11 +393,6 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
     return Ok(ret_bool);
 }
 
-// #[post("/pass_datas", data = "<pass_datas>")]
-// pub fn rrpc__pass_datas(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, pass_datas: Json<Vec<chord_util::DataIdAndValue>>) -> Json<Result<bool, chord_util::GeneralError>> {
-//     return Json(stabilizer::pass_datas(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), pass_datas.0));
-// }
-
 pub async fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_delete");
     let req_rslt = http_post_request(
@@ -547,19 +420,9 @@ pub async fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, client_po
     return Ok(is_exist);
 }
 
-// #[post("/global_delete", data = "<key_str>")]
-// pub fn rrpc__global_delete(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, client_pool: State<ArMu<HashMap<String, ArMu<reqwest::Client>>>>, key_str: Json<String>) -> Json<Result<bool, chord_util::GeneralError>> {
-//     let rt = Runtime::new().unwrap();
-
-//     let handle = rt.spawn({
-//         chord_node::global_delete(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key_str.0)        
-//     });
-    
-//     return Json(rt.block_on(handle).unwrap());
-// }
-
 pub async fn grpc_call_test_get_node_info(address : &String) -> node_info::NodeInfo { //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>){
-    let mut client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await.unwrap(); //?;
+    //let mut client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await.unwrap(); //?;
+    let mut client = get_grpc_client(address).await;
 
     let request = tonic::Request::new(RString {
         val: "it is sunny!".into()
@@ -795,52 +658,7 @@ pub async fn grpc_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_st
     .await;
 }
 
-// pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, bind_addr: String, bind_port_num: i32){
-//     let config = Config::build(Environment::Production)
-//     .address(bind_addr)
-//     .port(bind_port_num as u16)
-//     .workers(30)
-//     .keep_alive(10000)
-//     .read_timeout(10000)
-//     .write_timeout(10000)
-//     .limits(rocket::config::Limits::new().limit("forms", u64::MAX).limit("json", u64::MAX))
-//     .finalize()
-//     .unwrap();
-
-//     let app = rocket::custom(config);
-    
-//     app.manage(self_node)
-//        .manage(data_store)
-//        .manage(client_pool)
-//        .mount(
-//            "/", 
-//             routes![
-//                 index,
-//                 get_param_test,
-//                 deserialize_test,
-//                 result_type,
-//                 rrpc__check_predecessor,
-//                 rrpc__set_routing_infos_force,
-//                 rrpc__find_successor,
-//                 rrpc__closest_preceding_finger,                
-//                 rrpc__get_node_info,
-//                 rrpc__resolve_id_val,
-//                 rrpc__global_put,
-//                 rrpc__put,
-//                 rrpc__global_get,
-//                 rrpc__get,
-//                 rrpc__global_delete,
-//                 rrpc__global_put_simple,
-//                 rrpc__global_get_simple,
-//                 rrpc__global_delete_simple,
-//                 rrpc__pass_datas
-//             ]
-//         )
-//        .launch();
-// }
-
 pub fn conv_node_info_to_grpc_one(node_info: node_info::NodeInfo) -> crate::rustdkvs::NodeInfo {
-    println!("called conv_node_info_to_grpc_one");
     return crate::rustdkvs::NodeInfo {
         //message : format!("Hello {}!", request.into_inner().name).into(),
         node_id : node_info.node_id,
@@ -887,7 +705,6 @@ pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo
 }
 
 pub fn conv_node_info_to_normal_one(node_info: crate::rustdkvs::NodeInfo) -> node_info::NodeInfo {
-    println!("called conv_node_info_to_grpc_one");
     return node_info::NodeInfo {
         //message : format!("Hello {}!", request.into_inner().name).into(),
         node_id : node_info.node_id,

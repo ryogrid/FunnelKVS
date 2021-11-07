@@ -5,8 +5,20 @@ message RString {
     string val = 1;
 }
 
+message INT32 {
+    int32 val = 1;
+}
+
 message UINT32 {
     uint32 val = 1;
+}
+
+message BOOL {
+    bool val = 1;
+}
+
+message VOID {
+    int32 val = 1;
 }
 
 message SetRoutingInfosForce {
@@ -34,17 +46,26 @@ message Put {
     string val_str = 2;
 }
 
-// TODO: need define DataIDandValue and PassData message
+message PassDatas {
+    repeated DataIdAndValues vals = 1;  
+}
+
+message DataIdAndValues {
+    uint32 data_id = 1;
+    string val_str = 2;
+}
 
 service RustDKVS {
     rpc grpc_test_get_node_info (RString) returns (NodeInfo);
-    // rpc grpc_get_node_info () returns (NodeInfo);
-    // rpc grpc_check_predecessor() returns (bool);
-    // rpc grpc_set_routing_infos_force(SetRoutingInfosForce) returns (bool);
-    // rpc grpc_find_successor(uint32) returns (NodeInfo);
-    // rpc grpc_closest_preceding_finger(uint32) returns (NodeInfo);
-    // rpc grpc_global_put(GlobalPut) returns (bool);
-    // rpc grpc_put(Put) returns (bool);
-    // rpc grpc_global_get(uint32) returns (DataIDandValue);
-    // rpc grpc_get(uint32) returns (DataIDandValue);
+    rpc grpc_check_predecessor(VOID) returns (BOOL);
+    rpc grpc_set_routing_infos_force(SetRoutingInfosForce) returns (BOOL);
+    rpc grpc_find_successor(UINT32) returns (NodeInfo);
+    rpc grpc_closest_preceding_finger(UINT32) returns (NodeInfo);
+    rpc grpc_global_put(GlobalPut) returns (BOOL);
+    rpc grpc_put(Put) returns (BOOL);
+    rpc grpc_global_get(UINT32) returns (DataIdAndValues);
+    rpc grpc_get(UINT32) returns (DataIdAndValues);
+    rpc grpc_pass_datas(PassDatas) returns (BOOL);
+    rpc grpc_global_delete(UINT32) returns (BOOL);
+    rpc grpc_get_node_info (VOID) returns (NodeInfo);
 }

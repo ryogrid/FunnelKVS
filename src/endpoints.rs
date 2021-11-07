@@ -186,7 +186,7 @@ async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<H
     return Ok(ret);
 }
 
-pub async fn grpc_call_check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));
@@ -196,22 +196,22 @@ pub async fn grpc_call_check_predecessor(self_node: &node_info::NodeInfo, caller
     return Ok(response.unwrap().into_inner().val);
 }
 
-pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor");
-    let req_rslt = http_post_request(tmp_url_str_ref
-        , self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(caller_node_ni){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+// pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor");
+//     let req_rslt = http_post_request(tmp_url_str_ref
+//         , self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(caller_node_ni){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
     
-    match req_rslt.await {
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-        Ok(resp) => { return Ok(true) }
-    };        
-}
+//     match req_rslt.await {
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//         Ok(resp) => { return Ok(true) }
+//     };        
+// }
 
-pub async fn grpc_call_set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(
@@ -227,20 +227,20 @@ pub async fn grpc_call_set_routing_infos_force(self_node: &node_info::NodeInfo, 
     return Ok(response.unwrap().into_inner().val);
 }
 
-pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
-    let rpc_arg = SetRoutingInfosForce::new(predecessor_info, successor_info_0, ftable_enry_0);
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/set_routing_infos_force");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&rpc_arg){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+// pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+//     let rpc_arg = SetRoutingInfosForce::new(predecessor_info, successor_info_0, ftable_enry_0);
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/set_routing_infos_force");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&rpc_arg){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
 
-    return Ok(true);
-}
+//     return Ok(true);
+// }
 
-pub async fn grpc_call_find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(Uint32 { val: id});
@@ -250,29 +250,29 @@ pub async fn grpc_call_find_successor(self_node: &node_info::NodeInfo, client_po
     return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
 }
 
-pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/find_successor");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&id){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+// pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/find_successor");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&id){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
     
-    let req_rslt_ref = &(match req_rslt.await {
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-        Ok(ninfo) => ninfo
-    });
+//     let req_rslt_ref = &(match req_rslt.await {
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//         Ok(ninfo) => ninfo
+//     });
 
-    let ret_ninfo = match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(req_rslt_ref){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-        Ok(ninfo) => ninfo
-    };
+//     let ret_ninfo = match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(req_rslt_ref){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//         Ok(ninfo) => ninfo
+//     };
 
-    return ret_ninfo;
-}
+//     return ret_ninfo;
+// }
 
-pub async fn grpc_call_closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(Uint32 { val: id});
@@ -282,60 +282,60 @@ pub async fn grpc_call_closest_preceding_finger(self_node: &node_info::NodeInfo,
     return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
 }
 
-pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&id){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+// pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&id){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
     
-    let res_text = match req_rslt.await {
-        Err(err) => {
-            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
-        }
-        Ok(text) => {text}
-    };
+//     let res_text = match req_rslt.await {
+//         Err(err) => {
+//             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+//         }
+//         Ok(text) => {text}
+//     };
 
-    let ret_ninfo = match match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(&res_text){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(result_ninfo) => result_ninfo
-    }{
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(ninfo) => ninfo
-    };
+//     let ret_ninfo = match match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(&res_text){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(result_ninfo) => result_ninfo
+//     }{
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(ninfo) => ninfo
+//     };
 
-    return Ok(ret_ninfo);
-}
+//     return Ok(ret_ninfo);
+// }
 
 // global_put の grpc は呼び出す箇所がないので実装不要
 
-pub async fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    let rpc_arg = GlobalPut::new(key_str, val_str);
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_put");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&rpc_arg){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+// pub async fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+//     let rpc_arg = GlobalPut::new(key_str, val_str);
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_put");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&rpc_arg){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
     
-    let res_text = match req_rslt.await {
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(text) => text
-    };
+//     let res_text = match req_rslt.await {
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(text) => text
+//     };
 
-    match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(result) => result
-    }{
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(is_exist) => { return Ok(is_exist); }
-    }
-}
+//     match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(result) => result
+//     }{
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(is_exist) => { return Ok(is_exist); }
+//     }
+// }
 
-pub async fn grpc_call_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(
@@ -350,137 +350,165 @@ pub async fn grpc_call_put(self_node: &node_info::NodeInfo, client_pool: ArMu<Ha
     return Ok(response.unwrap().into_inner().val);
 }
 
-pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
-    let rpc_arg = Put::new(key_id, val_str);
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/put");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&rpc_arg){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+// pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+//     let rpc_arg = Put::new(key_id, val_str);
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/put");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&rpc_arg){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
     
-    let res_text = match req_rslt.await {
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(text) => text
-    };
+//     let res_text = match req_rslt.await {
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(text) => text
+//     };
 
-    match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(result) => result
-    }{
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(is_exist) => { return Ok(is_exist) }
-    }
-}
+//     match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(result) => result
+//     }{
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(is_exist) => { return Ok(is_exist) }
+//     }
+// }
 
-pub async fn rrpc_call__global_get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_get");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&key_str){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+// global_get の grpc は呼び出し箇所がないため実装不要
+
+// pub async fn rrpc_call__global_get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_get");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&key_str){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
     
-    let res_text = match req_rslt.await {
-        Err(err) => {
-            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
-        }
-        Ok(text) => {text}
-    };
+//     let res_text = match req_rslt.await {
+//         Err(err) => {
+//             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+//         }
+//         Ok(text) => {text}
+//     };
 
-    let ret_iv = match match serde_json::from_str::<Result<chord_util::DataIdAndValue, chord_util::GeneralError>>(&res_text){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(result_iv) => result_iv
-    }{
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(data_iv) => data_iv
-    };
+//     let ret_iv = match match serde_json::from_str::<Result<chord_util::DataIdAndValue, chord_util::GeneralError>>(&res_text){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(result_iv) => result_iv
+//     }{
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(data_iv) => data_iv
+//     };
 
-    return Ok(ret_iv);
-}
+//     return Ok(ret_iv);
+// }
 
 pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/get");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&key_id){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+    let mut client = get_grpc_client(&self_node.address_str).await;
+
+    let request = tonic::Request::new(Uint32 { val: key_id});
     
-    let res_text = match req_rslt.await {
-        Err(err) => {
-            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
-        }
-        Ok(text) => {text}
-    };
-
-    let ret_iv = match match serde_json::from_str::<Result<chord_util::DataIdAndValue, chord_util::GeneralError>>(&res_text){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(result_iv) => result_iv
-    }{
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(data_iv) => data_iv
-    };
-
-    return Ok(ret_iv);
+    let response = client.grpc_get(request).await; //?;
+    println!("RESPONSE={:?}", response);
+    return Ok(conv_iv_to_normal_one(response.unwrap().into_inner()));
 }
+
+// pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/get");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&key_id){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
+    
+//     let res_text = match req_rslt.await {
+//         Err(err) => {
+//             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+//         }
+//         Ok(text) => {text}
+//     };
+
+//     let ret_iv = match match serde_json::from_str::<Result<chord_util::DataIdAndValue, chord_util::GeneralError>>(&res_text){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(result_iv) => result_iv
+//     }{
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(data_iv) => data_iv
+//     };
+
+//     return Ok(ret_iv);
+// }
 
 pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/pass_datas");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&pass_datas){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+    let mut client = get_grpc_client(&self_node.address_str).await;
+
+    let request = tonic::Request::new(
+        crate::rustdkvs::PassDatas {
+            vals: conv_iv_vec_to_grpc_one(pass_datas)
+        } 
+    );
     
-    let res_text = match req_rslt.await {
-        Err(err) => {
-            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
-        }
-        Ok(text) => {text}
-    };
-
-    let ret_bool = match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(result) => result
-    }{
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(is_successed) => is_successed
-    };
-
-    return Ok(ret_bool);
+    let response = client.grpc_pass_datas(request).await; //?;
+    println!("RESPONSE={:?}", response);
+    return Ok(response.unwrap().into_inner().val);
 }
 
-pub async fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
-    let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_delete");
-    let req_rslt = http_post_request(
-        tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
-        match serde_json::to_string(&key_str){
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        });
+// pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/pass_datas");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&pass_datas){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
     
-    let res_text = match req_rslt.await {
-        Err(err) => {
-            return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
-        }
-        Ok(text) => {text}
-    };
+//     let res_text = match req_rslt.await {
+//         Err(err) => {
+//             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+//         }
+//         Ok(text) => {text}
+//     };
 
-    let is_exist = match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(result_bool) => result_bool
-    }{
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
-        Ok(wrapped_bool) => wrapped_bool
-    };
+//     let ret_bool = match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(result) => result
+//     }{
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(is_successed) => is_successed
+//     };
 
-    return Ok(is_exist);
-}
+//     return Ok(ret_bool);
+// }
+
+// global_delete の grpc は呼び出し箇所がないため実装不要
+
+// pub async fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
+//     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_delete");
+//     let req_rslt = http_post_request(
+//         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
+//         match serde_json::to_string(&key_str){
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         });
+    
+//     let res_text = match req_rslt.await {
+//         Err(err) => {
+//             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+//         }
+//         Ok(text) => {text}
+//     };
+
+//     let is_exist = match match serde_json::from_str::<Result<bool, chord_util::GeneralError>>(&res_text){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(result_bool) => result_bool
+//     }{
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
+//         Ok(wrapped_bool) => wrapped_bool
+//     };
+
+//     return Ok(is_exist);
+// }
 
 pub async fn grpc_call_test_get_node_info(address : &String) -> node_info::NodeInfo { //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>){
     //let mut client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await.unwrap(); //?;
@@ -491,28 +519,40 @@ pub async fn grpc_call_test_get_node_info(address : &String) -> node_info::NodeI
     });
     
     let response = client.grpc_test_get_node_info(request).await; //?;
-    //println!("RESPONSE={:?}", response);
-    let ret_ni = response.unwrap().into_inner();
-    let ret_ni_conved = conv_node_info_to_normal_one(ret_ni);
-
-    return ret_ni_conved;
+    println!("RESPONSE={:?}", response);
+    return conv_node_info_to_normal_one(response.unwrap().into_inner());
 }
 
 pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<node_info::NodeInfo, GeneralError> {
-    let tmp_url_str_ref = &("http://".to_string() + address.as_str() + "/get_node_info");
-    let req_rslt = http_get_request(tmp_url_str_ref, address.as_str(), Arc::clone(&client_pool));
-    let ret_ninfo = match serde_json::from_str::<node_info::NodeInfo>(&(
-        match req_rslt.await {
-            Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-            Ok(text) => text
-        }
-    )){
-        Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
-        Ok(ninfo) => ninfo
-    };
+    let mut client = get_grpc_client(address).await;
 
-    return Ok(ret_ninfo);
+    let request = tonic::Request::new(Void {
+        val: 0
+    });
+    
+    let response = client.grpc_get_node_info(request).await; //?;
+    println!("RESPONSE={:?}", response);
+    let ret_ni = response.unwrap().into_inner();
+    let ret_ni_conved = conv_node_info_to_normal_one(ret_ni);
+
+    return Ok(ret_ni_conved);
 }
+
+// pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<node_info::NodeInfo, GeneralError> {
+//     let tmp_url_str_ref = &("http://".to_string() + address.as_str() + "/get_node_info");
+//     let req_rslt = http_get_request(tmp_url_str_ref, address.as_str(), Arc::clone(&client_pool));
+//     let ret_ninfo = match serde_json::from_str::<node_info::NodeInfo>(&(
+//         match req_rslt.await {
+//             Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//             Ok(text) => text
+//         }
+//     )){
+//         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
+//         Ok(ninfo) => ninfo
+//     };
+
+//     return Ok(ret_ninfo);
+// }
 
 #[tonic::async_trait]
 impl RustDkvs for MyRustDKVS {

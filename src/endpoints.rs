@@ -186,6 +186,15 @@ async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<H
     return Ok(ret);
 }
 
+pub async fn grpc_call_check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+    let mut client = get_grpc_client(&self_node.address_str).await;
+
+    let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));
+    
+    let response = client.grpc_check_predecessor(request).await; //?;
+    println!("RESPONSE={:?}", response);
+    return Ok(response.unwrap().into_inner().val);
+}
 
 pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor");
@@ -202,6 +211,22 @@ pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, calle
     };        
 }
 
+pub async fn grpc_call_set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+    let mut client = get_grpc_client(&self_node.address_str).await;
+
+    let request = tonic::Request::new(
+        crate::rustdkvs::SetRoutingInfosForce {
+            predecessor_info: Some(conv_node_info_to_grpc_one(predecessor_info)),
+            successor_info_0: Some(conv_node_info_to_grpc_one(successor_info_0)),
+            ftable_enry_0: Some(conv_node_info_to_grpc_one(ftable_enry_0))
+        } 
+    );
+    
+    let response = client.grpc_set_routing_infos_force(request).await; //?;
+    println!("RESPONSE={:?}", response);
+    return Ok(response.unwrap().into_inner().val);
+}
+
 pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
     let rpc_arg = SetRoutingInfosForce::new(predecessor_info, successor_info_0, ftable_enry_0);
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/set_routing_infos_force");
@@ -213,6 +238,16 @@ pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo,
         });
 
     return Ok(true);
+}
+
+pub async fn grpc_call_find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+    let mut client = get_grpc_client(&self_node.address_str).await;
+
+    let request = tonic::Request::new(Uint32 { val: id});
+    
+    let response = client.grpc_find_successor(request).await; //?;
+    println!("RESPONSE={:?}", response);
+    return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
 }
 
 pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
@@ -235,6 +270,16 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
     };
 
     return ret_ninfo;
+}
+
+pub async fn grpc_call_closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+    let mut client = get_grpc_client(&self_node.address_str).await;
+
+    let request = tonic::Request::new(Uint32 { val: id});
+    
+    let response = client.grpc_closest_preceding_finger(request).await; //?;
+    println!("RESPONSE={:?}", response);
+    return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
 }
 
 pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
@@ -264,6 +309,8 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
     return Ok(ret_ninfo);
 }
 
+// global_put の grpc は呼び出す箇所がないので実装不要
+
 pub async fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let rpc_arg = GlobalPut::new(key_str, val_str);
     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_put");
@@ -286,6 +333,21 @@ pub async fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool:
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
         Ok(is_exist) => { return Ok(is_exist); }
     }
+}
+
+pub async fn grpc_call_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+    let mut client = get_grpc_client(&self_node.address_str).await;
+
+    let request = tonic::Request::new(
+        crate::rustdkvs::Put { 
+            key_id: key_id,
+            val_str: val_str
+        }
+    );
+    
+    let response = client.grpc_put(request).await; //?;
+    println!("RESPONSE={:?}", response);
+    return Ok(response.unwrap().into_inner().val);
 }
 
 pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {

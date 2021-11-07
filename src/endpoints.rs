@@ -558,7 +558,7 @@ pub async fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, client_po
 //     return Json(rt.block_on(handle).unwrap());
 // }
 
-pub async fn grpc_call_test_get_node_info(address : &String) { //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>){
+pub async fn grpc_call_test_get_node_info(address : &String) -> node_info::NodeInfo { //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>){
     let mut client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await.unwrap(); //?;
 
     let request = tonic::Request::new(RString {
@@ -566,8 +566,11 @@ pub async fn grpc_call_test_get_node_info(address : &String) { //, client_pool: 
     });
     
     let response = client.grpc_test_get_node_info(request).await; //?;
+    //println!("RESPONSE={:?}", response);
+    let ret_ni = response.unwrap().into_inner();
+    let ret_ni_conved = conv_node_info_to_normal_one(ret_ni);
 
-    println!("RESPONSE={:?}", response);    
+    return ret_ni_conved;
 }
 
 pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<node_info::NodeInfo, GeneralError> {
@@ -733,7 +736,7 @@ pub fn conv_node_info_to_grpc_one(node_info: node_info::NodeInfo) -> crate::rust
 }
 
 pub fn conv_node_info_vec_to_grpc_one(ni_vec: Vec<node_info::NodeInfo>) -> Vec<crate::rustdkvs::NodeInfo> {
-    let mut ret_vec: Vec<NodeInfo> = vec![];
+    let mut ret_vec: Vec<crate::rustdkvs::NodeInfo> = vec![];
     for ninfo in ni_vec {
         ret_vec.push(conv_node_info_to_grpc_one(ninfo));
     }
@@ -746,7 +749,7 @@ pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo
     for ninfo in ni_opvec {
         match ninfo {
             None => {
-                // newした時点で born_id の初期値は -1 である
+                // newした時点での born_id の初期値は -1 である
                 let none_dummy = crate::rustdkvs::NodeInfo { 
                     node_id: 0,
                     address_str: "".to_string(),
@@ -761,6 +764,41 @@ pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo
                 let any: Any;
                 ret_vec.push(conv_node_info_to_grpc_one(ninfo_wrapped));
             }
+        }
+    }
+    return ret_vec;
+}
+
+pub fn conv_node_info_to_normal_one(node_info: crate::rustdkvs::NodeInfo) -> node_info::NodeInfo {
+    println!("called conv_node_info_to_grpc_one");
+    return node_info::NodeInfo {
+        //message : format!("Hello {}!", request.into_inner().name).into(),
+        node_id : node_info.node_id,
+        address_str: node_info.address_str,
+        born_id : node_info.born_id,
+        successor_info_list: conv_node_info_vec_to_normal_one(node_info.successor_info_list),
+        predecessor_info: conv_node_info_vec_to_normal_one(node_info.predecessor_info),
+        finger_table: conv_node_info_opvec_to_normal_one(node_info.finger_table)
+     };
+}
+
+pub fn conv_node_info_vec_to_normal_one(ni_vec: Vec<crate::rustdkvs::NodeInfo>) -> Vec<node_info::NodeInfo> {
+    let mut ret_vec: Vec<node_info::NodeInfo> = vec![];
+    for ninfo in ni_vec {
+        ret_vec.push(conv_node_info_to_normal_one(ninfo));
+    }
+    return ret_vec;
+}
+
+pub fn conv_node_info_opvec_to_normal_one(ni_opvec: Vec<crate::rustdkvs::NodeInfo>) -> Vec<Option<node_info::NodeInfo>> {
+    let mut ret_vec: Vec<Option<node_info::NodeInfo>> = vec![];
+    // TODO: (rustr) born_id = -1 な ノードは None として扱う
+    for ninfo in ni_opvec {
+        if ninfo.born_id == -1 {
+            ret_vec.push(None);
+        }else {
+            let val = Some(conv_node_info_to_normal_one(ninfo));
+            ret_vec.push(val);
         }
     }
     return ret_vec;

@@ -141,7 +141,7 @@ async fn main() {
 
         let grpc_serv_handle = tokio::spawn(async move {
             //endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), Arc::clone(&client_pool_api_serv), bind_addr_api_serv, bind_port_num);
-            endpoints::grpc_api_server_start(bind_addr_api_serv, bind_port_num).await;
+            endpoints::grpc_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), Arc::clone(&client_pool_api_serv), bind_addr_api_serv, bind_port_num).await;
         });
         grpc_serv_handle.await;
 /*

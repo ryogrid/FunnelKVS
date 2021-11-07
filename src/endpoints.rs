@@ -21,9 +21,6 @@ use crate::rustdkvs::rust_dkvs_client::RustDkvsClient;
 
 use crate::rustdkvs::{NodeInfo, Uint32, RString};
 
-#[derive(Debug, Default)]
-pub struct MyRustDKVS {}
-
 use crate::gval;
 use crate::chord_node;
 use crate::node_info;
@@ -33,6 +30,14 @@ use crate::router;
 use crate::stabilizer;
 
 type ArMu<T> = Arc<Mutex<T>>;
+
+//#[derive(Debug, Default)]
+#[derive(Debug)]
+pub struct MyRustDKVS {
+    self_node: ArMu<node_info::NodeInfo>,
+    data_store: ArMu<data_store::DataStore>,
+    client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>
+}
 
 // urlは "http://から始まるものにすること"
 async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<String, chord_util::GeneralError> {
@@ -659,9 +664,10 @@ impl RustDkvs for MyRustDKVS {
 //     return Json(rt.block_on(handle).unwrap().unwrap());
 // }
 
-pub async fn grpc_api_server_start(bind_addr: String, bind_port_num: i32) {
+pub async fn grpc_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, bind_addr: String, bind_port_num: i32) {
     let addr_port: SocketAddr = (bind_addr + ":" + bind_port_num.to_string().as_str()).parse().unwrap();
-    let rdkvs_serv = MyRustDKVS::default();
+    //let rdkvs_serv = MyRustDKVS::default();
+    let rdkvs_serv = MyRustDKVS { self_node: self_node, data_store: data_store, client_pool: client_pool};
 
     Server::builder()
     .add_service(RustDkvsServer::new(rdkvs_serv))

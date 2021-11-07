@@ -629,7 +629,100 @@ impl RustDkvs for MyRustDKVS {
         stabilizer::set_routing_infos_force(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), conv_node_info_to_normal_one(srif_obj.predecessor_info.unwrap()), conv_node_info_to_normal_one(srif_obj.successor_info_0.unwrap()), conv_node_info_to_normal_one(srif_obj.ftable_enry_0.unwrap()));
         let reply = Bool { val: true };
         Ok(Response::new(reply))
+    }
+    
+    async fn grpc_find_successor(
+        &self,
+        request: Request<Uint32>,
+    ) -> Result<Response<crate::rustdkvs::NodeInfo>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let reply_tmp = router::find_successor(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), request.into_inner().val).await;
+        let reply = conv_node_info_to_grpc_one(reply_tmp.unwrap());
+        Ok(Response::new(reply))
+    }
+
+    async fn grpc_closest_preceding_finger(
+        &self,
+        request: Request<Uint32>,
+    ) -> Result<Response<crate::rustdkvs::NodeInfo>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let reply_tmp = router::closest_preceding_finger(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), request.into_inner().val).await;
+        let reply = conv_node_info_to_grpc_one(reply_tmp.unwrap());
+        Ok(Response::new(reply))
+    }
+    
+    async fn grpc_global_put(
+        &self,
+        request: Request<crate::rustdkvs::GlobalPut>,
+    ) -> Result<Response<Bool>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let gp_val = request.into_inner();
+        let reply_tmp = chord_node::global_put(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), gp_val.key_str, gp_val.val_str).await;
+        let reply = Bool { val: reply_tmp.unwrap() };
+        Ok(Response::new(reply))
+    }
+
+    async fn grpc_put(
+        &self,
+        request: Request<crate::rustdkvs::Put>,
+    ) -> Result<Response<Bool>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let gp_val = request.into_inner();
+        let reply_tmp = chord_node::put(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), gp_val.key_id, gp_val.val_str);
+        let reply = Bool { val: reply_tmp.unwrap() };
+        Ok(Response::new(reply))
+    }
+
+    async fn grpc_global_get(
+        &self,
+        request: Request<RString>,
+    ) -> Result<Response<crate::rustdkvs::DataIdAndValue>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let reply_tmp = chord_node::global_get(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), request.into_inner().val).await;
+        let reply = conv_iv_to_grpc_one(reply_tmp.unwrap());
+        Ok(Response::new(reply))
+    }
+
+    async fn grpc_get(
+        &self,
+        request: Request<Uint32>,
+    ) -> Result<Response<crate::rustdkvs::DataIdAndValue>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let reply_tmp = chord_node::get(Arc::clone(&self.self_node), Arc::clone(&self.data_store), request.into_inner().val);
+        let reply = conv_iv_to_grpc_one(reply_tmp.unwrap());
+        Ok(Response::new(reply))
+    }
+
+    async fn grpc_pass_datas(
+        &self,
+        request: Request<PassDatas>,
+    ) -> Result<Response<Bool>, Status> {
+        println!("Got a request: {:?}", request);
+
+        let iv_vec_tmp = request.into_inner();
+        let reply_tmp = stabilizer::pass_datas(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), conv_iv_vec_to_normal_one(iv_vec_tmp.vals));
+        let reply = Bool { val: reply_tmp.unwrap() };
+        Ok(Response::new(reply))
+    }
+
+    async fn grpc_get_node_info(
+        &self,
+        request: Request<Void>, // Accept request of type RString
+    ) -> Result<Response<NodeInfo>, Status> { // Return an instance of type rustdkvs::NodeInfo
+        println!("Got a request: {:?}", request);
+
+        let reply = conv_node_info_to_grpc_one(chord_util::get_node_info(Arc::clone(&self.self_node), Arc::clone(&self.client_pool)));
+
+        Ok(Response::new(reply))
     }    
+
+
 }
 
 // #[get("/get_node_info")]

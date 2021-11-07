@@ -59,13 +59,13 @@ service RustDKVS {
     rpc grpc_test_get_node_info (RString) returns (NodeInfo);
     rpc grpc_check_predecessor(NodeInfo) returns (BOOL);
     rpc grpc_set_routing_infos_force(SetRoutingInfosForce) returns (BOOL);
-    // rpc grpc_find_successor(UINT32) returns (NodeInfo);
-    // rpc grpc_closest_preceding_finger(UINT32) returns (NodeInfo);
-    // rpc grpc_global_put(GlobalPut) returns (BOOL);
-    // rpc grpc_put(Put) returns (BOOL);
-    // rpc grpc_global_get(UINT32) returns (DataIdAndValues);
-    // rpc grpc_get(UINT32) returns (DataIdAndValues);
-    // rpc grpc_pass_datas(PassDatas) returns (BOOL);
+    rpc grpc_find_successor(UINT32) returns (NodeInfo);
+    rpc grpc_closest_preceding_finger(UINT32) returns (NodeInfo);
+    rpc grpc_global_put(GlobalPut) returns (BOOL);
+    rpc grpc_put(Put) returns (BOOL);
+    rpc grpc_global_get(RString) returns (DataIdAndValue);
+    rpc grpc_get(UINT32) returns (DataIdAndValue);
+    rpc grpc_pass_datas(PassDatas) returns (BOOL);
     // rpc grpc_global_delete(UINT32) returns (BOOL);
-    // rpc grpc_get_node_info (VOID) returns (NodeInfo);
+    rpc grpc_get_node_info (VOID) returns (NodeInfo);
 }

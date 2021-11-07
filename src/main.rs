@@ -55,6 +55,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use tokio::*;
+use tokio::runtime::Runtime;
 
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -96,9 +97,8 @@ fn req_rest_api_test() {
     //req_rest_api_test_inner_get();
 }
 
-
 #[tokio::main]
-async fn main() {
+async fn main(){
     //引数処理
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {
@@ -144,8 +144,8 @@ async fn main() {
             //endpoints::rest_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), Arc::clone(&client_pool_api_serv), bind_addr_api_serv, bind_port_num);
             endpoints::grpc_api_server_start(Arc::clone(&node_info_api_serv), Arc::clone(&data_store_api_serv), Arc::clone(&client_pool_api_serv), bind_addr_api_serv, bind_port_num).await;
         });
-        grpc_serv_handle.await;
-/*
+        //grpc_serv_handle.await;
+
         std::thread::sleep(std::time::Duration::from_millis(1500 as u64));
 
         println!("here1!\n");        
@@ -198,6 +198,23 @@ async fn main() {
         for handle in thread_handles {
             handle.await;
         }
-*/        
+
     }
 }
+
+/*
+//#[tokio::main]
+fn main() {
+    // let rt  = Runtime::new().unwrap();
+    // rt.block_on(async {
+    //     main_inner().await;
+    // });
+    tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()
+    .unwrap()
+    .block_on(async {
+        main_inner();
+    });
+}
+*/

@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-tonic = "0.6.1"
+tonic = { version = "0.6.1", features = ["transport"] }
 bytes = "1.1.0"
 protobuf = { version = "2", features = ["with-bytes"] }
 prost = "0.9.0"

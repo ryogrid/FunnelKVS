@@ -116,7 +116,11 @@ func extract_addr_and_born_id(input_json map[string]interface{}) (string, float6
 	return ret_addr, ret_born_id, ret_node_id, ret_succ_addr
 }
 
+//const bind_ip_addr = "192.168.3.13"
 const bind_ip_addr = "127.0.0.1"
+
+//const bind_ip_addr = "[::1]"
+//const bind_ip_addr = "0.0.0.0"
 const check_node_limit = 150
 
 var platform string
@@ -185,8 +189,9 @@ func setup_nodes(num int) {
 	start_port := 11000
 	cur_port := start_port
 	for ii := 0; ii < num; ii++ {
-		start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, cur_port-1, "./")
-		cur_port++
+		//start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, cur_port-1, "./")
+		start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, start_port, "./")
+		//		cur_port++
 		fmt.Printf("launched born_id=%d\n", ii+1)
 		time.Sleep(time.Second * 5)
 	}

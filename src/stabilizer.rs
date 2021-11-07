@@ -80,21 +80,28 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
     }
     
     if tyukai_node.node_id == tyukai_node.successor_info_list[0].node_id {
+        chord_util::dprint(&("join_2_7,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_new_node).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(&tyukai_node).as_str()));        
         {
-            let mut new_node_ref = new_node.lock().unwrap();
-            // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+            {
+                let mut new_node_ref = new_node.lock().unwrap();
+                // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
 
-            // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
-            // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
-            is_second_node = true;
-            
-            new_node_ref.successor_info_list.push(tyukai_node.clone());
+                // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
+                // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
+                is_second_node = true;
+                
+                new_node_ref.successor_info_list.push(tyukai_node.clone());
 
-            //drop(deep_cloned_new_node);
-            deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
-            //drop(new_node_ref);
+                //drop(deep_cloned_new_node);
+                deep_cloned_new_node = node_info::partial_clone_from_ref_strong(&new_node_ref);
+                //drop(new_node_ref);
+            }
             node_info::set_pred_info(Arc::clone(&new_node), tyukai_node.clone());
         }
+        chord_util::dprint(&("join_2_8,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_new_node).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(&tyukai_node).as_str()));
+
         endpoints::rrpc_call__set_routing_infos_force(
             &tyukai_node,
             deep_cloned_new_node.clone(),

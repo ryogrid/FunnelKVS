@@ -16,29 +16,29 @@ type ArMu<T> = Arc<Mutex<T>>;
 
 // idで識別されるデータを担当するノードの名前解決を行う
 pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
-    let deep_cloned_self_node;
+    let self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();
-        deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
 
-    chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+    chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
                 + chord_util::gen_debug_str_of_data(id).as_str()));
     
-    let n_dash = match find_predecessor(&deep_cloned_self_node, Arc::clone(&client_pool), id).await {
+    let n_dash = match find_predecessor(&self_node_deep_cloned, Arc::clone(&client_pool), id).await {
         Err(err) => {
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
         Ok(ninfo) => ninfo
     };
 
-    chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+    chord_util::dprint(&("find_successor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
                         + chord_util::gen_debug_str_of_node(&n_dash).as_str() + ","
-                        + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","
+                        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str() + ","
                         + chord_util::gen_debug_str_of_data(id).as_str()));
 
-    let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash.address_str, Arc::clone(&client_pool)).await {
+    let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
         Err(err) => {
             {
                 let mut self_node_ref = self_node.lock().unwrap();
@@ -51,7 +51,7 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
         }
     };
     
-    match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str, Arc::clone(&client_pool)).await {
+    match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0], Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
         Err(err) => {
             {
                 let mut self_node_ref = self_node.lock().unwrap();
@@ -96,7 +96,7 @@ pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: 
             };
             is_first_cpf = false;
         } else {
-            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, Arc::clone(&client_pool), id).await {
+            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, Arc::clone(&client_pool), id, exnode_ni_ref.node_id).await {
                 Err(err) => {
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
@@ -153,23 +153,23 @@ pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, clie
 
     chord_util::dprint(&"closest_preceding_finger_start".to_string());
 
-    let deep_cloned_self_node;
+    let self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();
-        deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
 
-    for node_info in (&deep_cloned_self_node).finger_table.iter().rev() {
+    for node_info in (&self_node_deep_cloned).finger_table.iter().rev() {
         let conved_node_info = match node_info {
             None => {
-                chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str()));
+                chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str()));
                 continue;
             },
             Some(ni) => ni
         };
 
-        chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+        chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
         // テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
@@ -178,12 +178,12 @@ pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, clie
         //  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
         //  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
         //  見つけるという処理になっていると思われる）
-        if chord_util::exist_between_two_nodes_right_mawari(deep_cloned_self_node.node_id, id, conved_node_info.node_id) {
+        if chord_util::exist_between_two_nodes_right_mawari(self_node_deep_cloned.node_id, id, conved_node_info.node_id) {
 
-            chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+            chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
-            let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info.address_str, Arc::clone(&client_pool)).await {
+            let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
                 Err(err) => {
                     {
                         let mut self_node_ref = self_node.lock().unwrap();
@@ -203,6 +203,6 @@ pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, clie
     // どんなに範囲を狭めても探索対象のIDを超えてしまうノードしか存在しなかった場合
     // 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という
     // ことになる
-    return Ok(deep_cloned_self_node);
+    return Ok(self_node_deep_cloned);
 }
 

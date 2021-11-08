@@ -186,7 +186,9 @@ async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<H
     return Ok(ret);
 }
 
-pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
+    // 呼び出し元で対処しているため、ここでの自ノードへの呼出しへの対処は不要
+    
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));
@@ -240,7 +242,11 @@ pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo,
 //     return Ok(true);
 // }
 
-pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+    if self_node.node_id == caller_id {
+        return router::find_successor(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool, id).await;
+    }
+    
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(Uint32 { val: id});
@@ -272,7 +278,11 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
 //     return ret_ninfo;
 // }
 
-pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+    if self_node.node_id == caller_id {
+        return router::closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool, id).await;
+    }
+    
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(Uint32 { val: id});
@@ -335,7 +345,11 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
 //     }
 // }
 
-pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
+    if self_node.node_id == caller_id {
+        return chord_node::put(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), Arc::clone(&data_store), client_pool, key_id, val_str);
+    }
+    
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(
@@ -403,7 +417,11 @@ pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<H
 //     return Ok(ret_iv);
 // }
 
-pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, caller_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+    if self_node.node_id == caller_id {
+
+        return chord_node::get(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), Arc::clone(&data_store), key_id);
+    }
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(Uint32 { val: key_id});
@@ -440,7 +458,8 @@ pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<H
 //     return Ok(ret_iv);
 // }
 
-pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, pass_datas: Vec<chord_util::DataIdAndValue>, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
+    // 呼び出し元で対処しているため、ここでの自ノードへの呼び出しへの対処は不要
     let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(
@@ -523,8 +542,11 @@ pub async fn grpc_call_test_get_node_info(address : &String) -> node_info::NodeI
     return conv_node_info_to_normal_one(response.unwrap().into_inner());
 }
 
-pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<node_info::NodeInfo, GeneralError> {
-    let mut client = get_grpc_client(address).await;
+pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_id: u32) -> Result<node_info::NodeInfo, GeneralError> {
+    if self_node.node_id == caller_id {
+        return Ok(chord_util::get_node_info(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool));
+    }
+    let mut client = get_grpc_client(&self_node.address_str).await;
 
     let request = tonic::Request::new(Void {
         val: 0
@@ -786,7 +808,7 @@ pub fn conv_node_info_vec_to_grpc_one(ni_vec: Vec<node_info::NodeInfo>) -> Vec<c
 
 pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo>>) -> Vec<crate::rustdkvs::NodeInfo> {
     let mut ret_vec: Vec<crate::rustdkvs::NodeInfo> = vec![];
-    // TODO: (rustr) born_id = -1 な ノードは None として扱うように受け側では逆変換する規約とする
+    // born_id = -1 な ノードは None として扱うように受け側では逆変換する規約とする
     for ninfo in ni_opvec {
         match ninfo {
             None => {
@@ -832,7 +854,7 @@ pub fn conv_node_info_vec_to_normal_one(ni_vec: Vec<crate::rustdkvs::NodeInfo>) 
 
 pub fn conv_node_info_opvec_to_normal_one(ni_opvec: Vec<crate::rustdkvs::NodeInfo>) -> Vec<Option<node_info::NodeInfo>> {
     let mut ret_vec: Vec<Option<node_info::NodeInfo>> = vec![];
-    // TODO: (rustr) born_id = -1 な ノードは None として扱う
+    // born_id = -1 な ノードは None として扱う
     for ninfo in ni_opvec {
         if ninfo.born_id == -1 {
             ret_vec.push(None);

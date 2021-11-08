@@ -28,7 +28,7 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id).await {
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id, self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
                     let mut self_node_ref = self_node.lock().unwrap();
@@ -49,7 +49,7 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
             + idx.to_string().as_str()
         ));        
 
-        let is_exist = match endpoints::rrpc_call__put(&replica_node, Arc::clone(&client_pool), target_id, val_str.clone()).await {
+        let is_exist = match endpoints::rrpc_call__put(&replica_node, Arc::clone(&data_store), Arc::clone(&client_pool), target_id, val_str.clone(), self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
                     let mut self_node_ref = self_node.lock().unwrap();
@@ -154,7 +154,7 @@ pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
     let data_id = chord_util::hash_str_to_int(&key_str);
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
-        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id).await {
+        let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id, self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
                     let mut self_node_ref = self_node.lock().unwrap();
@@ -192,7 +192,7 @@ pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
 
         // TODO: (rustr) gRPC化する際は getのRPCで取得した DataIdAndValueの値をチェックし 値が"Error" であれば取得に失敗したものと判断
         //               するように修正すること
-        let data_iv = match endpoints::rrpc_call__get(&replica_node, Arc::clone(&client_pool), target_id).await {
+        let data_iv = match endpoints::rrpc_call__get(&replica_node, Arc::clone(&data_store), Arc::clone(&client_pool), target_id, self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
                     let mut self_node_ref = self_node.lock().unwrap();

@@ -38,18 +38,24 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
                         + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str() + ","
                         + chord_util::gen_debug_str_of_data(id).as_str()));
 
-    let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
-        Err(err) => {
-            {
-                let mut self_node_ref = self_node.lock().unwrap();
-                node_info::handle_downed_node_info(&mut self_node_ref, &n_dash, &err);
+    let asked_n_dash_info: node_info::NodeInfo;
+    if n_dash.node_id == self_node_deep_cloned.node_id {
+        asked_n_dash_info = node_info::partial_clone_from_ref_strong(&self_node_deep_cloned);
+    } else {
+        asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
+            Err(err) => {
+                {
+                    let mut self_node_ref = self_node.lock().unwrap();
+                    node_info::handle_downed_node_info(&mut self_node_ref, &n_dash, &err);
+                }
+                return Err(chord_util::GeneralError::new(err.message, err.err_code));
             }
-            return Err(chord_util::GeneralError::new(err.message, err.err_code));
-        }
-        Ok(got_node) => {                
-            got_node
-        }
-    };
+            Ok(got_node) => {                
+                got_node
+            }
+        };
+    }
+
     
     match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0], Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
         Err(err) => {

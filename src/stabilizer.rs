@@ -309,7 +309,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
 
 // successor_info_listのインデックス1より後ろを規定数まで埋める
 // 途中でエラーとなった場合は、規定数に届いていなくとも処理を中断する
-pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError>{    
+pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError>{
     let self_node_id;
     let mut next_succ_id;
     let first_succ;
@@ -324,6 +324,11 @@ pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_po
         //let mut next_succ_info = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
+
+    if first_succ.node_id == self_node_id {
+        return Ok(true);
+    }
+
     let mut next_succ_info = match endpoints::rrpc_call__get_node_info(&first_succ, Arc::clone(&client_pool), self_node_id).await {
         Err(err) => {
             let mut self_node_ref = self_node.lock().unwrap();

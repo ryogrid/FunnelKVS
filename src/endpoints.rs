@@ -39,32 +39,75 @@ pub struct MyRustDKVS {
     client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>
 }
 
-pub async fn get_grpc_client(client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, address: &String) -> Result<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>, chord_util::GeneralError> {
-    let ret = match RustDkvsClient::connect("http://".to_string() + address.as_str()).await {
-        Ok(client) => { Ok(client) }
-        Err(err) => async {
-            let mut retry_cnt = 0; 
-            let ret_client;
-            loop {
-                let tmp_client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await;
-                if tmp_client.is_ok() {
-                    ret_client = tmp_client.unwrap();
-                    break;
-                }else{
-                    println!{"Socket Error Occured: {:?}", err};
-                    retry_cnt += 1;
-                    if retry_cnt == 3 {
-                        return Err(chord_util::GeneralError::new("socket error retry 3count reached".to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+// pub async fn get_grpc_client(client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, address: &String) -> Result<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>, chord_util::GeneralError> {
+//     let ret = match RustDkvsClient::connect("http://".to_string() + address.as_str()).await {
+//         Ok(client) => { Ok(client) }
+//         Err(err) => async {
+//             let mut retry_cnt = 0; 
+//             let ret_client;
+//             loop {
+//                 let tmp_client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await;
+//                 if tmp_client.is_ok() {
+//                     ret_client = tmp_client.unwrap();
+//                     break;
+//                 }else{
+//                     println!{"Socket Error Occured: {:?}", err};
+//                     retry_cnt += 1;
+//                     if retry_cnt == 3 {
+//                         return Err(chord_util::GeneralError::new("socket error retry 3count reached".to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+//                     }
+//                     std::thread::sleep(std::time::Duration::from_millis(1000 as u64));
+//                     continue;
+//                 }
+//             }
+//             Ok(ret_client)
+//         }.await
+//     }; //?;
+//     return ret;
+// }
+
+pub async fn get_grpc_client(client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, address: &String) -> Result<ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>, chord_util::GeneralError> {
+    let locked_pool = client_pool.lock().unwrap();
+    let get_rslt = locked_pool.get(address);
+    let ret = match get_rslt {
+        None => {
+            let tmp_ret = match RustDkvsClient::connect("http://".to_string() + address.as_str()).await {
+                Ok(client) => { Ok(client) }
+                Err(err) => async {
+                    let mut retry_cnt = 0; 
+                    let ret_client;
+                    loop {
+                        let tmp_client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await;
+                        if tmp_client.is_ok() {
+                            ret_client = tmp_client.unwrap();
+                            break;
+                        }else{
+                            println!{"Socket Error Occured: {:?}", err};
+                            retry_cnt += 1;
+                            if retry_cnt == 3 {
+                                return Err(chord_util::GeneralError::new("socket error retry 3count reached".to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+                            }
+                            std::thread::sleep(std::time::Duration::from_millis(1000 as u64));
+                            continue;
+                        }
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(1000 as u64));
-                    continue;
-                }
-            }
-            Ok(ret_client)
-        }.await
-    }; //?;
-    return ret;
+                    Ok(ret_client)
+                }.await
+            }; //?;
+            let new_client = ArMu_new!(tmp_ret.unwrap());
+            let ret_client = Arc::clone(&new_client);
+            let mut locked_pool = client_pool.lock().unwrap();
+            locked_pool.insert((*address).clone(), new_client);
+            ret_client
+        }
+        Some(client_armu) => {
+            Arc::clone(client_armu)
+        }
+    };
+    return Ok(ret);
 }
+
+
 
 
 // urlは "http://から始まるものにすること"
@@ -212,11 +255,12 @@ async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<H
 pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
     // 呼び出し元で対処しているため、ここでの自ノードへの呼出しへの対処は不要
     
-    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
+    let client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
-    let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));
-    
-    let response = client.grpc_check_predecessor(request).await;
+    let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));    
+
+    let mut locked_client = client.lock().unwrap();
+    let response = locked_client.grpc_check_predecessor(request).await;
     //println!("RESPONSE={:?}", response);
     return Ok(response.unwrap().into_inner().val);
 }
@@ -246,8 +290,9 @@ pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo,
             ftable_enry_0: Some(conv_node_info_to_grpc_one(ftable_enry_0))
         } 
     );
-    
-    let response = client.grpc_set_routing_infos_force(request).await;
+
+    let mut locked_client = client.lock().unwrap();    
+    let response = locked_client.grpc_set_routing_infos_force(request).await;
     //println!("RESPONSE={:?}", response);
     return Ok(response.unwrap().into_inner().val);
 }
@@ -273,8 +318,9 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
     let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: id});
-    
-    let response = client.grpc_find_successor(request).await; //?;
+
+    let mut locked_client = client.lock().unwrap();    
+    let response = locked_client.grpc_find_successor(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
 }
@@ -309,8 +355,9 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
     let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: id});
-    
-    let response = client.grpc_closest_preceding_finger(request).await; //?;
+
+    let mut locked_client = client.lock().unwrap();    
+    let response = locked_client.grpc_closest_preceding_finger(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
 }
@@ -381,8 +428,9 @@ pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<da
             val_str: val_str
         }
     );
-    
-    let response = client.grpc_put(request).await; //?;
+
+    let mut locked_client = client.lock().unwrap();    
+    let response = locked_client.grpc_put(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(response.unwrap().into_inner().val);
 }
@@ -448,8 +496,9 @@ pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, data_store: ArMu<da
     let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: key_id});
-    
-    let response = client.grpc_get(request).await; //?;
+
+    let mut locked_client = client.lock().unwrap();    
+    let response = locked_client.grpc_get(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(conv_iv_to_normal_one(response.unwrap().into_inner()));
 }
@@ -490,8 +539,9 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
             vals: conv_iv_vec_to_grpc_one(pass_datas)
         } 
     );
-    
-    let response = client.grpc_pass_datas(request).await; //?;
+
+    let mut locked_client = client.lock().unwrap();    
+    let response = locked_client.grpc_pass_datas(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(response.unwrap().into_inner().val);
 }
@@ -574,8 +624,9 @@ pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfo, client_po
     let request = tonic::Request::new(Void {
         val: 0
     });
-    
-    let response = client.grpc_get_node_info(request).await; //?;
+
+    let mut locked_client = client.lock().unwrap();    
+    let response = locked_client.grpc_get_node_info(request).await; //?;
     //println!("RESPONSE={:?}", response);
     let ret_ni = response.unwrap().into_inner();
     let ret_ni_conved = conv_node_info_to_normal_one(ret_ni);

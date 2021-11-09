@@ -38,6 +38,15 @@ pub struct NodeInfo {
     pub finger_table: Vec<Option<NodeInfo>>,
 }
 
+// routerモジュールの中で利用する、通信量を減らすための必要な情報だけのNodeInfo
+#[derive(Serialize, Deserialize)]
+#[derive(Debug)]
+pub struct NodeInfoSummary {
+    pub node_id: u32,
+    pub succ0_id: u32,
+    pub address_str: String
+}
+
 impl NodeInfo {
     pub fn new() -> NodeInfo {
         NodeInfo {
@@ -50,6 +59,7 @@ impl NodeInfo {
         }
     }
 }
+
 
 // 単純にdeepcopyするとチェーン構造になっているものが全てコピーされてしまう
 // ため、そこの考慮を行ったデータを返す
@@ -72,6 +82,12 @@ impl Clone for NodeInfo {
         ret_node_info.predecessor_info = vec![];
     
         return ret_node_info;
+    }  
+}
+
+impl Clone for NodeInfoSummary {
+    fn clone(&self) -> Self {
+        return NodeInfoSummary{ node_id: self.node_id, succ0_id: self.succ0_id, address_str: self.address_str.clone() };
     }  
 }
 
@@ -137,6 +153,16 @@ pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) ->
     }
 
     return ret_node_info;    
+}
+
+pub fn gen_summary_node_info(node_info_ref: &NodeInfo) -> NodeInfoSummary {
+    return NodeInfoSummary { node_id: node_info_ref.node_id, succ0_id: node_info_ref.successor_info_list[0].node_id, address_str: node_info_ref.address_str.clone() }
+}
+
+pub fn gen_node_info_from_summary(summary_ref: &NodeInfoSummary) -> NodeInfo {
+    let mut ret_ninfo = NodeInfo::new();
+    ret_ninfo.node_id = summary_ref.node_id;
+    return ret_ninfo;
 }
 
 pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){

@@ -209,7 +209,7 @@ pub fn rrpc__find_successor(self_node: State<ArMu<node_info::NodeInfo>>, id : Js
     return Json(router::find_successor(Arc::clone(&self_node), id.0));
 }
 
-pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfoSummary, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger"),
         match serde_json::to_string(&id){
@@ -224,7 +224,7 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
         Ok(text) => {text}
     };
 
-    let ret_ninfo = match match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(&res_text){
+    let ret_ninfo = match match serde_json::from_str::<Result<node_info::NodeInfoSummary, chord_util::GeneralError>>(&res_text){
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR))},
         Ok(result_ninfo) => result_ninfo
     }{
@@ -236,7 +236,7 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, id :
 }
 
 #[post("/closest_preceding_finger", data = "<id>")]
-pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
+pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfoSummary, chord_util::GeneralError>> {
     return Json(router::closest_preceding_finger(Arc::clone(&self_node), id.0));
 }
 

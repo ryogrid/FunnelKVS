@@ -16,7 +16,7 @@ type ArMu<T> = Arc<Mutex<T>>;
 
 // 経路表の情報を他ノードから強制的に設定する.
 // joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
-pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
+pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     //with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
     let self_node_clone;
     {
@@ -30,7 +30,7 @@ pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, client_pool
 }
 
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
-pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, self_node_address: &String, tyukai_node_address: &String, born_id: i32) {
+pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, self_node_address: &String, tyukai_node_address: &String, born_id: i32) {
     let mut new_node_deep_cloned;
     let mut is_second_node:bool = false;
     {
@@ -150,7 +150,7 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
     };
 }
 
-pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError>{
+pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<bool, chord_util::GeneralError>{
     let mut self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();
@@ -309,7 +309,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
 
 // successor_info_listのインデックス1より後ろを規定数まで埋める
 // 途中でエラーとなった場合は、規定数に届いていなくとも処理を中断する
-pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError>{
+pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<bool, chord_util::GeneralError>{
     let self_node_id;
     let mut next_succ_id;
     let first_succ;
@@ -395,7 +395,7 @@ pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_po
 // FingerTableに関するstabilize処理を行う
 // 一回の呼び出しで1エントリを更新する
 // FingerTableのエントリはこの呼び出しによって埋まっていく
-pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, idx: i32) -> Result<bool, chord_util::GeneralError> {
+pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, idx: i32) -> Result<bool, chord_util::GeneralError> {
     let self_node_deep_cloned;
     let update_id;
     {
@@ -443,7 +443,7 @@ pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client
 
 // caller_node が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
 // 本メソッドはstabilize処理の中で用いられる
-pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();
@@ -535,7 +535,7 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
 // passed_datasで渡されたデータのリストを自身のDataStoreに加える
 // 基本的に、ノード参加が判明した際に他のノードが self_node に対してデータを委譲
 // する際に利用することを想定する
-pub fn pass_datas(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
+pub fn pass_datas(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
     let mut data_store_ref = data_store.lock().unwrap();
     data_store_ref.store_iv_with_vec(pass_datas);
 

@@ -15,7 +15,7 @@ use crate::data_store;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // idで識別されるデータを担当するノードの名前解決を行う
-pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();
@@ -72,7 +72,7 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
 }
  
 // id の前で一番近い位置に存在するノードを探索する
-pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let mut n_dash: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
     let mut n_dash_found: node_info::NodeInfo = node_info::partial_clone_from_ref_strong(exnode_ni_ref);
     let mut is_first_cpf = true;
@@ -151,7 +151,7 @@ pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: 
 }
 
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     // 範囲の広いエントリから探索していく
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ

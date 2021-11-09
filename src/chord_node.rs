@@ -15,7 +15,7 @@ use crate::endpoints;
 
 type ArMu<T> = Arc<Mutex<T>>;
 
-pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();    
@@ -74,7 +74,7 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
     return Ok(true);
 }
 
-pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();
@@ -143,7 +143,7 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
 // 得られた value の文字列を返す
 // データの取得に失敗した場合は ERR_CODE_QUERIED_DATA_NOT_FOUND をエラーとして返す
 // 取得対象のデータが削除済みのデータであった場合は DELETED_ENTRY_MARKING_STR が正常値として返る
-pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();
@@ -297,7 +297,7 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
     return Ok(ret_val);
 }
 
-pub async fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
+pub async fn global_delete(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
     match global_get(Arc::clone(&self_node), Arc::clone(&data_store), Arc::clone(&client_pool), key_str.clone()).await {
         Err(err) => { return Err(err); }
         Ok(data_iv) => {

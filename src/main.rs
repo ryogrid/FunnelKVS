@@ -107,7 +107,7 @@ async fn main(){
             req_rest_api_test();
         }
         // else if num == 3 { // gRPC client
-        //     let ret_ni = endpoints::grpc_call_test_get_node_info(&"127.0.0.1:11000".to_string()).await; //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>)
+        //     let ret_ni = endpoints::grpc_call_test_get_node_info(&"127.0.0.1:11000".to_string()).await; //, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>)
         //     println!("{:?}", ret_ni);
         // }
     }else if args.len() > 2 {
@@ -126,7 +126,7 @@ async fn main(){
 
         let node_info = ArMu_new!(node_info::NodeInfo::new());
         let data_store = ArMu_new!(data_store::DataStore::new());
-        let client_pool = ArMu_new!(HashMap::<String, ArMu<reqwest::Client>>::new());
+        let client_pool = ArMu_new!(HashMap::<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>::new());
 
         let node_info_api_serv = Arc::clone(&node_info);
         let data_store_api_serv = Arc::clone(&data_store);

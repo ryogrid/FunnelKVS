@@ -36,10 +36,10 @@ type ArMu<T> = Arc<Mutex<T>>;
 pub struct MyRustDKVS {
     self_node: ArMu<node_info::NodeInfo>,
     data_store: ArMu<data_store::DataStore>,
-    client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>
+    client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>
 }
 
-pub async fn get_grpc_client(address: &String) -> Result<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>, chord_util::GeneralError> {
+pub async fn get_grpc_client(client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, address: &String) -> Result<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>, chord_util::GeneralError> {
     let ret = match RustDkvsClient::connect("http://".to_string() + address.as_str()).await {
         Ok(client) => { Ok(client) }
         Err(err) => async {
@@ -68,7 +68,7 @@ pub async fn get_grpc_client(address: &String) -> Result<crate::rustdkvs::rust_d
 
 
 // urlは "http://から始まるものにすること"
-async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<String, chord_util::GeneralError> {
+async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<String, chord_util::GeneralError> {
 /*
     let mut client_pool_ref = client_pool.lock().unwrap();
     let mut is_reused = false;
@@ -139,7 +139,7 @@ async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<Ha
 
 // urlは "http://から始まるものにすること"
 // json_str は JSONの文字列表現をそのまま渡せばよい
-async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, json_str: String) -> Result<String, chord_util::GeneralError> {
+async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, json_str: String) -> Result<String, chord_util::GeneralError> {
 /*
     let mut client_pool_ref = client_pool.lock().unwrap();
     let mut is_reused = false;
@@ -209,10 +209,10 @@ async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<H
     return Ok(ret);
 }
 
-pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
     // 呼び出し元で対処しているため、ここでの自ノードへの呼出しへの対処は不要
     
-    let mut client = get_grpc_client(&self_node.address_str).await?;
+    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));
     
@@ -221,7 +221,7 @@ pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, calle
     return Ok(response.unwrap().into_inner().val);
 }
 
-// pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+// pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<bool, chord_util::GeneralError> {
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor");
 //     let req_rslt = http_post_request(tmp_url_str_ref
 //         , self_node.address_str.as_str(), Arc::clone(&client_pool),
@@ -236,8 +236,8 @@ pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, calle
 //     };        
 // }
 
-pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
-    let mut client = get_grpc_client(&self_node.address_str).await?;
+pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<bool, chord_util::GeneralError> {
+    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(
         crate::rustdkvs::SetRoutingInfosForce {
@@ -252,7 +252,7 @@ pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo,
     return Ok(response.unwrap().into_inner().val);
 }
 
-// pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<bool, chord_util::GeneralError> {
+// pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<bool, chord_util::GeneralError> {
 //     let rpc_arg = SetRoutingInfosForce::new(predecessor_info, successor_info_0, ftable_enry_0);
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/set_routing_infos_force");
 //     let req_rslt = http_post_request(
@@ -265,12 +265,12 @@ pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo,
 //     return Ok(true);
 // }
 
-pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     if self_node.node_id == caller_id {
         return router::find_successor(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool, id).await;
     }
     
-    let mut client = get_grpc_client(&self_node.address_str).await?;
+    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: id});
     
@@ -279,7 +279,7 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
     return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
 }
 
-// pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+// pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/find_successor");
 //     let req_rslt = http_post_request(
 //         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
@@ -301,12 +301,12 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
 //     return ret_ninfo;
 // }
 
-pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     if self_node.node_id == caller_id {
         return router::closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool, id).await;
     }
     
-    let mut client = get_grpc_client(&self_node.address_str).await?;
+    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: id});
     
@@ -315,7 +315,7 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
     return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
 }
 
-// pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+// pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger");
 //     let req_rslt = http_post_request(
 //         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
@@ -344,7 +344,7 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
 
 // global_put の grpc は呼び出す箇所がないので実装不要
 
-// pub async fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
+// pub async fn rrpc_call__global_put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
 //     let rpc_arg = GlobalPut::new(key_str, val_str);
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_put");
 //     let req_rslt = http_post_request(
@@ -368,12 +368,12 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
 //     }
 // }
 
-pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32, val_str: String, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
     if self_node.node_id == caller_id {
         return chord_node::put(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), Arc::clone(&data_store), client_pool, key_id, val_str);
     }
     
-    let mut client = get_grpc_client(&self_node.address_str).await?;
+    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(
         crate::rustdkvs::Put { 
@@ -387,7 +387,7 @@ pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<da
     return Ok(response.unwrap().into_inner().val);
 }
 
-// pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+// pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
 //     let rpc_arg = Put::new(key_id, val_str);
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/put");
 //     let req_rslt = http_post_request(
@@ -413,7 +413,7 @@ pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<da
 
 // global_get の grpc は呼び出し箇所がないため実装不要
 
-// pub async fn rrpc_call__global_get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+// pub async fn rrpc_call__global_get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_get");
 //     let req_rslt = http_post_request(
 //         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
@@ -440,12 +440,12 @@ pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<da
 //     return Ok(ret_iv);
 // }
 
-pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, caller_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32, caller_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     if self_node.node_id == caller_id {
 
         return chord_node::get(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), Arc::clone(&data_store), key_id);
     }
-    let mut client = get_grpc_client(&self_node.address_str).await?;
+    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: key_id});
     
@@ -454,7 +454,7 @@ pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, data_store: ArMu<da
     return Ok(conv_iv_to_normal_one(response.unwrap().into_inner()));
 }
 
-// pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+// pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/get");
 //     let req_rslt = http_post_request(
 //         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
@@ -481,9 +481,9 @@ pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, data_store: ArMu<da
 //     return Ok(ret_iv);
 // }
 
-pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, pass_datas: Vec<chord_util::DataIdAndValue>, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
+pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, pass_datas: Vec<chord_util::DataIdAndValue>, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
     // 呼び出し元で対処しているため、ここでの自ノードへの呼び出しへの対処は不要
-    let mut client = get_grpc_client(&self_node.address_str).await?;
+    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(
         crate::rustdkvs::PassDatas {
@@ -496,7 +496,7 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
     return Ok(response.unwrap().into_inner().val);
 }
 
-// pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
+// pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/pass_datas");
 //     let req_rslt = http_post_request(
 //         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
@@ -525,7 +525,7 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
 
 // global_delete の grpc は呼び出し箇所がないため実装不要
 
-// pub async fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
+// pub async fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_str: String) -> Result<bool, chord_util::GeneralError> {
 //     let tmp_url_str_ref = &("http://".to_string() + self_node.address_str.as_str() + "/global_delete");
 //     let req_rslt = http_post_request(
 //         tmp_url_str_ref, self_node.address_str.as_str(), Arc::clone(&client_pool),
@@ -552,9 +552,9 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
 //     return Ok(is_exist);
 // }
 
-// pub async fn grpc_call_test_get_node_info(address : &String) -> node_info::NodeInfo { //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>){
+// pub async fn grpc_call_test_get_node_info(address : &String) -> node_info::NodeInfo { //, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>){
 //     //let mut client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await.unwrap(); //?;
-//     let mut client = get_grpc_client(address).await?;
+//     let mut client = get_grpc_client(Arc::clone(&client_pool), address).await?;
 
 //     let request = tonic::Request::new(RString {
 //         val: "it is sunny!".into()
@@ -565,11 +565,11 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
 //     return conv_node_info_to_normal_one(response.unwrap().into_inner());
 // }
 
-pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_id: u32) -> Result<node_info::NodeInfo, GeneralError> {
+pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, caller_id: u32) -> Result<node_info::NodeInfo, GeneralError> {
     if self_node.node_id == caller_id {
         return Ok(chord_util::get_node_info(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool));
     }
-    let mut client = get_grpc_client(&self_node.address_str).await?;
+    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Void {
         val: 0
@@ -583,7 +583,7 @@ pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfo, client_po
     return Ok(ret_ni_conved);
 }
 
-// pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>) -> Result<node_info::NodeInfo, GeneralError> {
+// pub async fn rrpc_call__get_node_info(address : &String, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<node_info::NodeInfo, GeneralError> {
 //     let tmp_url_str_ref = &("http://".to_string() + address.as_str() + "/get_node_info");
 //     let req_rslt = http_get_request(tmp_url_str_ref, address.as_str(), Arc::clone(&client_pool));
 //     let ret_ninfo = match serde_json::from_str::<node_info::NodeInfo>(&(
@@ -794,7 +794,7 @@ impl RustDkvs for MyRustDKVS {
 //     return Json(rt.block_on(handle).unwrap().unwrap());
 // }
 
-pub async fn grpc_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, bind_addr: String, bind_port_num: i32) {
+pub async fn grpc_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, bind_addr: String, bind_port_num: i32) {
     let addr_port: SocketAddr = (bind_addr + ":" + bind_port_num.to_string().as_str()).parse().unwrap();
     //let rdkvs_serv = MyRustDKVS::default();
     let rdkvs_serv = MyRustDKVS { self_node: self_node, data_store: data_store, client_pool: client_pool};

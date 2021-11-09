@@ -42,7 +42,7 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
     if n_dash.node_id == self_node_deep_cloned.node_id {
         asked_n_dash_info = node_info::partial_clone_from_ref_strong(&self_node_deep_cloned);
     } else {
-        asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
+        asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash, Arc::clone(&client_pool), self_node_deep_cloned.node_id, &self_node_deep_cloned).await {
             Err(err) => {
                 {
                     let mut self_node_ref = self_node.lock().unwrap();
@@ -58,7 +58,7 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
 
 
     
-    match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0], Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
+    match endpoints::rrpc_call__get_node_info(&node_info::gen_summary_node_info(&asked_n_dash_info.successor_info_list[0]), Arc::clone(&client_pool), self_node_deep_cloned.node_id, &self_node_deep_cloned).await {
         Err(err) => {
             {
                 let mut self_node_ref = self_node.lock().unwrap();
@@ -191,7 +191,7 @@ pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, clie
             chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
-            let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
+            let gnba_rslt = match endpoints::rrpc_call__get_node_info(&node_info::gen_summary_node_info(&conved_node_info), Arc::clone(&client_pool), self_node_deep_cloned.node_id, &self_node_deep_cloned).await {
                 Err(err) => {
                     {
                         let mut self_node_ref = self_node.lock().unwrap();

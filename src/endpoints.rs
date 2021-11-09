@@ -568,9 +568,9 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
 //     return conv_node_info_to_normal_one(response.unwrap().into_inner());
 // }
 
-pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfoSummary, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_id: u32) -> Result<node_info::NodeInfo, GeneralError> {
+pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfoSummary, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_id: u32, caller_ni: &node_info::NodeInfo) -> Result<node_info::NodeInfo, GeneralError> {
     if self_node.node_id == caller_id {
-        return Ok(chord_util::get_node_info(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool));
+        return Ok(chord_util::get_node_info(ArMu_new!(node_info::partial_clone_from_ref_strong(caller_ni)), client_pool));
     }
     let mut client = get_grpc_client(&self_node.address_str).await?;
 

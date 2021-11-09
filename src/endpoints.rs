@@ -89,18 +89,18 @@ fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_ut
 }
 
 #[get("/")]
-fn index() -> Json<node_info::NodeInfo> {
-    let mut node_info = node_info::NodeInfo::new();
+fn index() { //-> Json<node_info::NodeInfo> {
+    // let mut node_info = node_info::NodeInfo::new();
     
-    node_info.node_id = 100;
-    node_info.address_str = "kanbayashi".to_string();
-    node_info.born_id = 77;
-    node_info.successor_info_list = vec![];
-    node_info.successor_info_list.push(node_info.clone());    
-    node_info.predecessor_info = vec![];
-    node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
+    // node_info.node_id = 100;
+    // node_info.address_str = "kanbayashi".to_string();
+    // node_info.born_id = 77;
+    // node_info.successor_info_list = vec![];
+    // node_info.successor_info_list.push(node_info.clone());    
+    // node_info.predecessor_info = vec![];
+    // node_info.predecessor_info.push(node_info::partial_clone_from_ref_strong(&node_info));
 
-    Json(node_info)
+    // Json(node_info)
 }
 
 #[get("/result-type")]

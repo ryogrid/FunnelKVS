@@ -162,6 +162,7 @@ pub fn gen_summary_node_info(node_info_ref: &NodeInfo) -> NodeInfoSummary {
 pub fn gen_node_info_from_summary(summary_ref: &NodeInfoSummary) -> NodeInfo {
     let mut ret_ninfo = NodeInfo::new();
     ret_ninfo.node_id = summary_ref.node_id;
+    ret_ninfo.address_str = summary_ref.address_str.clone();
     return ret_ninfo;
 }
 

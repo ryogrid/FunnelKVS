@@ -104,7 +104,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     new_node_ref = new_node.lock().unwrap();
 
     // successorを設定する
-    new_node_ref.successor_info_list.push(successor.clone());
+    new_node_ref.successor_info_list.push(node_info::gen_node_info_from_summary(&successor));
 
     // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
     new_node_ref.finger_table[0] = Some(new_node_ref.successor_info_list[0].clone());
@@ -112,7 +112,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // successorと、successorノードの情報だけ適切なものとする
 
     drop(new_node_ref);
-    match endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node.clone()){
+    match endpoints::rrpc_call__check_predecessor(&node_info::gen_node_info_from_summary(&successor), &deep_cloned_new_node.clone()){
         Err(err) => {
             // IDを変えてリトライ
             // (これで異なるsuccessorが得られて、そのノードは生きていることを期待する)
@@ -371,11 +371,11 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
             return Ok(true);
         },
         Ok(found_node) => {
-            self_node_ref.finger_table[(idx - 1) as usize] = Some(found_node.clone());
+            self_node_ref.finger_table[(idx - 1) as usize] = Some(node_info::gen_node_info_from_summary(&found_node));
 
-            chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
-                    + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
-                    + chord_util::gen_debug_str_of_node(&found_node).as_str()));
+            // chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
+            //         + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+            //         + chord_util::gen_debug_str_of_node(&found_node).as_str()));
 
             return Ok(true);
         }

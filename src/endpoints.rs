@@ -182,7 +182,7 @@ pub fn rrpc__set_routing_infos_force(self_node: State<ArMu<node_info::NodeInfo>>
     return stabilizer::set_routing_infos_force(Arc::clone(&self_node), args.predecessor_info, args.successor_info_0, args.ftable_enry_0);
 }
 
-pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/find_successor"),
         match serde_json::to_string(&id){
@@ -195,7 +195,7 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> R
         Ok(ninfo) => ninfo
     });
 
-    let ret_ninfo = match serde_json::from_str::<Result<node_info::NodeInfo, chord_util::GeneralError>>(req_rslt_ref){
+    let ret_ninfo = match serde_json::from_str::<Result<node_info::NodeInfoSummary, chord_util::GeneralError>>(req_rslt_ref){
         Err(err) => { return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR)) },
         Ok(ninfo) => ninfo
     };
@@ -205,7 +205,7 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> R
 
 // idで識別されるデータを担当するノードの名前解決を行う
 #[post("/find_successor", data = "<id>")]
-pub fn rrpc__find_successor(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
+pub fn rrpc__find_successor(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfoSummary, chord_util::GeneralError>> {
     return Json(router::find_successor(Arc::clone(&self_node), id.0));
 }
 
@@ -465,7 +465,7 @@ pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>) -> Json<
 // 値をIDとして、find_successorした結果を返す
 // 問い合わせはまず自身に対してかける
 #[get("/resolve_id_val?<percentage>")]
-pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, percentage : String) -> Json<node_info::NodeInfo> {
+pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, percentage : String) -> Json<node_info::NodeInfoSummary> {
     let percentage_num: f32 = percentage.parse().unwrap();
     let id = ((percentage_num / 100.0) as f64) * (gval::ID_MAX as f64);
     Json(router::find_successor(Arc::clone(&self_node), id as u32).unwrap())

@@ -35,18 +35,18 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             Ok(ninfo) => ninfo
         };
 
-        chord_util::dprint(&("global_put_1,".to_string() 
-            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
-            + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
-            + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
-            + idx.to_string().as_str()
-        ));        
+        // chord_util::dprint(&("global_put_1,".to_string() 
+        //     + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+        //     + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
+        //     + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
+        //     + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
+        //     + idx.to_string().as_str()
+        // ));        
 
-        let is_exist = match endpoints::rrpc_call__put(&replica_node, target_id, val_str.clone()){
+        let is_exist = match endpoints::rrpc_call__put(&node_info::gen_node_info_from_summary(&replica_node), target_id, val_str.clone()){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
-                node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
+                node_info::handle_downed_node_info(&mut self_node_ref, &node_info::gen_node_info_from_summary(&replica_node), &err);
                 drop(self_node_ref);
                 continue;
                 //return Err(err);
@@ -54,13 +54,13 @@ pub fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             Ok(is_exist) => is_exist
         };
 
-        chord_util::dprint(&("global_put_2,".to_string() 
-            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
-            + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
-            + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
-            + idx.to_string().as_str()
-        ));
+        // chord_util::dprint(&("global_put_2,".to_string() 
+        //     + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+        //     + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
+        //     + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
+        //     + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
+        //     + idx.to_string().as_str()
+        // ));
     }
 
     return Ok(true);
@@ -149,13 +149,13 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
             Ok(ninfo) => ninfo
         };
 
-        chord_util::dprint(&("global_get_1,".to_string() 
-            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
-            + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
-            + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
-            + idx.to_string().as_str()
-        ));        
+        // chord_util::dprint(&("global_get_1,".to_string() 
+        //     + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+        //     + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
+        //     + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
+        //     + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
+        //     + idx.to_string().as_str()
+        // ));        
 /*
     if (ret.is_ok):
         target_node: 'ChordNode' = cast('ChordNode', ret.result)
@@ -172,22 +172,21 @@ pub fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_st
         return False
 */
 
-        let data_iv = match endpoints::rrpc_call__get(&replica_node, target_id){
+        let data_iv = match endpoints::rrpc_call__get(&node_info::gen_node_info_from_summary(&replica_node), target_id){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
-                node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
+                node_info::handle_downed_node_info(&mut self_node_ref, &node_info::gen_node_info_from_summary(&replica_node), &err);
                 drop(self_node_ref);
                 continue;
                 //return Err(err);
             }
             Ok(data_iv) => { 
-                    chord_util::dprint(&("global_get_2,".to_string() 
-                    + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-                    + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
-                    + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
-                    + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
-                    + idx.to_string().as_str()
-                ));
+                    // chord_util::dprint(&("global_get_2,".to_string() 
+                    // + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+                    // + chord_util::gen_debug_str_of_node(&replica_node).as_str() + ","
+                    // + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
+                    // + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
+                    // + idx.to_string().as_str()));
                 return Ok(data_iv); 
             }
         };

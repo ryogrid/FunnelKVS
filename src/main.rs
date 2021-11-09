@@ -179,7 +179,8 @@ async fn main(){
         let stabilize_ftable_th_handle = tokio::spawn(async move { loop {
             for idx in 1..(gval::ID_SPACE_BITS + 1){
                     stabilizer::stabilize_finger_table(Arc::clone(&node_info_arc_ftable_th), Arc::clone(&client_pool_arc_ftable_th), idx as i32).await;
-                    tokio::time::sleep(tokio::time::Duration::from_millis(50 as u64)).await;
+                    //std::thread::sleep(std::time::Duration::from_millis(50 as u64));
+                    tokio::time::sleep(tokio::time::Duration::from_millis(100 as u64)).await;
             }
         }});    
 

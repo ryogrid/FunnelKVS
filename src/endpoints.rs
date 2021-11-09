@@ -634,7 +634,6 @@ impl RustDkvs for MyRustDKVS {
         request: Request<crate::rustdkvs::SetRoutingInfosForce>,
     ) -> Result<Response<Bool>, Status> {
         println!("Got a request: {:?}", request);
-
         let srif_obj = request.into_inner();
         stabilizer::set_routing_infos_force(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), conv_node_info_to_normal_one(srif_obj.predecessor_info.unwrap()), conv_node_info_to_normal_one(srif_obj.successor_info_0.unwrap()), conv_node_info_to_normal_one(srif_obj.ftable_enry_0.unwrap()));
         let reply = Bool { val: true };
@@ -644,7 +643,7 @@ impl RustDkvs for MyRustDKVS {
     async fn grpc_find_successor(
         &self,
         request: Request<Uint32>,
-    ) -> Result<Response<crate::rustdkvs::NodeInfo>, Status> {
+    ) -> Result<Response<crate::rustdkvs::NodeInfoSummary>, Status> {
         println!("Got a request: {:?}", request);
 
         let reply_tmp = router::find_successor(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), request.into_inner().val).await;
@@ -655,7 +654,7 @@ impl RustDkvs for MyRustDKVS {
     async fn grpc_closest_preceding_finger(
         &self,
         request: Request<Uint32>,
-    ) -> Result<Response<crate::rustdkvs::NodeInfo>, Status> {
+    ) -> Result<Response<crate::rustdkvs::NodeInfoSummary>, Status> {
         //println!("Got a request: {:?}", request);
 
         let reply_tmp = router::closest_preceding_finger(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), request.into_inner().val).await;

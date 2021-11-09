@@ -125,10 +125,11 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
         let mut new_node_ref = new_node.lock().unwrap();
 
         // successorを設定する
-        new_node_ref.successor_info_list.push(successor.clone());
+        new_node_ref.successor_info_list.push(node_info::gen_node_info_from_summary(&successor));
 
         // finger_tableのインデックス0は必ずsuccessorになるはずなので、設定しておく
         new_node_ref.finger_table[0] = Some(new_node_ref.successor_info_list[0].clone());
+
 
         // successorと、successorノードの情報だけ適切なものとする
 
@@ -140,7 +141,7 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
         return;
     }
 
-    match endpoints::rrpc_call__check_predecessor(&successor, &new_node_deep_cloned, Arc::clone(&client_pool), new_node_deep_cloned.node_id).await {
+    match endpoints::rrpc_call__check_predecessor(&node_info::gen_node_info_from_summary(&successor), &new_node_deep_cloned, Arc::clone(&client_pool), new_node_deep_cloned.node_id).await {
         Err(err) => {
             // IDを変えてリトライ
             // (これで異なるsuccessorが得られて、そのノードは生きていることを期待する)
@@ -287,7 +288,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
                 return Ok(true);
             }
 
-            match endpoints::rrpc_call__check_predecessor(&new_successor_info, &self_node_deep_cloned, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
+            match endpoints::rrpc_call__check_predecessor(&new_successor_info, &self_node_deep_cloned.clone(), Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
                 Err(err) => {
                     let mut self_node_ref = self_node.lock().unwrap();
                     node_info::handle_downed_node_info(&mut self_node_ref, &new_successor_info, &err);
@@ -429,12 +430,14 @@ pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client
             return Ok(true);
         },
         Ok(found_node) => {
+            let mut self_node_ref = self_node.lock().unwrap();          
+            self_node_ref.finger_table[(idx - 1) as usize] = Some(node_info::gen_node_info_from_summary(&found_node));
             let mut self_node_ref = self_node.lock().unwrap();
             self_node_ref.finger_table[(idx - 1) as usize] = Some(found_node.clone());
 
-            chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
-                    + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
-                    + chord_util::gen_debug_str_of_node(&found_node).as_str()));
+            // chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
+            //         + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
+            //         + chord_util::gen_debug_str_of_node(&found_node).as_str()));
 
             return Ok(true);
         }

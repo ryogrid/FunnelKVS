@@ -105,10 +105,11 @@ async fn main(){
         let num: i32 = args[1].parse().unwrap();
         if num == 2 { // REST client
             req_rest_api_test();
-        }else if num == 3 { // gRPC client
-            let ret_ni = endpoints::grpc_call_test_get_node_info(&"127.0.0.1:11000".to_string()).await; //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>)
-            println!("{:?}", ret_ni);
         }
+        // else if num == 3 { // gRPC client
+        //     let ret_ni = endpoints::grpc_call_test_get_node_info(&"127.0.0.1:11000".to_string()).await; //, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>)
+        //     println!("{:?}", ret_ni);
+        // }
     }else if args.len() > 2 {
         let born_id: i32 = args[1].parse().unwrap();
         let bind_addr: String = args[2].parse().unwrap();

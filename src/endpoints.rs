@@ -29,7 +29,8 @@ use crate::data_store;
 use crate::router;
 use crate::stabilizer;
 
-type ArMu<T> = Arc<Mutex<T>>;
+//type ArMu<T> = Arc<Mutex<T>>;
+type ArMu<T> = Arc<tokio::sync::Mutex<T>>;
 
 //#[derive(Debug, Default)]
 #[derive(Debug)]
@@ -67,7 +68,7 @@ pub struct MyRustDKVS {
 // }
 
 pub async fn get_grpc_client(client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, address: &String) -> Result<ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>, chord_util::GeneralError> {
-    let locked_pool = client_pool.lock().unwrap();
+    let locked_pool = client_pool.lock().await;
     let get_rslt = locked_pool.get(address);
     let ret = match get_rslt {
         None => {
@@ -96,7 +97,7 @@ pub async fn get_grpc_client(client_pool: ArMu<HashMap<String, ArMu<crate::rustd
             }; //?;
             let new_client = ArMu_new!(tmp_ret.unwrap());
             let ret_client = Arc::clone(&new_client);
-            let mut locked_pool = client_pool.lock().unwrap();
+            let mut locked_pool = client_pool.lock().await;
             locked_pool.insert((*address).clone(), new_client);
             ret_client
         }
@@ -113,7 +114,7 @@ pub async fn get_grpc_client(client_pool: ArMu<HashMap<String, ArMu<crate::rustd
 // urlは "http://から始まるものにすること"
 async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<String, chord_util::GeneralError> {
 /*
-    let mut client_pool_ref = client_pool.lock().unwrap();
+    let mut client_pool_ref = client_pool.lock().await;
     let mut is_reused = false;
     let client_armu = match client_pool_ref.get(&address_str.to_string()){
         None => {            
@@ -143,7 +144,7 @@ async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<Ha
     };
     drop(client_pool_ref);
 
-    let client = client_armu.lock().unwrap();
+    let client = client_armu.lock().await;
 
     if is_reused {
         println!("reused client: {:?}", *client);
@@ -184,7 +185,7 @@ async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<Ha
 // json_str は JSONの文字列表現をそのまま渡せばよい
 async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, json_str: String) -> Result<String, chord_util::GeneralError> {
 /*
-    let mut client_pool_ref = client_pool.lock().unwrap();
+    let mut client_pool_ref = client_pool.lock().await;
     let mut is_reused = false;
     let client_armu = match client_pool_ref.get(&address_str.to_string()){
         None => {            
@@ -214,7 +215,7 @@ async fn http_post_request(url_str: &str, address_str: &str, client_pool: ArMu<H
     };
     drop(client_pool_ref);
 
-    let client = client_armu.lock().unwrap();
+    let client = client_armu.lock().await;
 
     if is_reused {
         println!("reused client: {:?}", *client);
@@ -259,15 +260,15 @@ pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, calle
 
     let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));    
 
-    let mut locked_client = client.lock().unwrap();
+    let mut locked_client = client.lock().await;
 
-    let mut channel = Channel::from_static("https://example.com")
-    .timeout(Duration::from_secs(10000))
-    .rate_limit(5, Duration::from_secs(1))
-    .concurrency_limit(256)
-    .channel();
+    // let mut channel = Channel::from_static("https://example.com")
+    // .timeout(Duration::from_secs(10000))
+    // .rate_limit(5, Duration::from_secs(1))
+    // .concurrency_limit(256)
+    // .channel();
+    // let cla = RustDkvsClient::new(channel);
 
-    let cla = RustDkvsClient::new(channel);
     //tonic::client::Grpc::new(locked_client.)
     let response = locked_client.grpc_check_predecessor(request).await;
     //println!("RESPONSE={:?}", response);
@@ -290,7 +291,7 @@ pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, calle
 // }
 
 pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<bool, chord_util::GeneralError> {
-    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
+    let client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(
         crate::rustdkvs::SetRoutingInfosForce {
@@ -300,7 +301,7 @@ pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo,
         } 
     );
 
-    let mut locked_client = client.lock().unwrap();    
+    let mut locked_client = client.lock().await;    
     let response = locked_client.grpc_set_routing_infos_force(request).await;
     //println!("RESPONSE={:?}", response);
     return Ok(response.unwrap().into_inner().val);
@@ -324,11 +325,11 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
         return router::find_successor(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool, id).await;
     }
     
-    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
+    let client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: id});
 
-    let mut locked_client = client.lock().unwrap();    
+    let mut locked_client = client.lock().await;    
     let response = locked_client.grpc_find_successor(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
@@ -361,11 +362,11 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
         return router::closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool, id).await;
     }
     
-    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
+    let client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: id});
 
-    let mut locked_client = client.lock().unwrap();    
+    let mut locked_client = client.lock().await;    
     let response = locked_client.grpc_closest_preceding_finger(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
@@ -426,10 +427,10 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
 
 pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32, val_str: String, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
     if self_node.node_id == caller_id {
-        return chord_node::put(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), Arc::clone(&data_store), client_pool, key_id, val_str);
+        return chord_node::put(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), Arc::clone(&data_store), client_pool, key_id, val_str).await;
     }
     
-    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
+    let client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(
         crate::rustdkvs::Put { 
@@ -438,7 +439,7 @@ pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<da
         }
     );
 
-    let mut locked_client = client.lock().unwrap();    
+    let mut locked_client = client.lock().await;    
     let response = locked_client.grpc_put(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(response.unwrap().into_inner().val);
@@ -500,13 +501,13 @@ pub async fn rrpc_call__put(self_node: &node_info::NodeInfo, data_store: ArMu<da
 pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32, caller_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     if self_node.node_id == caller_id {
 
-        return chord_node::get(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), Arc::clone(&data_store), key_id);
+        return chord_node::get(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), Arc::clone(&data_store), key_id).await;
     }
-    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
+    let client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Uint32 { val: key_id});
 
-    let mut locked_client = client.lock().unwrap();    
+    let mut locked_client = client.lock().await;    
     let response = locked_client.grpc_get(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(conv_iv_to_normal_one(response.unwrap().into_inner()));
@@ -541,7 +542,7 @@ pub async fn rrpc_call__get(self_node: &node_info::NodeInfo, data_store: ArMu<da
 
 pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, pass_datas: Vec<chord_util::DataIdAndValue>, caller_id: u32) -> Result<bool, chord_util::GeneralError> {
     // 呼び出し元で対処しているため、ここでの自ノードへの呼び出しへの対処は不要
-    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
+    let client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(
         crate::rustdkvs::PassDatas {
@@ -549,7 +550,7 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
         } 
     );
 
-    let mut locked_client = client.lock().unwrap();    
+    let mut locked_client = client.lock().await;    
     let response = locked_client.grpc_pass_datas(request).await; //?;
     //println!("RESPONSE={:?}", response);
     return Ok(response.unwrap().into_inner().val);
@@ -626,15 +627,15 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
 
 pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, caller_id: u32) -> Result<node_info::NodeInfo, GeneralError> {
     if self_node.node_id == caller_id {
-        return Ok(chord_util::get_node_info(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool));
+        return Ok(chord_util::get_node_info(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool).await);
     }
-    let mut client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
+    let client = get_grpc_client(Arc::clone(&client_pool), &self_node.address_str).await?;
 
     let request = tonic::Request::new(Void {
         val: 0
     });
 
-    let mut locked_client = client.lock().unwrap();    
+    let mut locked_client = client.lock().await;    
     let response = locked_client.grpc_get_node_info(request).await; //?;
     //println!("RESPONSE={:?}", response);
     let ret_ni = response.unwrap().into_inner();
@@ -696,7 +697,7 @@ impl RustDkvs for MyRustDKVS {
         println!("Got a request: {:?}", request);
 
         let srif_obj = request.into_inner();
-        stabilizer::set_routing_infos_force(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), conv_node_info_to_normal_one(srif_obj.predecessor_info.unwrap()), conv_node_info_to_normal_one(srif_obj.successor_info_0.unwrap()), conv_node_info_to_normal_one(srif_obj.ftable_enry_0.unwrap()));
+        stabilizer::set_routing_infos_force(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), conv_node_info_to_normal_one(srif_obj.predecessor_info.unwrap()), conv_node_info_to_normal_one(srif_obj.successor_info_0.unwrap()), conv_node_info_to_normal_one(srif_obj.ftable_enry_0.unwrap())).await;
         let reply = Bool { val: true };
         Ok(Response::new(reply))
     }
@@ -742,7 +743,7 @@ impl RustDkvs for MyRustDKVS {
         //println!("Got a request: {:?}", request);
 
         let gp_val = request.into_inner();
-        let reply_tmp = chord_node::put(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), gp_val.key_id, gp_val.val_str);
+        let reply_tmp = chord_node::put(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), gp_val.key_id, gp_val.val_str).await;
         let reply = Bool { val: reply_tmp.unwrap() };
         Ok(Response::new(reply))
     }
@@ -764,7 +765,7 @@ impl RustDkvs for MyRustDKVS {
     ) -> Result<Response<crate::rustdkvs::DataIdAndValue>, Status> {
         //println!("Got a request: {:?}", request);
 
-        let reply_tmp = chord_node::get(Arc::clone(&self.self_node), Arc::clone(&self.data_store), request.into_inner().val);
+        let reply_tmp = chord_node::get(Arc::clone(&self.self_node), Arc::clone(&self.data_store), request.into_inner().val).await;
         let reply = conv_iv_to_grpc_one(reply_tmp.unwrap());
         Ok(Response::new(reply))
     }
@@ -776,7 +777,7 @@ impl RustDkvs for MyRustDKVS {
         //println!("Got a request: {:?}", request);
 
         let iv_vec_tmp = request.into_inner();
-        let reply_tmp = stabilizer::pass_datas(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), conv_iv_vec_to_normal_one(iv_vec_tmp.vals));
+        let reply_tmp = stabilizer::pass_datas(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), conv_iv_vec_to_normal_one(iv_vec_tmp.vals)).await;
         let reply = Bool { val: reply_tmp.unwrap() };
         Ok(Response::new(reply))
     }
@@ -787,7 +788,7 @@ impl RustDkvs for MyRustDKVS {
     ) -> Result<Response<NodeInfo>, Status> { // Return an instance of type rustdkvs::NodeInfo
         println!("Got a request: {:?}", request);
 
-        let reply = conv_node_info_to_grpc_one(chord_util::get_node_info(Arc::clone(&self.self_node), Arc::clone(&self.client_pool)));
+        let reply = conv_node_info_to_grpc_one(chord_util::get_node_info(Arc::clone(&self.self_node), Arc::clone(&self.client_pool)).await);
 
         Ok(Response::new(reply))
     }    

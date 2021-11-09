@@ -13,12 +13,13 @@ use crate::router;
 use crate::data_store;
 use crate::endpoints;
 
-type ArMu<T> = Arc<Mutex<T>>;
+//type ArMu<T> = Arc<Mutex<T>>;
+type ArMu<T> = Arc<tokio::sync::Mutex<T>>;
 
 pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
-        let self_node_ref = self_node.lock().unwrap();    
+        let self_node_ref = self_node.lock().await;    
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
@@ -31,7 +32,7 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
         let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id, self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
-                    let mut self_node_ref = self_node.lock().unwrap();
+                    let mut self_node_ref = self_node.lock().await;
                     node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
                     //drop(self_node_ref);
                 }
@@ -52,7 +53,7 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
         let is_exist = match endpoints::rrpc_call__put(&replica_node, Arc::clone(&data_store), Arc::clone(&client_pool), target_id, val_str.clone(), self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
-                    let mut self_node_ref = self_node.lock().unwrap();
+                    let mut self_node_ref = self_node.lock().await;
                     node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
                     //drop(self_node_ref);
                 }
@@ -74,10 +75,10 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
     return Ok(true);
 }
 
-pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
+pub async fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
@@ -124,7 +125,7 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
 
     let ret;
     {
-        let mut data_store_ref = data_store.lock().unwrap();
+        let mut data_store_ref = data_store.lock().await;
         ret = data_store_ref.store_one_iv(key_id, val_str.clone());
         //drop(data_store_ref);
     }
@@ -146,7 +147,7 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
 pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
@@ -157,7 +158,7 @@ pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
         let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id, self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
-                    let mut self_node_ref = self_node.lock().unwrap();
+                    let mut self_node_ref = self_node.lock().await;
                     node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
                     //drop(self_node_ref);
                 }
@@ -195,7 +196,7 @@ pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
         let data_iv = match endpoints::rrpc_call__get(&replica_node, Arc::clone(&data_store), Arc::clone(&client_pool), target_id, self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
-                    let mut self_node_ref = self_node.lock().unwrap();
+                    let mut self_node_ref = self_node.lock().await;
                     node_info::handle_downed_node_info(&mut self_node_ref, &replica_node, &err);
                     //drop(self_node_ref);
                 }
@@ -218,10 +219,10 @@ pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
     return Err(chord_util::GeneralError::new("QUERIED DATA NOT FOUND".to_string(), chord_util::ERR_CODE_QUERIED_DATA_NOT_FOUND));
 }
 
-pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
+pub async fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
@@ -268,7 +269,7 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
 
     let ret_val;
     {
-        let data_store_ref = data_store.lock().unwrap();
+        let data_store_ref = data_store.lock().await;
         ret_val = match data_store_ref.get(key_id){
             Err(err) => {
                 let ret_val = chord_util::DataIdAndValue { data_id: 0, val_str: "Error".to_string() };

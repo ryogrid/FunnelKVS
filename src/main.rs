@@ -24,9 +24,14 @@ extern crate hyper;
 
 // utility macros
 
+// macro_rules! ArMu_new {
+//     ($wrapped:expr) => (
+//         Arc::new(Mutex::new($wrapped))
+//     );    
+// }
 macro_rules! ArMu_new {
     ($wrapped:expr) => (
-        Arc::new(Mutex::new($wrapped))
+        Arc::new(tokio::sync::Mutex::new($wrapped))
     );    
 }
 
@@ -39,7 +44,8 @@ pub mod router;
 pub mod data_store;
 pub mod endpoints;
 
-type ArMu<T> = Arc<Mutex<T>>;
+//type ArMu<T> = Arc<Mutex<T>>;
+type ArMu<T> = Arc<tokio::sync::Mutex<T>>;
 
 use std::{borrow::{Borrow, BorrowMut}, io::Write, sync::Arc, thread};
 use std::cell::{RefMut, RefCell, Ref};

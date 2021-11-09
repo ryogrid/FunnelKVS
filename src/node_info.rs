@@ -10,7 +10,8 @@ use crate::endpoints;
 use crate::data_store;
 use crate::router;
 
-type ArMu<T> = Arc<Mutex<T>>;
+//type ArMu<T> = Arc<Mutex<T>>;
+type ArMu<T> = Arc<tokio::sync::Mutex<T>>;
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug)]
@@ -107,8 +108,8 @@ pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
     return ret_node_info;    
 }
 
-pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
-    let mut self_node_ref = self_node.lock().unwrap();
+pub async fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
+    let mut self_node_ref = self_node.lock().await;
     if self_node_ref.predecessor_info.len() == 0 {
         self_node_ref.predecessor_info.push(node_info);
     }else{

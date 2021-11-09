@@ -12,21 +12,22 @@ use crate::endpoints;
 use crate::data_store;
 use crate::router;
 
-type ArMu<T> = Arc<Mutex<T>>;
+//type ArMu<T> = Arc<Mutex<T>>;
+type ArMu<T> = Arc<tokio::sync::Mutex<T>>;
 
 // 経路表の情報を他ノードから強制的に設定する.
 // joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
-pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
+pub async fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     //with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
     let self_node_clone;
     {
-        let mut self_node_ref = self_node.lock().unwrap();
+        let mut self_node_ref = self_node.lock().await;
         
         self_node_ref.successor_info_list[0] = successor_info_0;
         self_node_ref.finger_table[0] = Some(ftable_enry_0);
         self_node_clone = (*self_node_ref).clone();
     }
-    node_info::set_pred_info(Arc::clone(&self_node), predecessor_info);
+    node_info::set_pred_info(Arc::clone(&self_node), predecessor_info).await;
 }
 
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
@@ -35,7 +36,7 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
     let mut is_second_node:bool = false;
     {
         {
-            let mut new_node_ref = new_node.lock().unwrap();
+            let mut new_node_ref = new_node.lock().await;
             
             // ミリ秒精度のUNIXTIMEからChordネットワーク上でのIDを決定する
             new_node_ref.born_id = born_id;
@@ -50,16 +51,16 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
             {
                 println!("I am first node!");
                 // successorとpredecessorは自身として終了する
-                let mut new_node_ref = new_node.lock().unwrap();
+                let mut new_node_ref = new_node.lock().await;
                 new_node_ref.successor_info_list.push(new_node_deep_cloned.clone());
                 new_node_ref.finger_table[0] = Some(new_node_deep_cloned.clone());
                 //drop(deep_cloned_new_node);
                 new_node_deep_cloned = node_info::partial_clone_from_ref_strong(&new_node_ref);
                 //drop(new_node_ref);
             }
-            node_info::set_pred_info(Arc::clone(&new_node), new_node_deep_cloned.clone());
+            node_info::set_pred_info(Arc::clone(&new_node), new_node_deep_cloned.clone()).await;
 
-            println!("first_node at join: {:?}", new_node.lock().unwrap());
+            println!("first_node at join: {:?}", new_node.lock().await);
             return;
         }
 
@@ -88,7 +89,7 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
                         + chord_util::gen_debug_str_of_node(&tyukai_node).as_str()));        
         {
             {
-                let mut new_node_ref = new_node.lock().unwrap();
+                let mut new_node_ref = new_node.lock().await;
                 // secondノードの場合の考慮 (仲介ノードは必ずfirst node)
 
                 // 2ノードでsuccessorでもpredecessorでも、チェーン構造で正しい環が構成されるよう強制的に全て設定してしまう
@@ -101,7 +102,7 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
                 new_node_deep_cloned = node_info::partial_clone_from_ref_strong(&new_node_ref);
                 //drop(new_node_ref);
             }
-            node_info::set_pred_info(Arc::clone(&new_node), tyukai_node.clone());
+            node_info::set_pred_info(Arc::clone(&new_node), tyukai_node.clone()).await;
         }
         chord_util::dprint(&("join_2_8,".to_string() + chord_util::gen_debug_str_of_node(&new_node_deep_cloned).as_str() + ","
                         + chord_util::gen_debug_str_of_node(&tyukai_node).as_str()));
@@ -122,7 +123,7 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
     }
 
     {
-        let mut new_node_ref = new_node.lock().unwrap();
+        let mut new_node_ref = new_node.lock().await;
 
         // successorを設定する
         new_node_ref.successor_info_list.push(successor.clone());
@@ -153,7 +154,7 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
 pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>) -> Result<bool, chord_util::GeneralError>{
     let mut self_node_deep_cloned;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //println!("P-SELF-S: P: {:?} SELF: {:?} S {:?}", self_node_ref.predecessor_info, *self_node_ref, self_node_ref.successor_info_list);
         //drop(self_node_ref);
@@ -182,7 +183,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
 
     let successor_info = match ret.await {
         Err(err) => {
-            let mut self_node_ref = self_node.lock().unwrap();
+            let mut self_node_ref = self_node.lock().await;
             node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned.successor_info_list[0], &err);
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
@@ -202,7 +203,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
 
         match endpoints::rrpc_call__check_predecessor(&successor_info, &self_node_deep_cloned, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
             Err(err) => {
-                let mut self_node_ref = self_node.lock().unwrap();
+                let mut self_node_ref = self_node.lock().await;
                 node_info::handle_downed_node_info(&mut self_node_ref, &successor_info, &err);
                 return Ok(true);
             }
@@ -243,7 +244,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
 
         match endpoints::rrpc_call__check_predecessor(&successor_info, &self_node_deep_cloned, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
             Err(err) => {
-                let mut self_node_ref = self_node.lock().unwrap();
+                let mut self_node_ref = self_node.lock().await;
                 node_info::handle_downed_node_info(&mut self_node_ref, &successor_info, &err);
                 return Ok(true);
             }
@@ -261,7 +262,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
             // successorから自身に対して前方向にたどった場合の経路中に存在する場合
             // 自身の認識するsuccessorの情報を更新する
             {
-                let mut self_node_ref = self_node.lock().unwrap();
+                let mut self_node_ref = self_node.lock().await;
                 chord_util::dprint(&("stabilize_successor_SET_SUCCESSOR,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ", from "
                 + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + " to "
                 + chord_util::gen_debug_str_of_node(&successor_info.predecessor_info[0]).as_str()));
@@ -274,7 +275,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
             // ば情報を更新してもらう
             let new_successor_info = match endpoints::rrpc_call__get_node_info(&self_node_deep_cloned.successor_info_list[0], Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
                 Err(err) => {
-                    let mut self_node_ref = self_node.lock().unwrap();
+                    let mut self_node_ref = self_node.lock().await;
                     node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned.successor_info_list[0], &err);
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
@@ -289,7 +290,7 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
 
             match endpoints::rrpc_call__check_predecessor(&new_successor_info, &self_node_deep_cloned, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
                 Err(err) => {
-                    let mut self_node_ref = self_node.lock().unwrap();
+                    let mut self_node_ref = self_node.lock().await;
                     node_info::handle_downed_node_info(&mut self_node_ref, &new_successor_info, &err);
                     return Ok(true);
                 }
@@ -314,7 +315,7 @@ pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_po
     let mut next_succ_id;
     let first_succ;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         chord_util::dprint(&("fill_succ_info_list_0,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
 
         self_node_id = self_node_ref.node_id;
@@ -331,7 +332,7 @@ pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_po
 
     let mut next_succ_info = match endpoints::rrpc_call__get_node_info(&first_succ, Arc::clone(&client_pool), self_node_id).await {
         Err(err) => {
-            let mut self_node_ref = self_node.lock().unwrap();
+            let mut self_node_ref = self_node.lock().await;
             node_info::handle_downed_node_info(&mut self_node_ref, &first_succ, &err);
             // 後続を辿れないので、リスト埋めは中止してreturnする
             return Err(err);
@@ -346,7 +347,7 @@ pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_po
         if next_succ_info.node_id == self_node_id || next_succ_info.node_id == next_succ_id {
             // next_succ_infoがself_nodeと同一もしくは、1つ前の位置のノードを指していた場合
             // 後続を辿っていく処理がループを構成してしまうため抜ける
-            let self_node_ref = self_node.lock().unwrap();
+            let self_node_ref = self_node.lock().await;
             chord_util::dprint(
                 &("fill_succ_info_list_1,".to_string() 
                 + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
@@ -356,7 +357,7 @@ pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_po
             return Ok(true);
         }
         {
-            let mut self_node_ref = self_node.lock().unwrap();
+            let mut self_node_ref = self_node.lock().await;
             if self_node_ref.successor_info_list.len() < (idx_counter + 1) {            
                 self_node_ref.successor_info_list.push(next_succ_info.clone());
                 chord_util::dprint(
@@ -380,7 +381,7 @@ pub async fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>, client_po
         }
         next_succ_info = match endpoints::rrpc_call__get_node_info(&next_succ_info, Arc::clone(&client_pool), self_node_id).await {
             Err(err) => {
-                let mut self_node_ref = self_node.lock().unwrap();
+                let mut self_node_ref = self_node.lock().await;
                 node_info::handle_downed_node_info(&mut self_node_ref, &next_succ_info, &err);
                 // 後続を辿れないので、リスト埋めは中止してreturnする
                 return Err(err);
@@ -399,7 +400,7 @@ pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client
     let self_node_deep_cloned;
     let update_id;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //chord_util::dprint_routing_info(self.existing_node, sys._getframe().f_code.co_name);
 
@@ -416,7 +417,7 @@ pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client
     
     match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), update_id, self_node_deep_cloned.node_id).await {
         Err(err) => {
-            let mut self_node_ref = self_node.lock().unwrap();
+            let mut self_node_ref = self_node.lock().await;
             // 適切な担当ノードを得ることができなかった
             // 今回のエントリの更新はあきらめるが、例外の発生原因はおおむね見つけたノードがダウンしていた
             // ことであるので、更新対象のエントリには None を設定しておく
@@ -429,7 +430,7 @@ pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client
             return Ok(true);
         },
         Ok(found_node) => {
-            let mut self_node_ref = self_node.lock().unwrap();
+            let mut self_node_ref = self_node.lock().await;
             self_node_ref.finger_table[(idx - 1) as usize] = Some(found_node.clone());
 
             chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
@@ -446,7 +447,7 @@ pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client
 pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
@@ -457,7 +458,7 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
 
     if self_node_deep_cloned.predecessor_info.len() == 0 {
         // predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
-        node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
+        node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone()).await;
         chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
             + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
             + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str()));
@@ -469,7 +470,7 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
     // ノードダウン時の対処を行う場合に、このコードがないとうまくいかなそうなのでここで処理)
     match endpoints::rrpc_call__get_node_info(&self_node_deep_cloned.predecessor_info[0], Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
         Err(err) => {
-            let mut self_node_ref = self_node.lock().unwrap();
+            let mut self_node_ref = self_node.lock().await;
             node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned.predecessor_info[0], &err);
             return Ok(true);
         }
@@ -482,7 +483,7 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
     let distance_check;
     let distance_cur;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         distance_check = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id, caller_node_ni.node_id);
         distance_cur = chord_util::calc_distance_between_nodes_left_mawari(self_node_ref.node_id,
                                                                             self_node_ref.predecessor_info[0].node_id);
@@ -495,21 +496,21 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
     // 経路表の情報を更新する
     if distance_check < distance_cur {
         //drop(self_node_ref);
-        node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
+        node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone()).await;
 
         // 切り替えたpredecessorに対してデータの委譲を行う
         let delegate_datas: Vec<chord_util::DataIdAndValue>;
         {        
             let self_id = self_node_deep_cloned.node_id;
             let new_pred_id = caller_node_ni.node_id;
-            let mut data_store_ref = data_store.lock().unwrap();
+            let mut data_store_ref = data_store.lock().await;
             
             delegate_datas = data_store_ref.get_and_delete_iv_with_pred_self_id(new_pred_id, self_id);
             //drop(data_store_ref);
         }
 
         {
-            let self_node_ref = self_node.lock().unwrap();
+            let self_node_ref = self_node.lock().await;
             chord_util::dprint(&("check_predecessor_3,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
                     + chord_util::gen_debug_str_of_node(&self_node_ref.successor_info_list[0]).as_str() + ","
                     + chord_util::gen_debug_str_of_node(&self_node_ref.predecessor_info[0]).as_str()));
@@ -522,7 +523,7 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
 
         match endpoints::rrpc_call__pass_datas(&caller_node_ni, Arc::clone(&client_pool), delegate_datas, self_node_deep_cloned.node_id).await {
             Err(err) => {
-                let mut self_node_ref = self_node.lock().unwrap();
+                let mut self_node_ref = self_node.lock().await;
                 node_info::handle_downed_node_info(&mut self_node_ref, &caller_node_ni, &err);
                 return Ok(true);
             }
@@ -535,8 +536,8 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
 // passed_datasで渡されたデータのリストを自身のDataStoreに加える
 // 基本的に、ノード参加が判明した際に他のノードが self_node に対してデータを委譲
 // する際に利用することを想定する
-pub fn pass_datas(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
-    let mut data_store_ref = data_store.lock().unwrap();
+pub async fn pass_datas(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
+    let mut data_store_ref = data_store.lock().await;
     data_store_ref.store_iv_with_vec(pass_datas);
 
     return Ok(true);

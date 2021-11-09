@@ -12,13 +12,14 @@ use crate::stabilizer;
 use crate::endpoints;
 use crate::data_store;
 
-type ArMu<T> = Arc<Mutex<T>>;
+//type ArMu<T> = Arc<Mutex<T>>;
+type ArMu<T> = Arc<tokio::sync::Mutex<T>>;
 
 // idで識別されるデータを担当するノードの名前解決を行う
 pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
@@ -45,7 +46,7 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
         asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
             Err(err) => {
                 {
-                    let mut self_node_ref = self_node.lock().unwrap();
+                    let mut self_node_ref = self_node.lock().await;
                     node_info::handle_downed_node_info(&mut self_node_ref, &n_dash, &err);
                 }
                 return Err(chord_util::GeneralError::new(err.message, err.err_code));
@@ -60,7 +61,7 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
     match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0], Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
         Err(err) => {
             {
-                let mut self_node_ref = self_node.lock().unwrap();
+                let mut self_node_ref = self_node.lock().await;
                 node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
             }
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
@@ -161,7 +162,7 @@ pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, clie
 
     let self_node_deep_cloned;
     {
-        let self_node_ref = self_node.lock().unwrap();
+        let self_node_ref = self_node.lock().await;
         self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
         //drop(self_node_ref);
     }
@@ -192,7 +193,7 @@ pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, clie
             let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
                 Err(err) => {
                     {
-                        let mut self_node_ref = self_node.lock().unwrap();
+                        let mut self_node_ref = self_node.lock().await;
                         node_info::handle_downed_node_info(&mut self_node_ref, &conved_node_info, &err);
                     }
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));

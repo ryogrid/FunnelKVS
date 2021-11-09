@@ -11,7 +11,8 @@ use crate::endpoints;
 use crate::data_store;
 use crate::chord_util;
 
-type ArMu<T> = Arc<Mutex<T>>;
+//type ArMu<T> = Arc<Mutex<T>>;
+type ArMu<T> = Arc<tokio::sync::Mutex<T>>;
 
 pub const ID_SPACE_BITS : u32 = 32; // 160 <- sha1での本来の値
 pub const ID_SPACE_RANGE : u32 = 0xFFFFFFFF; // 0を含めての数である点に注意

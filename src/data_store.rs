@@ -13,7 +13,8 @@ use crate::endpoints;
 
 pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";
 
-type ArMu<T> = Arc<Mutex<T>>;
+//type ArMu<T> = Arc<Mutex<T>>;
+type ArMu<T> = Arc<tokio::sync::Mutex<T>>;
 
 #[derive(Debug, Clone)]
 pub struct DataStore {

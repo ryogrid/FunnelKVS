@@ -1,0 +1,71 @@
+syntax = "proto3";
+package rustdkvs;
+
+message RString {
+    string val = 1;
+}
+
+message INT32 {
+    int32 val = 1;
+}
+
+message UINT32 {
+    uint32 val = 1;
+}
+
+message BOOL {
+    bool val = 1;
+}
+
+message VOID {
+    int32 val = 1;
+}
+
+message SetRoutingInfosForce {
+    NodeInfo predecessor_info = 1;
+    NodeInfo successor_info_0 = 2;
+    NodeInfo ftable_enry_0 = 3;
+}
+
+message NodeInfo {
+    uint32 node_id = 1;
+    string address_str = 2;
+    int32 born_id = 3;
+    repeated NodeInfo successor_info_list = 4;
+    repeated NodeInfo predecessor_info = 5;
+    repeated NodeInfo finger_table = 6;
+}
+
+message GlobalPut {
+    string key_str = 1;
+    string val_str = 2;    
+}
+
+message Put {
+    uint32 key_id = 1;
+    string val_str = 2;
+}
+
+message PassDatas {
+    repeated DataIdAndValue vals = 1;  
+}
+
+message DataIdAndValue {
+    uint32 data_id = 1;
+    string val_str = 2;
+}
+
+service RustDKVS {
+    rpc grpc_test_get_node_info (RString) returns (NodeInfo);
+    rpc grpc_check_predecessor(NodeInfo) returns (BOOL);
+    rpc grpc_set_routing_infos_force(SetRoutingInfosForce) returns (BOOL);
+    rpc grpc_find_successor(UINT32) returns (NodeInfo);
+    rpc grpc_closest_preceding_finger(UINT32) returns (NodeInfo);
+    rpc grpc_global_put(GlobalPut) returns (BOOL);
+    rpc grpc_put(Put) returns (BOOL);
+    rpc grpc_global_get(RString) returns (DataIdAndValue);
+    rpc grpc_get(UINT32) returns (DataIdAndValue);
+    rpc grpc_pass_datas(PassDatas) returns (BOOL);
+    // rpc grpc_global_delete(UINT32) returns (BOOL);
+    rpc grpc_get_node_info (VOID) returns (NodeInfo);
+}

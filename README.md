@@ -22,7 +22,8 @@
   - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
   - $ rustup override set nightly
   - $ rustup update && cargo update
-  - $ cargo run [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
+  - $ cargo build **--release**
+  - $ ./target/release/rust_dkvs [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
 
 - Setup KVS system
     - **launch example of node daemons which compose KVS system**
@@ -31,9 +32,9 @@
       - **born_id of first node must be 1** but born_id of other node is free except for "1"
         - "1" can be used by first node only 
       - **IP address and port number has no restriction but each node should be able to communicate directly with other nodes**
-    - $ cargo run 1 127.0.0.1 11000 127.0.0.1 10999 ./  
-    - $ cargo run 2 127.0.0.1 11001 127.0.0.1 11000 ./
-    - $ cargo run 3 127.0.0.1 11002 127.0.0.1 11000 ./
+    - $ ./target/release/rust_dkvs 1 127.0.0.1 11000 127.0.0.1 10999 ./  
+    - $ ./target/release/rust_dkvs 2 127.0.0.1 11001 127.0.0.1 11000 ./
+    - $ ./target/release/rust_dkvs 3 127.0.0.1 11002 127.0.0.1 11000 ./
     - ....
 
 - REST interfaces which is offered by KVS system

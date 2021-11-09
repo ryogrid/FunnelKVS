@@ -3,6 +3,7 @@ use std::borrow::{Borrow, BorrowMut};
 use std::cell::{RefMut, RefCell, Ref};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
+use std::collections::HashMap;
 
 use crate::gval;
 use crate::node_info;
@@ -14,15 +15,18 @@ use crate::data_store;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // idで識別されるデータを担当するノードの名前解決を行う
-pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
-    let mut self_node_ref = self_node.lock().unwrap();
-    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
-    drop(self_node_ref);
+pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
+    let self_node_deep_cloned;
+    {
+        let self_node_ref = self_node.lock().unwrap();
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        //drop(self_node_ref);
+    }
 
-    chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+    chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
                 + chord_util::gen_debug_str_of_data(id).as_str()));
     
-    let n_dash = match find_predecessor(&deep_cloned_self_node, id){
+    let n_dash = match find_predecessor(&self_node_deep_cloned, Arc::clone(&client_pool), id).await {
         Err(err) => {
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
@@ -34,21 +38,32 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
     //                     + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str() + ","
     //                     + chord_util::gen_debug_str_of_data(id).as_str()));
 
-    let asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash.address_str) {
-        Err(err) => {
-            self_node_ref = self_node.lock().unwrap();
-            node_info::handle_downed_node_info(&mut self_node_ref, &node_info::gen_node_info_from_summary(&n_dash), &err);
-            return Err(chord_util::GeneralError::new(err.message, err.err_code));
-        }
-        Ok(got_node) => {                
-            got_node
-        }
-    };
+    let asked_n_dash_info: node_info::NodeInfo;
+    if n_dash.node_id == self_node_deep_cloned.node_id {
+        asked_n_dash_info = node_info::partial_clone_from_ref_strong(&self_node_deep_cloned);
+    } else {
+        asked_n_dash_info = match endpoints::rrpc_call__get_node_info(&n_dash, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
+            Err(err) => {
+                {
+                    let mut self_node_ref = self_node.lock().unwrap();
+                    node_info::handle_downed_node_info(&mut self_node_ref, &node_info::gen_node_info_from_summary(&n_dash), &err);
+                }
+                return Err(chord_util::GeneralError::new(err.message, err.err_code));
+            }
+            Ok(got_node) => {                
+                got_node
+            }
+        };
+    }
+
+
     
-    match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str) {
+    match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0], Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
         Err(err) => {
-            self_node_ref = self_node.lock().unwrap();
-            node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
+            {
+                let mut self_node_ref = self_node.lock().unwrap();
+                node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
+            }
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
         Ok(got_node) => {                
@@ -58,9 +73,10 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
 }
  
 // id の前で一番近い位置に存在するノードを探索する
-pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
+pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id: u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     let mut n_dash: node_info::NodeInfoSummary = node_info::gen_summary_node_info(exnode_ni_ref);
     let mut n_dash_found: node_info::NodeInfoSummary = node_info::gen_summary_node_info(exnode_ni_ref);
+
     let mut is_first_cpf = true;
     chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&exnode_ni_ref).as_str()));
     
@@ -80,7 +96,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
 
         // 初回は自ノードへの呼出しなのでRPCのインタフェースを介さずに呼び出しを行う
         if is_first_cpf {
-            n_dash_found = match closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(exnode_ni_ref)), id) {
+            n_dash_found = match closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(exnode_ni_ref)), Arc::clone(&client_pool), id).await {
                     Err(err) => {
                         return Err(chord_util::GeneralError::new(err.message, err.err_code));
                     }
@@ -88,7 +104,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
             };
             is_first_cpf = false;
         } else {
-            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, id){
+            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, Arc::clone(&client_pool), id, exnode_ni_ref.node_id).await {
                 Err(err) => {
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
@@ -137,7 +153,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
 }
 
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
-pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
+pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     // 範囲の広いエントリから探索していく
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく
     // ように構成されているため、リバースしてインデックスの大きな方から小さい方へ
@@ -145,20 +161,23 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
 
     chord_util::dprint(&"closest_preceding_finger_start".to_string());
 
-    let mut self_node_ref = self_node.lock().unwrap();
-    let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
-    drop(self_node_ref);
+    let self_node_deep_cloned;
+    {
+        let self_node_ref = self_node.lock().unwrap();
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+        //drop(self_node_ref);
+    }
 
-    for node_info in (&deep_cloned_self_node).finger_table.iter().rev() {
+    for node_info in (&self_node_deep_cloned).finger_table.iter().rev() {
         let conved_node_info = match node_info {
             None => {
-                chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str()));
+                chord_util::dprint(&("closest_preceding_finger_0,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str()));
                 continue;
             },
             Some(ni) => ni
         };
 
-        chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+        chord_util::dprint(&("closest_preceding_finger_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
         // テーブル内のエントリが保持しているノードのIDが自身のIDと探索対象のIDの間にあれば
@@ -167,15 +186,17 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
         //  しまっている可能性が高く、エントリが保持しているノードが、探索対象のIDを飛び越してしまっている
         //  可能性が高いということになる。そこで探索範囲を狭めていって、飛び越さない範囲で一番近いノードを
         //  見つけるという処理になっていると思われる）
-        if chord_util::exist_between_two_nodes_right_mawari(deep_cloned_self_node.node_id, id, conved_node_info.node_id) {
+        if chord_util::exist_between_two_nodes_right_mawari(self_node_deep_cloned.node_id, id, conved_node_info.node_id) {
 
-            chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
+            chord_util::dprint(&("closest_preceding_finger_2,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
                             + chord_util::gen_debug_str_of_node(&conved_node_info).as_str()));
 
-            let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info.address_str){
+            let gnba_rslt = match endpoints::rrpc_call__get_node_info(&conved_node_info, Arc::clone(&client_pool), self_node_deep_cloned.node_id).await {
                 Err(err) => {
-                    self_node_ref = self_node.lock().unwrap();
-                    node_info::handle_downed_node_info(&mut self_node_ref, &conved_node_info, &err);
+                    {
+                        let mut self_node_ref = self_node.lock().unwrap();
+                        node_info::handle_downed_node_info(&mut self_node_ref, &conved_node_info, &err);
+                    }
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
                 Ok(got_node) => {                
@@ -190,6 +211,7 @@ pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) 
     // どんなに範囲を狭めても探索対象のIDを超えてしまうノードしか存在しなかった場合
     // 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という
     // ことになる
+
     return Ok(node_info::gen_summary_node_info(&deep_cloned_self_node));
 }
 

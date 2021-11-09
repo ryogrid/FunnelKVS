@@ -6,13 +6,24 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "rust_dkvs"
+path = "src/main.rs"
+
 [dependencies]
+tokio = { version = "1", features = ["full"] }
+tonic = { version = "0.6.1", features = ["transport"] }
+bytes = "1.1.0"
+protobuf = { version = "2", features = ["with-bytes"] }
+prost = "0.9.0"
+prost-types = "0.9.0"
+prost-derive = "0.9.0"
 rocket = "0.4.10"
 rocket_contrib = { version = "0.4.5", features = ["json"] }
 serde = { version = "^1.0", features = ["derive"] }
 serde_json = "^1.0.68"
 hyper = "0.14.13"
-reqwest = { version = "0.11.5", features = ["blocking", "json"] }
+reqwest = { version = "0.11.5", features = ["json"] }
 lazy_static = "1.4.0"
 # parking_lot = "0.11"
 clippy = { version = "*", optional = true }
@@ -22,4 +33,7 @@ chrono = "0.4"
 
 [profile.release]
 panic = 'abort'
+
+[build-dependencies]
+tonic-build  = "0.6.0"
 

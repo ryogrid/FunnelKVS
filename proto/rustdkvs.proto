@@ -36,6 +36,12 @@ message NodeInfo {
     repeated NodeInfo finger_table = 6;
 }
 
+message NodeInfoSummary {
+    uint32 node_id = 1;
+    uint32 succ0_id = 2;
+    string address_str = 3;
+}
+
 message GlobalPut {
     string key_str = 1;
     string val_str = 2;    
@@ -57,10 +63,10 @@ message DataIdAndValue {
 
 service RustDKVS {
     rpc grpc_test_get_node_info (RString) returns (NodeInfo);
-    rpc grpc_check_predecessor(NodeInfo) returns (BOOL);
+    rpc grpc_check_predecessor(NodeInfoSummary) returns (BOOL);
     rpc grpc_set_routing_infos_force(SetRoutingInfosForce) returns (BOOL);
-    rpc grpc_find_successor(UINT32) returns (NodeInfo);
-    rpc grpc_closest_preceding_finger(UINT32) returns (NodeInfo);
+    rpc grpc_find_successor(UINT32) returns (NodeInfoSummary);
+    rpc grpc_closest_preceding_finger(UINT32) returns (NodeInfoSummary);
     rpc grpc_global_put(GlobalPut) returns (BOOL);
     rpc grpc_put(Put) returns (BOOL);
     rpc grpc_global_get(RString) returns (DataIdAndValue);

@@ -19,7 +19,7 @@ use prost::Message;
 use crate::rustdkvs::rust_dkvs_server::{RustDkvs, RustDkvsServer};
 use crate::rustdkvs::rust_dkvs_client::RustDkvsClient;
 
-use crate::rustdkvs::{NodeInfo, Uint32, RString, Void, Bool, DataIdAndValue, PassDatas};
+use crate::rustdkvs::{NodeInfo, Uint32, RString, Void, Bool, DataIdAndValue, PassDatas, NodeInfoSummary};
 
 use crate::gval;
 use crate::chord_node;
@@ -214,7 +214,8 @@ pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, calle
     
     let mut client = get_grpc_client(&self_node.address_str).await?;
 
-    let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));
+    //let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));
+    let request = tonic::Request::new(crate::rustdkvs::NodeInfoSummary { node_id: caller_node_ni.node_id, succ0_id: caller_node_ni.node_id, address_str: caller_node_ni.address_str.clone()});
     
     let response = client.grpc_check_predecessor(request).await;
     //println!("RESPONSE={:?}", response);
@@ -265,7 +266,7 @@ pub async fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo,
 //     return Ok(true);
 // }
 
-pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     if self_node.node_id == caller_id {
         return router::find_successor(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool, id).await;
     }
@@ -274,9 +275,10 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
 
     let request = tonic::Request::new(Uint32 { val: id});
     
-    let response = client.grpc_find_successor(request).await; //?;
+    let response = client.grpc_find_successor(request).await.unwrap().into_inner(); //?;
     //println!("RESPONSE={:?}", response);
-    return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
+    //return Ok(node_info::gen_summary_node_info(&conv_node_info_to_normal_one(response.unwrap().into_inner())));
+    return Ok(node_info::NodeInfoSummary { node_id: response.node_id, succ0_id: response.node_id, address_str: response.address_str.clone()});
 }
 
 // pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
@@ -301,7 +303,7 @@ pub async fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, client_p
 //     return ret_ninfo;
 // }
 
-pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
+pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32, caller_id: u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     if self_node.node_id == caller_id {
         return router::closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool, id).await;
     }
@@ -310,9 +312,10 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
 
     let request = tonic::Request::new(Uint32 { val: id});
     
-    let response = client.grpc_closest_preceding_finger(request).await; //?;
+    let response = client.grpc_closest_preceding_finger(request).await.unwrap().into_inner(); //?;
     //println!("RESPONSE={:?}", response);
-    return Ok(conv_node_info_to_normal_one(response.unwrap().into_inner()));
+    //return Ok(node_info::gen_summary_node_info(&conv_node_info_to_normal_one(response.unwrap().into_inner())));
+    return Ok(node_info::NodeInfoSummary { node_id: response.node_id, succ0_id: response.node_id, address_str: response.address_str.clone()});
 }
 
 // pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
@@ -565,7 +568,7 @@ pub async fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, client_pool:
 //     return conv_node_info_to_normal_one(response.unwrap().into_inner());
 // }
 
-pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_id: u32) -> Result<node_info::NodeInfo, GeneralError> {
+pub async fn rrpc_call__get_node_info(self_node: &node_info::NodeInfoSummary, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_id: u32) -> Result<node_info::NodeInfo, GeneralError> {
     if self_node.node_id == caller_id {
         return Ok(chord_util::get_node_info(ArMu_new!(node_info::partial_clone_from_ref_strong(self_node)), client_pool));
     }
@@ -619,11 +622,12 @@ impl RustDkvs for MyRustDKVS {
 
     async fn grpc_check_predecessor(
         &self,
-        request: Request<crate::rustdkvs::NodeInfo>,
+        request: Request<crate::rustdkvs::NodeInfoSummary>,
     ) -> Result<Response<Bool>, Status> {
         //println!("Got a request: {:?}", request);
 
-        let reply_tmp = stabilizer::check_predecessor(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), conv_node_info_to_normal_one(request.into_inner())).await.unwrap();
+        let req_tmp = request.into_inner();
+        let reply_tmp = stabilizer::check_predecessor(Arc::clone(&self.self_node), Arc::clone(&self.data_store), Arc::clone(&self.client_pool), node_info::NodeInfoSummary { node_id: req_tmp.node_id, succ0_id: req_tmp.node_id, address_str: req_tmp.address_str.clone()}).await.unwrap();
         let reply = Bool { val: reply_tmp };
 
         Ok(Response::new(reply))
@@ -646,8 +650,9 @@ impl RustDkvs for MyRustDKVS {
     ) -> Result<Response<crate::rustdkvs::NodeInfoSummary>, Status> {
         println!("Got a request: {:?}", request);
 
-        let reply_tmp = router::find_successor(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), request.into_inner().val).await;
-        let reply = conv_node_info_to_grpc_one(reply_tmp.unwrap());
+        let reply_tmp = router::find_successor(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), request.into_inner().val).await.unwrap();
+        let reply = crate::rustdkvs::NodeInfoSummary { node_id: reply_tmp.node_id, succ0_id: reply_tmp.succ0_id, address_str: reply_tmp.address_str.clone() };
+        //let reply = node_info::gen_summary_node_info() conv_node_info_to_grpc_one(node_info::gen_node_info_from_summary(&reply_tmp.unwrap()));
         Ok(Response::new(reply))
     }
 
@@ -657,8 +662,9 @@ impl RustDkvs for MyRustDKVS {
     ) -> Result<Response<crate::rustdkvs::NodeInfoSummary>, Status> {
         //println!("Got a request: {:?}", request);
 
-        let reply_tmp = router::closest_preceding_finger(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), request.into_inner().val).await;
-        let reply = conv_node_info_to_grpc_one(reply_tmp.unwrap());
+        let reply_tmp = router::closest_preceding_finger(Arc::clone(&self.self_node), Arc::clone(&self.client_pool), request.into_inner().val).await.unwrap();
+        let reply = crate::rustdkvs::NodeInfoSummary { node_id: reply_tmp.node_id, succ0_id: reply_tmp.succ0_id, address_str: reply_tmp.address_str.clone() };
+        //let reply = conv_node_info_to_grpc_one(reply_tmp.unwrap());
         Ok(Response::new(reply))
     }
     

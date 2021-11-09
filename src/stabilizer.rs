@@ -432,8 +432,6 @@ pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client
         Ok(found_node) => {
             let mut self_node_ref = self_node.lock().unwrap();          
             self_node_ref.finger_table[(idx - 1) as usize] = Some(node_info::gen_node_info_from_summary(&found_node));
-            let mut self_node_ref = self_node.lock().unwrap();
-            self_node_ref.finger_table[(idx - 1) as usize] = Some(found_node.clone());
 
             // chord_util::dprint(&("stabilize_finger_table_3,".to_string() 
             //         + chord_util::gen_debug_str_of_node(&self_node_ref).as_str() + ","
@@ -446,7 +444,7 @@ pub async fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, client
 
 // caller_node が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
 // 本メソッドはstabilize処理の中で用いられる
-pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
+pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, caller_node_ni: node_info::NodeInfoSummary) -> Result<bool, chord_util::GeneralError> {
     let self_node_deep_cloned;
     {
         let self_node_ref = self_node.lock().unwrap();
@@ -454,16 +452,16 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
         //drop(self_node_ref);
     }
 
-    chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-        + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
-        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str()));
+    // chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+    //     + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
+    //     + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str()));
 
     if self_node_deep_cloned.predecessor_info.len() == 0 {
         // predecesorが設定されていなければ無条件にチェックを求められたノードを設定する
-        node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
-        chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
-            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str()));
+        node_info::set_pred_info(Arc::clone(&self_node), node_info::gen_node_info_from_summary(&caller_node_ni));
+        // chord_util::dprint(&("check_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+        //     + chord_util::gen_debug_str_of_node(&caller_node_ni).as_str() + ","
+        //     + chord_util::gen_debug_str_of_node(&self_node_deep_cloned.successor_info_list[0]).as_str()));
         return Ok(true);
     }
 
@@ -498,7 +496,7 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
     // 経路表の情報を更新する
     if distance_check < distance_cur {
         //drop(self_node_ref);
-        node_info::set_pred_info(Arc::clone(&self_node), caller_node_ni.clone());
+        node_info::set_pred_info(Arc::clone(&self_node), node_info::gen_node_info_from_summary(&caller_node_ni));
 
         // 切り替えたpredecessorに対してデータの委譲を行う
         let delegate_datas: Vec<chord_util::DataIdAndValue>;
@@ -523,10 +521,10 @@ pub async fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store:
             return Ok(true);
         }
 
-        match endpoints::rrpc_call__pass_datas(&caller_node_ni, Arc::clone(&client_pool), delegate_datas, self_node_deep_cloned.node_id).await {
+        match endpoints::rrpc_call__pass_datas(&node_info::gen_node_info_from_summary(&caller_node_ni), Arc::clone(&client_pool), delegate_datas, self_node_deep_cloned.node_id).await {
             Err(err) => {
                 let mut self_node_ref = self_node.lock().unwrap();
-                node_info::handle_downed_node_info(&mut self_node_ref, &caller_node_ni, &err);
+                node_info::handle_downed_node_info(&mut self_node_ref, &node_info::gen_node_info_from_summary(&caller_node_ni), &err);
                 return Ok(true);
             }
             Ok(some) => { return Ok(true) }

@@ -104,7 +104,7 @@ pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: 
             };
             is_first_cpf = false;
         } else {
-            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&n_dash, Arc::clone(&client_pool), id, exnode_ni_ref.node_id).await {
+            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&node_info::gen_node_info_from_summary(&n_dash), Arc::clone(&client_pool), id, exnode_ni_ref.node_id).await {
                 Err(err) => {
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
@@ -212,6 +212,6 @@ pub async fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, clie
     // 自身の知っている情報の中で対象を飛び越さない範囲で一番近いノードは自身という
     // ことになる
 
-    return Ok(node_info::gen_summary_node_info(&deep_cloned_self_node));
+    return Ok(node_info::gen_summary_node_info(&self_node_deep_cloned));
 }
 

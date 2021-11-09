@@ -49,7 +49,8 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
         //     + idx.to_string().as_str()
         // ));        
 
-        let is_exist = match endpoints::rrpc_call__put(&node_info::gen_node_info_from_summary(&replica_node), target_id, val_str.clone()){
+        let is_exist = match endpoints::rrpc_call__put(&node_info::gen_node_info_from_summary(&replica_node), Arc::clone(&data_store), Arc::clone(&client_pool), target_id, val_str.clone(), self_node_deep_cloned.node_id).await {        
+        //let is_exist = match endpoints::rrpc_call__put(&node_info::gen_node_info_from_summary(&replica_node), target_id, val_str.clone()){
             Err(err) => {
                 let mut self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &node_info::gen_node_info_from_summary(&replica_node), &err);

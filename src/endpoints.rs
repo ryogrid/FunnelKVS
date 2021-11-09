@@ -260,6 +260,15 @@ pub async fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, calle
     let request = tonic::Request::new(conv_node_info_to_grpc_one((*caller_node_ni).clone()));    
 
     let mut locked_client = client.lock().unwrap();
+
+    let mut channel = Channel::from_static("https://example.com")
+    .timeout(Duration::from_secs(10000))
+    .rate_limit(5, Duration::from_secs(1))
+    .concurrency_limit(256)
+    .channel();
+
+    let cla = RustDkvsClient::new(channel);
+    //tonic::client::Grpc::new(locked_client.)
     let response = locked_client.grpc_check_predecessor(request).await;
     //println!("RESPONSE={:?}", response);
     return Ok(response.unwrap().into_inner().val);

@@ -68,6 +68,7 @@ pub async fn join(new_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap
 
     let mut tyukai_node_dummy = node_info::NodeInfo::new();
     tyukai_node_dummy.address_str = tyukai_node_address.clone();
+    tyukai_node_dummy.successor_info_list.push(node_info::NodeInfo::new());
 
     // ダウンしているノードの情報が与えられることは想定しない
     let tyukai_node = endpoints::rrpc_call__get_node_info(&node_info::gen_summary_node_info(&tyukai_node_dummy), Arc::clone(&client_pool), new_node_deep_cloned.node_id, &new_node_deep_cloned).await.unwrap();
@@ -179,7 +180,8 @@ pub async fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>, client_po
     // 場合があるため、successorのChordNodeオブジェクトを引いて、そこから最新のnode_info
     // の参照を得る
 
-    let succ0_summary = node_info::gen_summary_node_info(&self_node_deep_cloned.successor_info_list[0]);
+    //let succ0_summary = node_info::gen_summary_node_info(&self_node_deep_cloned.successor_info_list[0]);
+    let succ0_summary = node_info::NodeInfoSummary { node_id: self_node_deep_cloned.successor_info_list[0].node_id, succ0_id: 0, address_str: self_node_deep_cloned.successor_info_list[0].address_str.clone() };
     let ret = endpoints::rrpc_call__get_node_info(&succ0_summary, Arc::clone(&client_pool), self_node_deep_cloned.node_id, &self_node_deep_cloned);
 
     let successor_info = match ret.await {

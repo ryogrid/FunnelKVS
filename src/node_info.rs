@@ -136,17 +136,17 @@ pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) ->
     for each_ninfo in &node_info_ref.successor_info_list {
         ret_node_info.successor_info_list.push((*each_ninfo).clone());
     }
-    // ret_node_info.finger_table = vec![];
-    // for each_ninfo in &node_info_ref.finger_table {
-    //     let tmp_val = match each_ninfo {
-    //         None => None,
-    //         Some(val) => {
-    //             let ret_val = Some((*val).clone());
-    //             ret_val
-    //         }
-    //     };
-    //     ret_node_info.finger_table.push(tmp_val);
-    // }    
+    ret_node_info.finger_table = vec![];
+    for each_ninfo in &node_info_ref.finger_table {
+        let tmp_val = match each_ninfo {
+            None => None,
+            Some(val) => {
+                let ret_val = Some((*val).clone());
+                ret_val
+            }
+        };
+        ret_node_info.finger_table.push(tmp_val);
+    }    
     ret_node_info.predecessor_info = vec![];
     for each_ninfo in &node_info_ref.predecessor_info {
         ret_node_info.predecessor_info.push((*each_ninfo).clone());
@@ -156,7 +156,13 @@ pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) ->
 }
 
 pub fn gen_summary_node_info(node_info_ref: &NodeInfo) -> NodeInfoSummary {
-    return NodeInfoSummary { node_id: node_info_ref.node_id, succ0_id: node_info_ref.successor_info_list[0].node_id, address_str: node_info_ref.address_str.clone() }
+    let succ0_id_tmp;
+    if node_info_ref.successor_info_list.len() == 0 {
+        succ0_id_tmp = 0;
+    }else{
+        succ0_id_tmp = node_info_ref.successor_info_list[0].node_id;
+    }
+    return NodeInfoSummary { node_id: node_info_ref.node_id, succ0_id: succ0_id_tmp, address_str: node_info_ref.address_str.clone() }
 }
 
 pub fn gen_node_info_from_summary(summary_ref: &NodeInfoSummary) -> NodeInfo {

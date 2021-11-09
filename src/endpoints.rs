@@ -53,7 +53,7 @@ pub async fn get_grpc_client(address: &String) -> Result<crate::rustdkvs::rust_d
                 }else{
                     println!{"Socket Error Occured: {:?}", err};
                     retry_cnt += 1;
-                    if retry_cnt == 3 {
+                    if retry_cnt == 10 {
                         return Err(chord_util::GeneralError::new("socket error retry 3count reached".to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
                     }
                     std::thread::sleep(std::time::Duration::from_millis(1000 as u64));

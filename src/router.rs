@@ -57,8 +57,8 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
     }
 
 
-    
-    match endpoints::rrpc_call__get_node_info(&node_info::gen_summary_node_info(&asked_n_dash_info.successor_info_list[0]), Arc::clone(&client_pool), self_node_deep_cloned.node_id, &self_node_deep_cloned).await {
+    let succ0_summary = node_info::NodeInfoSummary { node_id: asked_n_dash_info.successor_info_list[0].node_id, succ0_id: 0, address_str: asked_n_dash_info.successor_info_list[0].address_str.clone() };
+    match endpoints::rrpc_call__get_node_info(&succ0_summary, Arc::clone(&client_pool), self_node_deep_cloned.node_id, &self_node_deep_cloned).await {
         Err(err) => {
             {
                 let mut self_node_ref = self_node.lock().unwrap();

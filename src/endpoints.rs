@@ -77,51 +77,54 @@ pub async fn get_channel(address: &String) -> tonic::transport::Channel {
     .rate_limit(5, Duration::from_secs(1))
     .concurrency_limit(256);
     
+    println!("before connect");
     let channel = endpoint.connect().await;
+    println!("after connect");
 
     return channel.unwrap();
 }
 
 pub async fn get_grpc_client(client_pool: ArMu<HashMap<String, ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>>>, address: &String) -> Result<ArMu<crate::rustdkvs::rust_dkvs_client::RustDkvsClient<tonic::transport::Channel>>, chord_util::GeneralError> {
     //return Ok(RustDkvsClient::new(get_channel("http://".to_string() + address.as_str().await));
-    let locked_pool = client_pool.lock().await;
-    let get_rslt = locked_pool.get(address);
-    let ret = match get_rslt {
-        None => {
-            //let tmp_ret = match RustDkvsClient::connect("http://".to_string() + address.as_str()).await {
-            //     Ok(client) => { Ok(client) }
-            //     Err(err) => async {
-            //         let mut retry_cnt = 0; 
-            //         let ret_client;
-            //         loop {
-            //             let tmp_client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await;
-            //             if tmp_client.is_ok() {
-            //                 ret_client = tmp_client.unwrap();
-            //                 break;
-            //             }else{
-            //                 println!{"Socket Error Occured: {:?}", err};
-            //                 retry_cnt += 1;
-            //                 if retry_cnt == 3 {
-            //                     return Err(chord_util::GeneralError::new("socket error retry 3count reached".to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
-            //                 }
-            //                 std::thread::sleep(std::time::Duration::from_millis(1000 as u64));
-            //                 continue;
-            //             }
-            //         }
-            //         Ok(ret_client)
-            //     }.await
-            // }; //?;
-            let new_client = ArMu_new!(RustDkvsClient::new(get_channel(&("http://".to_string() + address.as_str())).await));
-            let ret_client = Arc::clone(&new_client);
-            let mut locked_pool = client_pool.lock().await;
-            locked_pool.insert((*address).clone(), new_client);
-            ret_client
-        }
-        Some(client_armu) => {
-            Arc::clone(client_armu)
-        }
-    };
-    return Ok(ret);
+    {
+        let locked_pool = client_pool.lock().await;
+        let get_rslt = locked_pool.get(address);
+        match get_rslt {
+            None => {
+                //let tmp_ret = match RustDkvsClient::connect("http://".to_string() + address.as_str()).await {
+                //     Ok(client) => { Ok(client) }
+                //     Err(err) => async {
+                //         let mut retry_cnt = 0; 
+                //         let ret_client;
+                //         loop {
+                //             let tmp_client = RustDkvsClient::connect("http://".to_string() + address.as_str()).await;
+                //             if tmp_client.is_ok() {
+                //                 ret_client = tmp_client.unwrap();
+                //                 break;
+                //             }else{
+                //                 println!{"Socket Error Occured: {:?}", err};
+                //                 retry_cnt += 1;
+                //                 if retry_cnt == 3 {
+                //                     return Err(chord_util::GeneralError::new("socket error retry 3count reached".to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
+                //                 }
+                //                 std::thread::sleep(std::time::Duration::from_millis(1000 as u64));
+                //                 continue;
+                //             }
+                //         }
+                //         Ok(ret_client)
+                //     }.await
+                // }; //?;
+            }
+            Some(client_armu) => {
+                return Ok(Arc::clone(client_armu))
+            }
+        };
+    }
+    let new_client = ArMu_new!(RustDkvsClient::new(get_channel(address).await));
+    let ret_client = Arc::clone(&new_client);
+    let mut locked_pool = client_pool.lock().await;    
+    locked_pool.insert((*address).clone(), new_client);
+    return Ok(ret_client);
 }
 
 

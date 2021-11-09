@@ -112,7 +112,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     // successorと、successorノードの情報だけ適切なものとする
 
     drop(new_node_ref);
-    match endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node){
+    match endpoints::rrpc_call__check_predecessor(&successor, &deep_cloned_new_node.clone()){
         Err(err) => {
             // IDを変えてリトライ
             // (これで異なるsuccessorが得られて、そのノードは生きていることを期待する)
@@ -165,7 +165,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         chord_util::dprint(&("stabilize_successor_2,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&deep_cloned_self_node.successor_info_list[0]).as_str()));
 
-        match endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node){
+        match endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node.clone()){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &successor_info, &err);
@@ -202,7 +202,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
         chord_util::dprint(&("stabilize_successor_5,".to_string() + chord_util::gen_debug_str_of_node(&deep_cloned_self_node).as_str() + ","
         + chord_util::gen_debug_str_of_node(&successor_info.successor_info_list[0]).as_str()));
 
-        match endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node){
+        match endpoints::rrpc_call__check_predecessor(&successor_info, &deep_cloned_self_node.clone()){
             Err(err) => {
                 self_node_ref = self_node.lock().unwrap();
                 node_info::handle_downed_node_info(&mut self_node_ref, &successor_info, &err);
@@ -243,7 +243,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
                 }
             };
 
-            match endpoints::rrpc_call__check_predecessor(&new_successor_info, &deep_cloned_self_node){
+            match endpoints::rrpc_call__check_predecessor(&new_successor_info, &deep_cloned_self_node.clone()){
                 Err(err) => {
                     self_node_ref = self_node.lock().unwrap();
                     node_info::handle_downed_node_info(&mut self_node_ref, &new_successor_info, &err);

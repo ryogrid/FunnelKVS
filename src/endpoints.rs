@@ -23,7 +23,7 @@ type ArMu<T> = Arc<Mutex<T>>;
 // urlは "http://から始まるものにすること"
 fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
     let client = match reqwest::blocking::Client::builder()
-    .timeout(Duration::from_secs(100))
+    .timeout(Duration::from_secs(10000))
     .build(){
         Err(err) => {
             chord_util::dprint(&("ERROR at http_get_request(1)".to_string() + url_str));
@@ -32,7 +32,9 @@ fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
         Ok(got_client) => got_client
     };
 
-    let resp = match client.get(url_str).header(reqwest::header::CONTENT_TYPE, "application/json").send(){
+    let resp = match client.get(url_str)
+    //.header(reqwest::header::CONTENT_TYPE, "application/json")
+    .send(){
         Err(err) => { 
             chord_util::dprint(&("ERROR at http_get_request(2)".to_string() + url_str));
             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
@@ -56,7 +58,7 @@ fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
 fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_util::GeneralError> {
     //let client = reqwest::blocking::Client::new();
     let client = match reqwest::blocking::Client::builder()
-    .timeout(Duration::from_secs(100))
+    .timeout(Duration::from_secs(10000))
     .build(){
         Err(err) => { 
             chord_util::dprint(&("ERROR at http_post_request(1)".to_string() + url_str));
@@ -65,7 +67,9 @@ fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_ut
         Ok(got_client) => got_client
     };
 
-    let resp = match client.post(url_str).header(reqwest::header::CONTENT_TYPE, "application/json").body(json_str).send(){
+    let resp = match client.post(url_str)
+    .header(reqwest::header::CONTENT_TYPE, "application/json")
+    .body(json_str).send(){
         Err(err) => {
             chord_util::dprint(&("ERROR at http_post_request(2)".to_string() + url_str));
             return Err(chord_util::GeneralError::new(err.to_string(), chord_util::ERR_CODE_HTTP_REQUEST_ERR));
@@ -470,8 +474,11 @@ pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, percent
 pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, bind_addr: String, bind_port_num: i32){
     let config = Config::build(Environment::Production)
     .address(bind_addr)
+    .read_timeout(10000)
+    .write_timeout(10000)
+    .keep_alive(10000)
     .port(bind_port_num as u16)
-    .workers(30)
+    .workers(256)
     .finalize()
     .unwrap();
 

@@ -107,6 +107,38 @@ pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
     return ret_node_info;    
 }
 
+// 実体の参照からコピーを作成する
+// cloneした場合と異なり、predecessor_info, successor_info_list
+// も一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
+pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) -> NodeInfo {
+    let mut ret_node_info = NodeInfo::new();
+
+    ret_node_info.node_id = node_info_ref.node_id;
+    ret_node_info.address_str = node_info_ref.address_str.clone();
+    ret_node_info.born_id = node_info_ref.born_id;
+    ret_node_info.successor_info_list = vec![];
+    for each_ninfo in &node_info_ref.successor_info_list {
+        ret_node_info.successor_info_list.push((*each_ninfo).clone());
+    }
+    // ret_node_info.finger_table = vec![];
+    // for each_ninfo in &node_info_ref.finger_table {
+    //     let tmp_val = match each_ninfo {
+    //         None => None,
+    //         Some(val) => {
+    //             let ret_val = Some((*val).clone());
+    //             ret_val
+    //         }
+    //     };
+    //     ret_node_info.finger_table.push(tmp_val);
+    // }    
+    ret_node_info.predecessor_info = vec![];
+    for each_ninfo in &node_info_ref.predecessor_info {
+        ret_node_info.predecessor_info.push((*each_ninfo).clone());
+    }
+
+    return ret_node_info;    
+}
+
 pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
     let mut self_node_ref = self_node.lock().unwrap();
     if self_node_ref.predecessor_info.len() == 0 {

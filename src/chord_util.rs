@@ -198,7 +198,7 @@ pub fn gen_debug_str_of_data(data_id : u32) -> String {
 
 pub fn get_node_info(self_node: ArMu<node_info::NodeInfo>) -> node_info::NodeInfo {
     let self_node_ref = self_node.lock().unwrap();
-    let ret = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    let ret = node_info::partial_clone_from_ref_strong_without_ftable(&self_node_ref);
     return ret;
 }
 

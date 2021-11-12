@@ -315,7 +315,7 @@ pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo
     let response = client.grpc_closest_preceding_finger(request).await.unwrap().into_inner(); //?;
     //println!("RESPONSE={:?}", response);
     //return Ok(node_info::gen_summary_node_info(&conv_node_info_to_normal_one(response.unwrap().into_inner())));
-    return Ok(node_info::NodeInfoSummary { node_id: response.node_id, succ0_id: response.node_id, address_str: response.address_str.clone()});
+    return Ok(node_info::NodeInfoSummary { node_id: response.node_id, succ0_id: response.succ0_id, address_str: response.address_str.clone()});
 }
 
 // pub async fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id : u32) -> Result<node_info::NodeInfo, chord_util::GeneralError> {
@@ -835,28 +835,28 @@ pub fn conv_node_info_vec_to_grpc_one(ni_vec: Vec<node_info::NodeInfo>) -> Vec<c
 }
 
 pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo>>) -> Vec<crate::rustdkvs::NodeInfo> {
-    let ret_vec: Vec<crate::rustdkvs::NodeInfo> = vec![];
-    // born_id = -1 な ノードは None として扱うように受け側では逆変換する規約とする
-    // for ninfo in ni_opvec {
-    //     match ninfo {
-    //         None => {
-    //             // newした時点での born_id の初期値は -1 である
-    //             let none_dummy = crate::rustdkvs::NodeInfo { 
-    //                 node_id: 0,
-    //                 address_str: "".to_string(),
-    //                 born_id: -1,
-    //                 predecessor_info: vec![],
-    //                 successor_info_list: vec![],
-    //                 finger_table: vec![]
-    //             };
-    //             ret_vec.push(none_dummy);
-    //         }
-    //         Some(ninfo_wrapped) => { 
-    //             let any: Any;
-    //             ret_vec.push(conv_node_info_to_grpc_one(ninfo_wrapped));
-    //         }
-    //     }
-    // }
+    let mut ret_vec: Vec<crate::rustdkvs::NodeInfo> = vec![];
+    //born_id = -1 な ノードは None として扱うように受け側では逆変換する規約とする
+    for ninfo in ni_opvec {
+        match ninfo {
+            None => {
+                // newした時点での born_id の初期値は -1 である
+                let none_dummy = crate::rustdkvs::NodeInfo { 
+                    node_id: 0,
+                    address_str: "".to_string(),
+                    born_id: -1,
+                    predecessor_info: vec![],
+                    successor_info_list: vec![],
+                    finger_table: vec![]
+                };
+                ret_vec.push(none_dummy);
+            }
+            Some(ninfo_wrapped) => { 
+                let any: Any;
+                ret_vec.push(conv_node_info_to_grpc_one(ninfo_wrapped));
+            }
+        }
+    }
     return ret_vec;
 }
 

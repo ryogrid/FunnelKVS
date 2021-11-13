@@ -129,7 +129,7 @@ func CheckChainWithSuccessorInfo() {
 	counter := 0
 	request_count := 0
 	is_success_reqest := false
-	for true {
+	for {
 		resp_json, err := HttpGetRequest(succ_addr, endpoint_path)
 		request_count++
 		if request_count == CcheckNodeLimit {
@@ -137,7 +137,7 @@ func CheckChainWithSuccessorInfo() {
 			break
 		}
 		if err != nil {
-			if is_success_reqest == false {
+			if !is_success_reqest {
 				start_port += 1
 				succ_addr = gval.BindIpAddr + ":" + strconv.Itoa(start_port)
 				continue

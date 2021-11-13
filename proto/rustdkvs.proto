@@ -1,4 +1,7 @@
 syntax = "proto3";
+
+option go_package = "github.com/ryogrid/rust_dkvs/tools/lib/rustdkvs";
+
 package rustdkvs;
 
 message RString {

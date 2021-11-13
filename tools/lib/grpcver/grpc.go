@@ -56,30 +56,45 @@ func CheckChainWithSuccessorInfo() {
 	var node_id uint32 = 1
 	counter := 0
 	request_count := 0
-	is_success_reqest := false
-	for {
-		node_info, err := GrpcGetNodeInfo(succ_addr)
-		request_count++
-		if request_count == rest.CcheckNodeLimit {
-			fmt.Println("Error: travarse times may exceeded launched nodes!")
+	is_success_request := false
+	is_fined := false
+fin:
+	for !is_fined {
+		var node_info *rustdkvs.NodeInfo
+		var err error
+		var retry_count = 0
+		for {
+			node_info, err = GrpcGetNodeInfo(succ_addr)
+			request_count++
+			if request_count == rest.CcheckNodeLimit {
+				fmt.Println("Error: travarse times may exceeded launched nodes!")
+				is_fined = true
+				break fin
+			}
+			if err != nil {
+				if !is_success_request {
+					start_port += 1
+					succ_addr = gval.BindIpAddr + ":" + strconv.Itoa(start_port)
+					break
+				} else if retry_count < 3 {
+					//同じアドレスでもう一回
+					continue
+				} else {
+					fmt.Println("Error: successor should downed and information of successor is not recovered.")
+					is_fined = true
+					break fin
+				}
+			}
+			is_success_request = true
 			break
 		}
-		if err != nil {
-			if !is_success_reqest {
-				start_port += 1
-				succ_addr = gval.BindIpAddr + ":" + strconv.Itoa(start_port)
-				continue
-			} else {
-				fmt.Println("Error: successor should downed and information of successor is not recovered.")
+		if is_success_request {
+			cur_addr, born_id, node_id, succ_addr = ExtractAddrAndBornId(node_info)
+			counter++
+			fmt.Printf("addr=%s born_id=%d node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (float64(node_id)/float64(0xFFFFFFFF))*100.0, counter, succ_addr)
+			if succ_addr == start_addr {
 				break
 			}
-		}
-		is_success_reqest = true
-		cur_addr, born_id, node_id, succ_addr = ExtractAddrAndBornId(node_info)
-		counter++
-		fmt.Printf("addr=%s born_id=%d node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (float64(node_id)/float64(0xFFFFFFFF))*100.0, counter, succ_addr)
-		if succ_addr == start_addr {
-			break
 		}
 	}
 }

@@ -204,6 +204,13 @@ pub async fn global_get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
                     // + chord_util::gen_debug_str_of_data(data_id).as_str() + ","
                     // + chord_util::gen_debug_str_of_data(target_id).as_str() + ","
                     // + idx.to_string().as_str()));
+                if data_iv.val_str == "Error" {
+                    chord_util::dprint(&("TRY_GET_ERROR: tried_node_addr=".to_string() 
+                    + replica_node.address_str.clone().as_str()
+                    + " tried_node_id=" + replica_node.node_id.to_string().as_str()
+                    ));
+                    continue;
+                }
                 return Ok(data_iv); 
             }
         };
@@ -232,7 +239,7 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
     // いるノードとなるまで下手にデータを持たない方が、データ配置の整合性を壊すリスクが
     // 減りそうな気がするので、そうする
     if self_node_deep_cloned.predecessor_info.len() == 0 {
-        let ret_val = chord_util::DataIdAndValue { data_id: 0, val_str: "Error".to_string() };
+        let ret_val = chord_util::DataIdAndValue { data_id: self_node_deep_cloned.node_id, val_str: "Error".to_string() };
         return Ok(ret_val);
         //return Err(chord_util::GeneralError::new("predecessor is None".to_string(), chord_util::ERR_CODE_PRED_IS_NONE));
     }
@@ -243,16 +250,17 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         + chord_util::gen_debug_str_of_data(key_id).as_str())
     );
 
-/*    
+
     // Chordネットワークを右回りにたどった時に、データの id (key_id) が predecessor の node_id から
     // 自身の node_id の間に位置する場合、そのデータは自身の担当だが、そうではない場合
     if chord_util::exist_between_two_nodes_right_mawari(
         self_node_deep_cloned.predecessor_info[0].node_id,
         self_node_deep_cloned.node_id, 
         key_id) == false {
-            return Err(chord_util::GeneralError::new("passed data is out of my tantou range".to_string(), chord_util::ERR_CODE_NOT_TANTOU));
+            //return Err(chord_util::GeneralError::new("passed data is out of my tantou range".to_string(), chord_util::ERR_CODE_NOT_TANTOU));
+            return Ok(chord_util::DataIdAndValue { data_id: self_node_deep_cloned.node_id, val_str: "passed data is out of my tantou range".to_string() })
     }
-*/
+
 
     chord_util::dprint(
         &("get_3,".to_string()
@@ -265,7 +273,7 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         let data_store_ref = data_store.lock().unwrap();
         ret_val = match data_store_ref.get(key_id){
             Err(err) => {
-                let ret_val = chord_util::DataIdAndValue { data_id: 0, val_str: "Error".to_string() };
+                let ret_val = chord_util::DataIdAndValue { data_id: self_node_deep_cloned.node_id, val_str: "Error".to_string() };
                 return Ok(ret_val);
                 //return Err(err);
             }

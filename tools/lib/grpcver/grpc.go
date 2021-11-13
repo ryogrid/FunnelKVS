@@ -91,7 +91,7 @@ fin:
 		if is_success_request {
 			cur_addr, born_id, node_id, succ_addr = ExtractAddrAndBornId(node_info)
 			counter++
-			fmt.Printf("addr=%s born_id=%d node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (float64(node_id)/float64(0xFFFFFFFF))*100.0, counter, succ_addr)
+			fmt.Printf("addr=%s node_id=%d born_id=%d node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, node_id, born_id, (float64(node_id)/float64(0xFFFFFFFF))*100.0, counter, succ_addr)
 			if succ_addr == start_addr {
 				break
 			}

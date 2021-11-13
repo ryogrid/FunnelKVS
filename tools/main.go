@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 
+	"tools/lib/grpcver"
 	"tools/lib/gval"
 	"tools/lib/kvsutil"
 	"tools/lib/rest"
@@ -32,6 +33,8 @@ func main() {
 		rest.GetTestValues(addr_and_port)
 	case "profile-get-node-info":
 		rest.ProfileGetNodeInfoThroughput()
+	case "call-grpc-test":
+		grpcver.GrpcGetNodeInfo()
 	default:
 		fmt.Println("dkvs_client -op=<operation-name> -arg1=<argument if needed>")
 	}

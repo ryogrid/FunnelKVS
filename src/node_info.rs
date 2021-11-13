@@ -136,17 +136,17 @@ pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) ->
     for each_ninfo in &node_info_ref.successor_info_list {
         ret_node_info.successor_info_list.push((*each_ninfo).clone());
     }
-    ret_node_info.finger_table = vec![];
-    for each_ninfo in &node_info_ref.finger_table {
-        let tmp_val = match each_ninfo {
-            None => None,
-            Some(val) => {
-                let ret_val = Some((*val).clone());
-                ret_val
-            }
-        };
-        ret_node_info.finger_table.push(tmp_val);
-    }    
+    // ret_node_info.finger_table = vec![];
+    // for each_ninfo in &node_info_ref.finger_table {
+    //     let tmp_val = match each_ninfo {
+    //         None => None,
+    //         Some(val) => {
+    //             let ret_val = Some((*val).clone());
+    //             ret_val
+    //         }
+    //     };
+    //     ret_node_info.finger_table.push(tmp_val);
+    // }    
     ret_node_info.predecessor_info = vec![];
     for each_ninfo in &node_info_ref.predecessor_info {
         ret_node_info.predecessor_info.push((*each_ninfo).clone());

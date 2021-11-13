@@ -732,7 +732,8 @@ impl RustDkvs for MyRustDKVS {
     ) -> Result<Response<NodeInfo>, Status> { // Return an instance of type rustdkvs::NodeInfo
         println!("Got a request: {:?}", request);
 
-        let reply = conv_node_info_to_grpc_one(chord_util::get_node_info(Arc::clone(&self.self_node), Arc::clone(&self.client_pool)));
+        let mut reply = conv_node_info_to_grpc_one(chord_util::get_node_info(Arc::clone(&self.self_node), Arc::clone(&self.client_pool)));
+        reply.finger_table = vec![];
 
         Ok(Response::new(reply))
     }    
@@ -840,20 +841,20 @@ pub fn conv_node_info_opvec_to_grpc_one(ni_opvec: Vec<Option<node_info::NodeInfo
     for ninfo in ni_opvec {
         match ninfo {
             None => {
-                // newした時点での born_id の初期値は -1 である
-                let none_dummy = crate::rustdkvs::NodeInfo { 
-                    node_id: 0,
-                    address_str: "".to_string(),
-                    born_id: -1,
-                    predecessor_info: vec![],
-                    successor_info_list: vec![],
-                    finger_table: vec![]
-                };
-                ret_vec.push(none_dummy);
+                // // newした時点での born_id の初期値は -1 である
+                // let none_dummy = crate::rustdkvs::NodeInfo { 
+                //     node_id: 0,
+                //     address_str: "".to_string(),
+                //     born_id: -1,
+                //     predecessor_info: vec![],
+                //     successor_info_list: vec![],
+                //     finger_table: vec![]
+                // };
+                // ret_vec.push(none_dummy);
             }
             Some(ninfo_wrapped) => { 
-                let any: Any;
-                ret_vec.push(conv_node_info_to_grpc_one(ninfo_wrapped));
+                // let any: Any;
+                // ret_vec.push(conv_node_info_to_grpc_one(ninfo_wrapped));
             }
         }
     }

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
-	"tools/gval"
-	"tools/kvsutil"
-	"tools/rest"
+
+	"tools/lib/gval"
+	"tools/lib/kvsutil"
+	"tools/lib/rest"
 )
 
 func main() {

@@ -26,6 +26,7 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
     // 更新に失敗するレプリカがあった場合、それはノードダウンであると（本当にそうか確実ではないが）前提をおいて、
     // 続くレプリカの更新は継続する
     let data_id = chord_util::hash_str_to_int(&key_str);
+    let mut is_exist = true;
     for idx in 0..(gval::REPLICA_NUM + 1) {
         let target_id = chord_util::overflow_check_and_conv(data_id as u64 + (gval::REPLICA_ID_DISTANCE as u64) * (idx as u64));
         let replica_node = match endpoints::rrpc_call__find_successor(&self_node_deep_cloned, Arc::clone(&client_pool), target_id, self_node_deep_cloned.node_id).await {
@@ -49,7 +50,7 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
         //     + idx.to_string().as_str()
         // ));        
 
-        let is_exist = match endpoints::rrpc_call__put(&node_info::gen_node_info_from_summary(&replica_node), Arc::clone(&data_store), Arc::clone(&client_pool), target_id, val_str.clone(), self_node_deep_cloned.node_id).await {        
+        is_exist = match endpoints::rrpc_call__put(&node_info::gen_node_info_from_summary(&replica_node), Arc::clone(&data_store), Arc::clone(&client_pool), target_id, val_str.clone(), self_node_deep_cloned.node_id).await {        
         //let is_exist = match endpoints::rrpc_call__put(&node_info::gen_node_info_from_summary(&replica_node), target_id, val_str.clone()){
             Err(err) => {
                 let mut self_node_ref = self_node.lock().unwrap();
@@ -70,7 +71,8 @@ pub async fn global_put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<d
         // ));
     }
 
-    return Ok(true);
+    //return Ok(true);
+    return Ok(is_exist);
 }
 
 pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
@@ -110,7 +112,8 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         self_node_deep_cloned.predecessor_info[0].node_id,
         self_node_deep_cloned.node_id, 
         key_id) == false {
-            return Err(chord_util::GeneralError::new("passed data is out of my tantou range".to_string(), chord_util::ERR_CODE_NOT_TANTOU));
+            //return Err(chord_util::GeneralError::new("passed data is out of my tantou range".to_string(), chord_util::ERR_CODE_NOT_TANTOU));
+            return Ok(false);
     }
 
 

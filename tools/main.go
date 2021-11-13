@@ -34,7 +34,9 @@ func main() {
 	case "profile-get-node-info":
 		rest.ProfileGetNodeInfoThroughput()
 	case "call-grpc-test":
-		grpcver.GrpcGetNodeInfo()
+		grpcver.GrpcGetNodeInfo("127.0.0.1:11000")
+	case "check-chain-g":
+		grpcver.CheckChainWithSuccessorInfo()
 	default:
 		fmt.Println("dkvs_client -op=<operation-name> -arg1=<argument if needed>")
 	}

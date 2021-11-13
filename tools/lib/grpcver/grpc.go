@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-func GrpcGetNodeInfo() {
+func GrpcGetNodeInfo(address_port string) (*rustdkvs.NodeInfo, error) {
 	var conn *grpc.ClientConn
-	conn, err := grpc.Dial(":9000", grpc.WithInsecure())
+	conn, err := grpc.Dial(address_port, grpc.WithInsecure())
 	if err != nil {
 		fmt.Printf("did not connect: %s\n", err)
 	}
@@ -24,26 +24,37 @@ func GrpcGetNodeInfo() {
 	c := rustdkvs.NewRustDKVSClient(conn)
 
 	response, err := c.GrpcGetNodeInfo(context.Background(), &rustdkvs.VOID{Val: 0})
-	if err != nil {
-		fmt.Printf("Error when calling grpc_get_node_info: %s\n", err)
-	}
-	fmt.Println(response)
+	return response, err
+	// if err != nil {
+	// 	fmt.Printf("Error when calling grpc_get_node_info: %s\n", err)
+	// }
+	// fmt.Println(response)
+}
+
+func ExtractAddrAndBornId(node_info *rustdkvs.NodeInfo) (string, int32, uint32, string) {
+	ret_addr := node_info.AddressStr
+	ret_born_id := node_info.BornId
+	ret_node_id := node_info.NodeId
+	succ_list := node_info.SuccessorInfoList
+	succ_entry_0 := succ_list[0]
+	ret_succ_addr := succ_entry_0.AddressStr
+	return ret_addr, ret_born_id, ret_node_id, ret_succ_addr
 }
 
 func CheckChainWithSuccessorInfo() {
-	const endpoint_path = "/get_node_info"
+	//const endpoint_path = "/get_node_info"
 	start_port := 11000
 	start_addr := gval.BindIpAddr + ":" + strconv.Itoa(start_port)
 
 	succ_addr := start_addr
 	cur_addr := ""
-	born_id := -1.0
-	node_id := -1.0
+	var born_id int32 = -1
+	var node_id uint32 = 1
 	counter := 0
 	request_count := 0
 	is_success_reqest := false
 	for {
-		resp_json, err := rest.HttpGetRequest(succ_addr, endpoint_path)
+		node_info, err := GrpcGetNodeInfo(succ_addr)
 		request_count++
 		if request_count == rest.CcheckNodeLimit {
 			fmt.Println("Error: travarse times may exceeded launched nodes!")
@@ -60,9 +71,9 @@ func CheckChainWithSuccessorInfo() {
 			}
 		}
 		is_success_reqest = true
-		cur_addr, born_id, node_id, succ_addr = rest.ExtractAddrAndBornId(resp_json)
+		cur_addr, born_id, node_id, succ_addr = ExtractAddrAndBornId(node_info)
 		counter++
-		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter, succ_addr)
+		fmt.Printf("addr=%s born_id=%d node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (float64(node_id)/float64(0xFFFFFFFF))*100.0, counter, succ_addr)
 		if succ_addr == start_addr {
 			break
 		}

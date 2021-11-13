@@ -26,7 +26,7 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
     chord_util::dprint(&("find_successor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
                 + chord_util::gen_debug_str_of_data(id).as_str()));
     
-    let n_dash = match find_predecessor(&self_node_deep_cloned, Arc::clone(&client_pool), id).await {
+    let n_dash = match find_predecessor(Arc::clone(&self_node), Arc::clone(&client_pool), id).await {
         Err(err) => {
             return Err(chord_util::GeneralError::new(err.message, err.err_code));
         }
@@ -73,12 +73,18 @@ pub async fn find_successor(self_node: ArMu<node_info::NodeInfo>, client_pool: A
 }
  
 // id の前で一番近い位置に存在するノードを探索する
-pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id: u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
-    let mut n_dash: node_info::NodeInfoSummary = node_info::gen_summary_node_info(exnode_ni_ref);
-    let mut n_dash_found: node_info::NodeInfoSummary = node_info::gen_summary_node_info(exnode_ni_ref);
-
+pub async fn find_predecessor(self_node: ArMu<node_info::NodeInfo>, client_pool: ArMu<HashMap<String, ArMu<reqwest::Client>>>, id: u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {    
+    let mut n_dash: node_info::NodeInfoSummary; 
+    let mut n_dash_found: node_info::NodeInfoSummary;
+    let self_node_deep_cloned; 
+    {
+        let self_node_ref = self_node.lock().unwrap();
+        n_dash = node_info::gen_summary_node_info(&self_node_ref);
+        n_dash_found = node_info::gen_summary_node_info(&self_node_ref);
+        self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
+    }
     let mut is_first_cpf = true;
-    chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&exnode_ni_ref).as_str()));
+    chord_util::dprint(&("find_predecessor_1,".to_string() + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str()));
     
     // n_dash と n_dashのsuccessorの 間に id が位置するような n_dash を見つけたら、ループを終了し n_dash を return する
     loop {
@@ -96,7 +102,7 @@ pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: 
 
         // 初回は自ノードへの呼出しなのでRPCのインタフェースを介さずに呼び出しを行う
         if is_first_cpf {
-            n_dash_found = match closest_preceding_finger(ArMu_new!(node_info::partial_clone_from_ref_strong(exnode_ni_ref)), Arc::clone(&client_pool), id).await {
+            n_dash_found = match closest_preceding_finger(Arc::clone(&self_node), Arc::clone(&client_pool), id).await {
                     Err(err) => {
                         return Err(chord_util::GeneralError::new(err.message, err.err_code));
                     }
@@ -104,8 +110,11 @@ pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: 
             };
             is_first_cpf = false;
         } else {
-            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&node_info::gen_node_info_from_summary(&n_dash), Arc::clone(&client_pool), id, exnode_ni_ref.node_id).await {
+            n_dash_found = match endpoints::rrpc_call__closest_preceding_finger(&node_info::gen_node_info_from_summary(&n_dash), Arc::clone(&client_pool), id, self_node_deep_cloned.node_id).await {
                 Err(err) => {
+                    let mut self_node_ref = self_node.lock().unwrap();
+                    node_info::handle_downed_node_info(&mut self_node_ref, &self_node_deep_cloned, &err);
+
                     return Err(chord_util::GeneralError::new(err.message, err.err_code));
                 }
                 Ok(ninfo) => ninfo
@@ -123,9 +132,9 @@ pub async fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, client_pool: 
 
         // closelst_preceding_finger は id を通り越してしまったノードは返さない
         // という前提の元で以下のチェックを行う
-        let distance_old = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, n_dash.node_id);
-        let distance_found = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, n_dash_found.node_id);
-        let distance_data_id = chord_util::calc_distance_between_nodes_right_mawari(exnode_ni_ref.node_id, id);
+        let distance_old = chord_util::calc_distance_between_nodes_right_mawari(self_node_deep_cloned.node_id, n_dash.node_id);
+        let distance_found = chord_util::calc_distance_between_nodes_right_mawari(self_node_deep_cloned.node_id, n_dash_found.node_id);
+        let distance_data_id = chord_util::calc_distance_between_nodes_right_mawari(self_node_deep_cloned.node_id, id);
         if distance_found < distance_old && !(distance_old >= distance_data_id) {
             // 探索を続けていくと n_dash は id に近付いていくはずであり、それは上記の前提を踏まえると
             // 自ノードからはより遠い位置の値になっていくということのはずである

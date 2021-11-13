@@ -107,8 +107,8 @@ async fn http_get_request(url_str: &str, address_str: &str, client_pool: ArMu<Ha
     }
 */
     let client = match reqwest::Client::builder()
-    .pool_max_idle_per_host(3)
-    .pool_idle_timeout(None)
+    .pool_max_idle_per_host(256)
+    .pool_idle_timeout(Duration::from_secs(10000))
     .timeout(Duration::from_secs(10000))
     .build(){
         Err(err) => { 

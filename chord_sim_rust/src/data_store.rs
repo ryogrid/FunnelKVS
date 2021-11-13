@@ -1,12 +1,7 @@
+/*
 # coding:utf-8
 
-from typing import Dict, List, Optional, cast, TYPE_CHECKING
-
 from .chord_util import ChordUtil, KeyValue, DataIdAndValue, PResult, ErrorCode
-
-if TYPE_CHECKING:
-    from .chord_node import ChordNode
-    from .node_info import NodeInfo
 
 class DataStore:
 
@@ -185,8 +180,6 @@ class DataStore:
 
         # レプリカを successorList内のノードに渡す（手抜きでputされたもの含めた全てを渡してしまう）
         for succ_info in self.existing_node.node_info.successor_info_list:
-            # try:
-                # succ_node: ChordNode = ChordUtil.get_node_by_address(succ_info.address_str)
             ret = ChordUtil.get_node_by_address(succ_info.address_str)
             if (ret.is_ok):
                 succ_node : 'ChordNode' = cast('ChordNode', ret.result)
@@ -197,12 +190,6 @@ class DataStore:
                     "distribute_replica_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                     + ChordUtil.gen_debug_str_of_node(succ_info))
                 continue
-            # except (NodeIsDownedExceptiopn, InternalControlFlowException):
-            #     # stabilize処理 と put処理 を経ていずれ正常な状態に
-            #     # なるため、ここでは何もせずに次のノードに移る
-            #     ChordUtil.dprint("distribute_replica_2," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
-            #                      + ChordUtil.gen_debug_str_of_node(succ_info))
-            #     continue
 
             # 非効率だが、putやstabilize_successorなどの度に担当データを全て渡してしまう
             # TODO: putやstabilize_successorが呼び出される担当データ全てのレプリカを渡すのはあまりに非効率なので、担当データのIDリストを渡して
@@ -213,3 +200,37 @@ class DataStore:
 
             ChordUtil.dprint("distribute_replica_3," + ChordUtil.gen_debug_str_of_node(self.existing_node.node_info) + ","
                              + ChordUtil.gen_debug_str_of_node(succ_info))
+*/
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::cell::RefCell;
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
+
+use crate::gval;
+use crate::chord_node;
+use crate::node_info;
+use crate::chord_util;
+use crate::stabilizer;
+use crate::router;
+use crate::taskqueue;
+use crate::endpoints;
+
+pub const DELETED_ENTRY_MARKING_STR : &str = "THIS_KEY_IS_DELETED";
+pub const DATA_STORE_OP_DIRECT_STORE : &str = "DIRECT_STORE";
+pub const DATA_STORE_OP_DIRECT_REMOVE : &str = "DIRECT_REMOVE";
+
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
+#[derive(Debug, Clone)]
+pub struct DataStore {
+//    pub existing_node : ArRmRs<chord_node::ChordNode>,
+    // Keyはハッシュを通されたものなので元データの値とは異なる
+    pub stored_data : HashMap<String, chord_util::DataIdAndValue>,
+}
+
+impl DataStore {
+    pub fn new() -> DataStore {
+        let sd = HashMap::new();
+        DataStore {stored_data : sd}
+    }
+}

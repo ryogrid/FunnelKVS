@@ -4,17 +4,21 @@ import copy
 from typing import List, Optional
 
 from . import gval
+from .chord_util import ChordUtil
+import threading
 
 # メモ: オブジェクトをdictのキーとして使用可能としてある
 class NodeInfo:
 
     def __init__(self):
-        self.node_id: int = None
-        self.address_str: str = None
+        self.node_id: int = -1
+        self.address_str: str = ""
 
-        # デバッグ用のID（実システムには存在しない）
+        # デバッグ用のID
         # 何ノード目として生成されたかの値
-        self.born_id: int = None
+        # TODO: 実システムでは開発中（というか、スクリプトで順にノード起動していくような形）でないと
+        #       利用できないことは念頭おいて置く必要あり NodeInfo#born_id
+        self.born_id: int = -1
 
         # 以下の2つはNodeInfoオブジェクトを保持.
         # ある時点で取得したものが保持されており、変化する場合のあるフィールド
@@ -29,10 +33,18 @@ class NodeInfo:
         # join後はNoneになることのないように制御される
         self.predecessor_info: Optional[NodeInfo] = None
 
+        # predecessor_info と successor_info_list のそれぞれに対応する
+        # ロック変数(re-entrantロック)
+        self.lock_of_pred_info : threading.RLock = threading.RLock()
+        self.lock_of_succ_infos : threading.RLock = threading.RLock()
+
+        # stored_data, master2data_idx、master_node_dict 全てのフィールドに対する
+        # ロック変数(re-entrantロック)
+        self.lock_of_datastore : threading.RLock = threading.RLock()
+
         # NodeInfoオブジェクトを要素として持つリスト
         # インデックスの小さい方から狭い範囲が格納される形で保持する
         # sha1で生成されるハッシュ値は160bit符号無し整数であるため要素数は160となる
-
         # TODO: 現在は ID_SPACE_BITS が検証時の実行時間の短縮のため30となっている
         self.finger_table: List[Optional[NodeInfo]] = [None] * gval.ID_SPACE_BITS
 
@@ -56,6 +68,11 @@ class NodeInfo:
         ret_node_info.successor_info_list = []
         ret_node_info.predecessor_info = None
 
+        # ロック関連のフィールドは本メソッドでコピーすることで生まれた
+        # オブジェクトにおいて利用されることがあったとしても、ロックの
+        # 対象は上記でコピーしているオブジェクトではなく、フィールドそのもの
+        # であるため、コピーの必要はない
+
         return ret_node_info
 
     def __eq__(self, other):
@@ -65,3 +82,6 @@ class NodeInfo:
 
     def __hash__(self):
         return self.node_id
+
+    def __str__(self):
+        return ChordUtil.gen_debug_str_of_node(self)

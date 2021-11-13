@@ -1,6 +1,5 @@
+/*
 # coding:utf-8
-
-from typing import Dict, List, Tuple, Optional, cast
 
 import sys
 import modules.gval as gval
@@ -72,10 +71,6 @@ class ChordNode:
             self.stabilizer.join(node_address)
 
     def global_put(self, data_id : int, value_str : str) -> bool:
-        # try:
-
-        #target_node = self.router.find_successor(data_id)
-
         ret = self.router.find_successor(data_id)
         if (ret.is_ok):
             target_node: 'ChordNode' = cast('ChordNode', ret.result)
@@ -90,15 +85,6 @@ class ChordNode:
             ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id))
             return False
-
-        # except (AppropriateNodeNotFoundException, InternalControlFlowException, NodeIsDownedExceptiopn):
-        #     # 適切なノードを得られなかった、もしくは join処理中のノードを扱おうとしてしまい例外発生
-        #     # となってしまったため次回呼び出し時にリトライする形で呼び出しをうけられるように情報を設定しておく
-        #     ChordNode.need_put_retry_data_id = data_id
-        #     ChordNode.need_put_retry_node = self
-        #     ChordUtil.dprint("global_put_1,RETRY_IS_NEEDED" + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                      + ChordUtil.gen_debug_str_of_data(data_id))
-        #     return False
 
         success = target_node.endpoints.grpc__put(data_id, value_str)
         if not success:
@@ -166,10 +152,6 @@ class ChordNode:
             if self.node_info.predecessor_info == None:
                 ChordUtil.dprint("global_get_recover_prev_1,predecessor is None")
                 return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-            # try:
-
-                # cur_predecessor : ChordNode = ChordUtil.get_node_by_address(
-                #     cast(NodeInfo, self.node_info.predecessor_info).address_str)
             ret = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.predecessor_info).address_str)
             if (ret.is_ok):
                 cur_predecessor : 'ChordNode' = cast('ChordNode', ret.result)
@@ -183,15 +165,6 @@ class ChordNode:
                     # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
                     ChordUtil.dprint("global_get_recover_prev_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-
-            # except NodeIsDownedExceptiopn:
-            #     # ここでは何も対処はしない
-            #     ChordUtil.dprint("global_get_recover_prev_2,NODE_IS_DOWNED")
-            #     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-            # except InternalControlFlowException:
-            #     # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
-            #     ChordUtil.dprint("global_get_recover_prev_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
-            #     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
 
             ChordUtil.dprint("global_get_recover_prev_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id))
@@ -221,11 +194,6 @@ class ChordNode:
     # global_getで取得しようとしたKeyが探索したノードに存在なかった場合に、当該ノードから
     # successorを辿ってリカバリを試みる処理をくくり出したもの
     def global_get_recover_succ(self, data_id : int) -> Tuple[str, Optional['ChordNode']]:
-        # try:
-            # cur_successor : ChordNode = ChordUtil.get_node_by_address(
-            #     cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
-            # got_value_str = cur_successor.endpoints.grpc__get(data_id, for_recovery=True)
-
         ret = ChordUtil.get_node_by_address(cast(NodeInfo, self.node_info.successor_info_list[0]).address_str)
         if (ret.is_ok):
             cur_successor : 'ChordNode' = cast('ChordNode', ret.result)
@@ -239,15 +207,6 @@ class ChordNode:
                 # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
                 ChordUtil.dprint("global_get_recover_succ_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
                 return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-
-        # except NodeIsDownedExceptiopn:
-        #     # ここでは何も対処はしない
-        #     ChordUtil.dprint("global_get_recover_succ_2,NODE_IS_DOWNED")
-        #     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
-        # except InternalControlFlowException:
-        #     # join処理中のノードにアクセスしようとしてしまった場合に内部的にraiseされる例外
-        #     ChordUtil.dprint("global_get_recover_succ_3,TARGET_NODE_DOES_NOT_EXIST_EXCEPTION_IS_OCCURED")
-        #     return ChordNode.QUERIED_DATA_NOT_FOUND_STR, None
 
         ChordUtil.dprint("global_get_recover_succ_4," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
@@ -284,11 +243,7 @@ class ChordNode:
         ChordUtil.dprint("global_get_0," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                          + ChordUtil.gen_debug_str_of_data(data_id))
 
-        # try:
-            # target_node = self.router.find_successor(data_id)
-            # got_value_str = target_node.endpoints.grpc__get(data_id)
-
-        ret = self.router.find_successor(data_id)
+                         ret = self.router.find_successor(data_id)
         if (ret.is_ok):
             target_node: 'ChordNode' = cast('ChordNode', ret.result)
             got_value_str = target_node.endpoints.grpc__get(data_id)
@@ -306,18 +261,6 @@ class ChordNode:
                              + ChordUtil.gen_debug_str_of_data(data_id))
             # 処理を終える
             return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
-
-        # except (AppropriateNodeNotFoundException, InternalControlFlowException, NodeIsDownedExceptiopn):
-        #     # 適切なノードを得ることができなかった、もしくは、内部エラーが発生した
-        #
-        #     # リトライに必要な情報をクラス変数に設定しておく
-        #     ChordNode.need_getting_retry_data_id = data_id
-        #     ChordNode.need_getting_retry_node = self
-        #
-        #     ChordUtil.dprint("global_get_0_1,FIND_NODE_FAILED," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                      + ChordUtil.gen_debug_str_of_data(data_id))
-        #     # 処理を終える
-        #     return ChordNode.OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR
 
         is_data_got_on_recovery = False
         # 返ってきた値が ChordNode.QUERIED_DATA_NOT_FOUND_STR だった場合、target_nodeから
@@ -405,8 +348,6 @@ class ChordNode:
                              + "REQUEST_RECEIVED_BUT_I_CAN_NOT_KNOW_TANTOU_RANGE")
             return ChordNode.QUERIED_DATA_NOT_FOUND_STR
 
-        # try:
-            #di_entry : DataIdAndValue = self.data_store.get(data_id)
         ret = self.data_store.get(data_id)
         if (ret.is_ok):
             di_entry: DataIdAndValue = cast(DataIdAndValue, ret.result)
@@ -415,11 +356,6 @@ class ChordNode:
             ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
                              + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
             return err_str
-        # except KeyError:
-        #     err_str = ChordNode.QUERIED_DATA_NOT_FOUND_STR
-        #     ChordUtil.dprint("get_1," + ChordUtil.gen_debug_str_of_node(self.node_info) + ","
-        #                  + ChordUtil.gen_debug_str_of_data(data_id) + "," + err_str)
-        #     return err_str
 
         # Chordネットワークを右回りにたどった時に、データの id (data_id) がpredecessorの node_id から
         # 自身の node_id の間に位置した.
@@ -471,3 +407,262 @@ class ChordNode:
             self.node_info.successor_info_list = self.endpoints.grpc__pass_successor_list()
         finally:
             self.node_info.lock_of_succ_infos.release()
+*/
+
+/*
+
+class ChordNode:
+    QUERIED_DATA_NOT_FOUND_STR = "QUERIED_DATA_WAS_NOT_FOUND"
+    OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL"
+
+    # global_get内で探索した担当ノードにgetをかけて、データを持っていないと
+    # レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
+    GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES = 5
+
+    # global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
+    # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+    need_getting_retry_data_id : int = -1
+    need_getting_retry_node : Optional['ChordNode'] = None
+
+    # global_put が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
+    # なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+    need_put_retry_data_id : int = -1
+    need_put_retry_data_value : str = ""
+    need_put_retry_node : Optional['ChordNode'] = None
+
+    # join処理もコンストラクタで行ってしまう
+    def __init__(self, node_address: str, first_node=False):
+        self.node_info : NodeInfo = NodeInfo()
+
+        self.data_store : DataStore = DataStore(self)
+        self.stabilizer : Stabilizer = Stabilizer(self)
+        self.router : Router = Router(self)
+        self.tqueue : TaskQueue = TaskQueue(self)
+        self.endpoints : Endpoints = Endpoints(self)
+
+        # ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+        self.node_info.address_str = ChordUtil.gen_address_str()
+        self.node_info.node_id = ChordUtil.hash_str_to_int(self.node_info.address_str)
+
+        gval.already_born_node_num += 1
+        self.node_info.born_id = gval.already_born_node_num
+
+        # シミュレーション時のみ必要なフィールド（実システムでは不要）
+        self.is_alive = True
+
+        # join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
+        # 大本から呼び出されないようにするためのフラグ
+        self.is_join_op_finished = False
+
+        if first_node:
+            with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
+                # 最初の1ノードの場合
+
+                # successorとpredecessorは自身として終了する
+                self.node_info.successor_info_list.append(self.node_info.get_partial_deepcopy())
+                self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+
+                # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+                # データの委譲は必要ない
+
+                return
+        else:
+            self.stabilizer.join(node_address)
+
+*/
+use std::sync::atomic::{AtomicIsize, AtomicBool};
+use std::sync::Arc;
+use std::cell::{RefMut, RefCell, Ref};
+use std::borrow::Borrow;
+use std::sync::atomic::Ordering;
+
+use parking_lot::{ReentrantMutex, const_reentrant_mutex};
+
+use crate::gval;
+use crate::node_info;
+use crate::chord_util;
+use crate::stabilizer;
+use crate::router;
+use crate::data_store;
+use crate::taskqueue;
+use crate::endpoints;
+
+type ArRmRs<T> = Arc<ReentrantMutex<RefCell<T>>>;
+
+pub const QUERIED_DATA_NOT_FOUND_STR : &str = "QUERIED_DATA_WAS_NOT_FOUND";
+pub const OP_FAIL_DUE_TO_FIND_NODE_FAIL_STR : &str = "OPERATION_FAILED_DUE_TO_FINDING_NODE_FAIL";
+
+// global_get内で探索した担当ノードにgetをかけて、データを持っていないと
+// レスポンスがあった際に、持っていないか辿っていくノードの一方向における上限数
+pub const GLOBAL_GET_NEAR_NODES_TRY_MAX_NODES : i32 = 5;
+
+// global_getでの取得が NOT_FOUNDになった場合はこのクラス変数に格納して次のget処理の際にリトライさせる
+// なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+pub static mut need_getting_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
+
+lazy_static! {
+    pub static ref need_getting_retry_node : ArRmRs<Option<ChordNode>> 
+        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
+}
+/*
+need_getting_retry_node : Optional['ChordNode'] = None
+*/
+
+// global_put が router.find_successorでの例外発生で失敗した場合にこのクラス変数に格納して次のput処理の際にリトライさせる
+// なお、本シミュレータの設計上、このフィールドは一つのデータだけ保持できれば良い
+pub static mut need_put_retry_data_id : AtomicIsize = AtomicIsize::new(-1);
+
+lazy_static! {
+    pub static ref need_put_retry_data_value : ArRmRs<String> 
+        = Arc::new(const_reentrant_mutex(RefCell::new("".to_string())));
+}
+/*
+need_put_retry_data_value : str = ""
+*/
+
+
+lazy_static! {
+    pub static ref need_put_retry_node : ArRmRs<Option<ChordNode>> 
+        = Arc::new(const_reentrant_mutex(RefCell::new(None)));
+}
+/*
+need_put_retry_node : Optional['ChordNode'] = None
+*/
+
+#[derive(Debug)]
+pub struct ChordNode {
+    pub node_info : ArRmRs<node_info::NodeInfo>,
+    pub data_store : ArRmRs<data_store::DataStore>,
+    pub tqueue : ArRmRs<taskqueue::TaskQueue>,
+//    pub stabilizer : ArRmRs<stabilizer::Stabilizer>,
+//    pub router : router::Router,
+//    pub endpoints : ArRmRs<endpoints::Endpoints>,
+    // シミュレーション時のみ必要なフィールド（実システムでは不要）
+    pub is_alive : AtomicBool,
+    // join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
+    // 大本から呼び出されないようにするためのフラグ
+    pub is_join_op_finished : AtomicBool
+}
+
+
+impl ChordNode {
+
+    pub fn new() -> ChordNode {
+        ChordNode {
+            node_info: ArRmRs_new!(node_info::NodeInfo::new()),
+            data_store: ArRmRs_new!(data_store::DataStore::new()),
+//            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
+//            router: ArRmRs_new!(router::Router::new()),
+//            stabilizer: ArRmRs_new!(stabilizer::Stabilizer::new()),
+//            router: router::Router::new(),
+            tqueue: ArRmRs_new!(taskqueue::TaskQueue::new()),
+//            endpoints: ArRmRs_new!(endpoints::Endpoints::new()),
+            is_alive: AtomicBool::new(false),
+            is_join_op_finished: AtomicBool::new(false)
+        }
+    }
+
+/*    
+    # join処理もコンストラクタで行ってしまう
+    def __init__(self, node_address: str, first_node=False):
+        self.node_info : NodeInfo = NodeInfo()
+
+        self.data_store : DataStore = DataStore(self)
+        self.stabilizer : Stabilizer = Stabilizer(self)
+        self.router : Router = Router(self)
+        self.tqueue : TaskQueue = TaskQueue(self)
+        self.endpoints : Endpoints = Endpoints(self)
+*/        
+}
+
+//シミュレータの神々が利用するのはコンストラクタではなくこちらのファクトリメソッド
+pub fn new_and_join(tyukai_node_address: String, first_node: bool) -> ArRmRs<ChordNode> {
+    let new_node = ArRmRs_new!(ChordNode::new());
+    {
+        unsafe{
+            gval::already_born_node_num.fetch_add(1, Ordering::Relaxed);
+        }
+
+        let new_node_refcell = get_refcell_from_arc_with_locking!(new_node);
+        let new_node_refmut = get_ref_from_refcell!(new_node_refcell);
+        let new_node_ni_refcell = get_refcell_from_arc_with_locking!(new_node_refmut.node_info);
+        let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
+
+        // ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+        new_node_ni_refmut.address_str = chord_util::gen_address_str();
+        new_node_ni_refmut.node_id = chord_util::hash_str_to_int(&new_node_ni_refmut.address_str);
+
+        unsafe{
+            new_node_ni_refmut.born_id = gval::already_born_node_num.load(Ordering::Relaxed) as i32;
+        }
+
+        // シミュレーション時のみ必要なフィールド（実システムでは不要）
+        new_node_refmut.is_alive.store(true, Ordering::Relaxed);
+        // TODO: (rust) 実際にKVSとしてデータのput、getを行うようになったらこのフラグは
+        //              falseで初期化し、適切な箇所でtrueに変更すること
+        new_node_refmut.is_join_op_finished.store(true, Ordering::Relaxed);
+
+        let new_node_copied_for_succlist : node_info::NodeInfo;
+        let new_node_copied_for_pred_info : node_info::NodeInfo;
+        {
+            //new_node_copied_for_succlist = node_info::get_partial_deepcopy(new_node_ni_ref);
+            new_node_copied_for_succlist = (*new_node_ni_refmut).clone();
+            //new_node_copied_for_pred_info = node_info::get_partial_deepcopy(new_node_ni_ref);
+            new_node_copied_for_pred_info = (*new_node_ni_refmut).clone();
+        }
+        //let new_node_ni_refmut = get_refmut_from_refcell!(new_node_ni_refcell);
+
+        if first_node {
+            //with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
+
+            // 最初の1ノードの場合
+
+            // successorとpredecessorは自身として終了する
+            //let succ_list_target_idx = new_node_ni_refmut.successor_info_list.len() - 1;
+            new_node_ni_refmut.successor_info_list.push(new_node_copied_for_succlist);
+            //new_node_ni_refmut.predecessor_info[0] = new_node_copied_for_pred_info;
+            new_node_ni_refmut.set_pred_info(new_node_copied_for_pred_info);
+
+            // 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+            // データの委譲は必要ない
+
+            return Arc::clone(&new_node);
+        }
+    }
+
+    // first_node == false の場合
+    stabilizer::join(Arc::clone(&new_node), &tyukai_node_address);
+
+    return Arc::clone(&new_node);
+}
+
+/*
+# ミリ秒精度のUNIXTIMEから自身のアドレスにあたる文字列と、Chordネットワーク上でのIDを決定する
+self.node_info.address_str = ChordUtil.gen_address_str()
+self.node_info.node_id = ChordUtil.hash_str_to_int(self.node_info.address_str)
+
+gval.already_born_node_num += 1
+self.node_info.born_id = gval.already_born_node_num
+
+# シミュレーション時のみ必要なフィールド（実システムでは不要）
+self.is_alive = True
+
+# join処理が完了していない状態で global_get, global_put, stablize処理, kill処理 がシミュレータの
+# 大本から呼び出されないようにするためのフラグ
+self.is_join_op_finished = False
+
+if first_node:
+    with self.node_info.lock_of_pred_info, self.node_info.lock_of_succ_infos:
+        # 最初の1ノードの場合
+
+        # successorとpredecessorは自身として終了する
+        self.node_info.successor_info_list.append(self.node_info.get_partial_deepcopy())
+        self.node_info.predecessor_info = self.node_info.get_partial_deepcopy()
+
+        # 最初の1ノードなので、joinメソッド内で行われるsuccessor からの
+        # データの委譲は必要ない
+
+        return
+else:
+    self.stabilizer.join(node_address)
+*/

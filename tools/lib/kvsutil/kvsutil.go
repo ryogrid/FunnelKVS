@@ -37,6 +37,6 @@ func SetupNodes(num int) {
 		StartANode(ii+1, gval.BindIpAddr, cur_port+ii, gval.BindIpAddr, start_port, "./")
 		//		cur_port++
 		fmt.Printf("launched born_id=%d\n", ii+1)
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 3)
 	}
 }

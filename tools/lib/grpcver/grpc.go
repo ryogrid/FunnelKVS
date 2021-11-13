@@ -3,8 +3,8 @@ package grpcver
 import (
 	//"context"
 	"fmt"
-
 	"strconv"
+	"time"
 	"tools/lib/gval"
 	"tools/lib/rest"
 	"tools/lib/rustdkvs"
@@ -23,7 +23,11 @@ func GrpcGetNodeInfo(address_port string) (*rustdkvs.NodeInfo, error) {
 
 	c := rustdkvs.NewRustDKVSClient(conn)
 
-	response, err := c.GrpcGetNodeInfo(context.Background(), &rustdkvs.VOID{Val: 0})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	response, err := c.GrpcGetNodeInfo(ctx, &rustdkvs.VOID{Val: 0})
+	//response, err := c.GrpcGetNodeInfo(context.Background(), &rustdkvs.VOID{Val: 0})
 	return response, err
 	// if err != nil {
 	// 	fmt.Printf("Error when calling grpc_get_node_info: %s\n", err)

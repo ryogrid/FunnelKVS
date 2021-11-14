@@ -86,12 +86,12 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
         return Err(chord_util::GeneralError::new("predecessor is None".to_string(), chord_util::ERR_CODE_PRED_IS_NONE));
     }
 
-    chord_util::dprint(
-        &("put_2,".to_string()
-        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-        + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
-        + val_str.clone().as_str())
-    );
+    // chord_util::dprint(
+    //     &("put_2,".to_string()
+    //     + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+    //     + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
+    //     + val_str.clone().as_str())
+    // );
 
     
     // Chordネットワークを右回りにたどった時に、データの id (key_id) が predecessor の node_id から
@@ -104,24 +104,24 @@ pub fn put(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
     }
 
 
-    chord_util::dprint(
-        &("put_3,".to_string()
-        + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-        + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
-        + val_str.clone().as_str())
-    );
+    // chord_util::dprint(
+    //     &("put_3,".to_string()
+    //     + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+    //     + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
+    //     + val_str.clone().as_str())
+    // );
 
     let mut data_store_ref = data_store.lock().unwrap();
-    let ret = data_store_ref.store_one_iv(key_id, val_str.clone());
+    let ret = data_store_ref.store_one_iv(key_id, val_str);
     drop(data_store_ref);
 
-    chord_util::dprint(
-            &("put_4,".to_string()
-            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-            + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
-            + val_str.clone().as_str() + ","
-            + ret.to_string().as_str())
-    );
+    // chord_util::dprint(
+    //         &("put_4,".to_string()
+    //         + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+    //         + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
+    //         + val_str.clone().as_str() + ","
+    //         + ret.to_string().as_str())
+    // );
 
     return Ok(ret);
 }
@@ -253,12 +253,12 @@ pub fn get(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::Da
 
     drop(data_store_ref);
 
-    chord_util::dprint(
-            &("get_4,".to_string()
-            + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
-            + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
-            + ret_val.val_str.clone().as_str())
-    );
+    // chord_util::dprint(
+    //         &("get_4,".to_string()
+    //         + chord_util::gen_debug_str_of_node(&self_node_deep_cloned).as_str() + ","
+    //         + chord_util::gen_debug_str_of_data(key_id).as_str() + "," 
+    //         + ret_val.val_str.clone().as_str())
+    // );
 
     return Ok(ret_val);
 }

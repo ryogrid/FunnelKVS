@@ -28,7 +28,7 @@ impl DataStore {
     }
 
     pub fn store_one_iv(& mut self, data_id: u32, value_str: String) -> bool {
-        let iv_entry = chord_util::DataIdAndValue::new(data_id, value_str.clone());
+        let iv_entry = chord_util::DataIdAndValue::new(data_id, value_str);
         match self.stored_data.insert(data_id.to_string(), iv_entry){
             None => { return false; }
             Some(_old_val) => { return true; }

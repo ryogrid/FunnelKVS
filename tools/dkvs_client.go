@@ -270,11 +270,17 @@ func put_test_values(addr_and_port string) {
 	}
 }
 
-func get_test_values(addr_and_port string) {
+func get_test_values(addr_and_port string, reverse bool) {
 	num := 100
 	start_unix_time := time.Now().Unix()
 	for ii := 0; ii < num; ii++ {
-		key := strconv.Itoa(ii)
+		var key string
+		if reverse {
+			key = strconv.Itoa(num - ii - 1)
+		} else {
+			key = strconv.Itoa(ii)
+		}
+
 		fmt.Printf("get request key=%s\n", key)
 		resp_json, err := global_get_simple(addr_and_port, key)
 		fmt.Println(resp_json)
@@ -287,22 +293,136 @@ func get_test_values(addr_and_port string) {
 	fmt.Printf("%f sec/data\n", time_to_get)
 }
 
-func profile_get_node_info_throughput() {
-	num := 50
+func get_test_values_parallel() {
+	num := 100 * 20
+
+	ch1 := make(chan bool)
+	ch11 := make(chan bool)
+	ch2 := make(chan bool)
+	ch22 := make(chan bool)
+	ch3 := make(chan bool)
+	ch33 := make(chan bool)
+	ch4 := make(chan bool)
+	ch44 := make(chan bool)
+	ch5 := make(chan bool)
+	ch55 := make(chan bool)
+	ch6 := make(chan bool)
+	ch66 := make(chan bool)
+	ch7 := make(chan bool)
+	ch77 := make(chan bool)
+	ch8 := make(chan bool)
+	ch88 := make(chan bool)
+	ch9 := make(chan bool)
+	ch99 := make(chan bool)
+	ch10 := make(chan bool)
+	ch100 := make(chan bool)
+
 	start_unix_time := time.Now().UnixNano()
-	const endpoint_path = "/get_node_info"
-	target_port := 11000
-	target_addr := bind_ip_addr + ":" + strconv.Itoa(target_port)
-	for ii := 0; ii < num; ii++ {
-		_, err := http_get_request(target_addr, endpoint_path)
-		//fmt.Println(resp_json)
-		if err != nil {
-			fmt.Printf("error:%s\n", err)
-		}
-	}
+	go func() {
+		get_test_values("127.0.0.1:11000", false)
+		ch1 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11000", true)
+		ch11 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11001", false)
+		ch2 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11001", true)
+		ch22 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11002", false)
+		ch3 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11002", true)
+		ch33 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11003", false)
+		ch4 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11003", true)
+		ch44 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11004", false)
+		ch5 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11004", true)
+		ch55 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11005", false)
+		ch6 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11005", true)
+		ch66 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11006", false)
+		ch7 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11006", true)
+		ch77 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11007", false)
+		ch8 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11007", true)
+		ch88 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11008", false)
+		ch9 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11008", true)
+		ch99 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11009", false)
+		ch10 <- true
+	}()
+	go func() {
+		get_test_values("127.0.0.1:11009", true)
+		ch100 <- true
+	}()
+
+	<-ch1
+	<-ch11
+	<-ch2
+	<-ch22
+	<-ch3
+	<-ch33
+	<-ch4
+	<-ch44
+	<-ch5
+	<-ch55
+	<-ch6
+	<-ch66
+	<-ch7
+	<-ch77
+	<-ch8
+	<-ch88
+	<-ch9
+	<-ch99
+	<-ch10
+	<-ch100
+
 	end_unitx_time := time.Now().UnixNano()
 	time_to_query := (float64(end_unitx_time-start_unix_time) / float64(num)) / float64(1000)
-	fmt.Printf("%f usec/query\n", time_to_query)
+	fmt.Printf("%f usec/query in parallel\n", time_to_query)
 }
 
 func main() {
@@ -326,10 +446,10 @@ func main() {
 		break
 	case "get-test-values":
 		addr_and_port := *arg1
-		get_test_values(addr_and_port)
+		get_test_values(addr_and_port, false)
 		break
-	case "profile-get-node-info":
-		profile_get_node_info_throughput()
+	case "get-test-values-parallel":
+		get_test_values_parallel()
 		break
 	default:
 		fmt.Println("dkvs_client -op=<operation-name> -arg1=<argument if needed>")

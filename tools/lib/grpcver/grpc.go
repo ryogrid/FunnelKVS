@@ -35,14 +35,15 @@ func GrpcGetNodeInfo(address_port string) (*rustdkvs.NodeInfo, error) {
 	// fmt.Println(response)
 }
 
-func ExtractAddrAndBornId(node_info *rustdkvs.NodeInfo) (string, int32, uint32, string) {
+func ExtractAddrAndBornId(node_info *rustdkvs.NodeInfo) (string, int32, uint32, string, string) {
 	ret_addr := node_info.AddressStr
 	ret_born_id := node_info.BornId
 	ret_node_id := node_info.NodeId
 	succ_list := node_info.SuccessorInfoList
+	ret_self_addr := node_info.AddressStr
 	succ_entry_0 := succ_list[0]
 	ret_succ_addr := succ_entry_0.AddressStr
-	return ret_addr, ret_born_id, ret_node_id, ret_succ_addr
+	return ret_addr, ret_born_id, ret_node_id, ret_self_addr, ret_succ_addr
 }
 
 func CheckChainWithSuccessorInfo() {
@@ -51,6 +52,7 @@ func CheckChainWithSuccessorInfo() {
 	start_addr := gval.BindIpAddr + ":" + strconv.Itoa(start_port)
 
 	succ_addr := start_addr
+	self_addr := start_addr
 	cur_addr := ""
 	var born_id int32 = -1
 	var node_id uint32 = 1
@@ -89,9 +91,9 @@ fin:
 			break
 		}
 		if is_success_request {
-			cur_addr, born_id, node_id, succ_addr = ExtractAddrAndBornId(node_info)
+			cur_addr, born_id, node_id, self_addr, succ_addr = ExtractAddrAndBornId(node_info)
 			counter++
-			fmt.Printf("addr=%s node_id=%d born_id=%d node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, node_id, born_id, (float64(node_id)/float64(0xFFFFFFFF))*100.0, counter, succ_addr)
+			fmt.Printf("addr=%s node_id=%d born_id=%d node_id_ratio=%f counter=%d self_addr=%s, succ_addr=%s\n", cur_addr, node_id, born_id, (float64(node_id)/float64(0xFFFFFFFF))*100.0, counter, self_addr, succ_addr)
 			if succ_addr == start_addr {
 				break
 			}

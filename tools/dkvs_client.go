@@ -106,14 +106,15 @@ func http_get_request(addr_and_port string, path_str string) (map[string]interfa
 	return decoded_data.(map[string]interface{}), err
 }
 
-func extract_addr_and_born_id(input_json map[string]interface{}) (string, float64, float64, string) {
+func extract_addr_and_born_id(input_json map[string]interface{}) (string, int32, uint32, string, string) {
 	ret_addr := input_json["address_str"].(string)
-	ret_born_id := input_json["born_id"].(float64)
-	ret_node_id := input_json["node_id"].(float64)
+	ret_born_id := int32(input_json["born_id"].(float64))
+	ret_node_id := uint32(input_json["node_id"].(float64))
 	succ_list := input_json["successor_info_list"].([]interface{})
+	ret_self_addr := input_json["address_str"].(string)
 	succ_entry_0 := succ_list[0].(map[string]interface{})
 	ret_succ_addr := succ_entry_0["address_str"].(string)
-	return ret_addr, ret_born_id, ret_node_id, ret_succ_addr
+	return ret_addr, ret_born_id, ret_node_id, ret_self_addr, ret_succ_addr
 }
 
 const bind_ip_addr = "127.0.0.1"
@@ -121,41 +122,98 @@ const check_node_limit = 150
 
 var platform string
 
+// func check_chain_with_successor_info() {
+// 	const endpoint_path = "/get_node_info"
+// 	start_port := 11000
+// 	start_addr := bind_ip_addr + ":" + strconv.Itoa(start_port)
+
+// 	succ_addr := start_addr
+// 	cur_addr := ""
+// 	born_id := -1.0
+// 	node_id := -1.0
+// 	counter := 0
+// 	request_count := 0
+// 	is_success_reqest := false
+// 	for true {
+// 		resp_json, err := http_get_request(succ_addr, endpoint_path)
+// 		request_count++
+// 		if request_count == check_node_limit {
+// 			fmt.Println("Error: travarse times may exceeded launched nodes!")
+// 			break
+// 		}
+// 		if err != nil {
+// 			if is_success_reqest == false {
+// 				start_port += 1
+// 				succ_addr = bind_ip_addr + ":" + strconv.Itoa(start_port)
+// 				continue
+// 			} else {
+// 				fmt.Println("Error: successor should downed and information of successor is not recovered.")
+// 				break
+// 			}
+// 		}
+// 		is_success_reqest = true
+// 		cur_addr, born_id, node_id, succ_addr = extract_addr_and_born_id(resp_json)
+// 		counter++
+// 		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter, succ_addr)
+// 		if succ_addr == start_addr {
+// 			break
+// 		}
+// 	}
+// }
+
 func check_chain_with_successor_info() {
 	const endpoint_path = "/get_node_info"
 	start_port := 11000
 	start_addr := bind_ip_addr + ":" + strconv.Itoa(start_port)
 
 	succ_addr := start_addr
+	self_addr := start_addr
 	cur_addr := ""
-	born_id := -1.0
-	node_id := -1.0
+	var born_id int32 = -1
+	var node_id uint32 = 1
 	counter := 0
 	request_count := 0
-	is_success_reqest := false
-	for true {
-		resp_json, err := http_get_request(succ_addr, endpoint_path)
-		request_count++
-		if request_count == check_node_limit {
-			fmt.Println("Error: travarse times may exceeded launched nodes!")
+	is_success_request := false
+	is_fin := false
+fin:
+	for !is_fin {
+		var err error
+		var retry_count = 0
+		var resp_json map[string]interface{} = nil
+		for {
+			resp_json, err = http_get_request(succ_addr, endpoint_path)
+			request_count++
+			if request_count == check_node_limit {
+				fmt.Println("Error: travarse times may exceeded launched nodes!")
+				is_fin = true
+				break fin
+			}
+			if err != nil {
+				if !is_success_request {
+					start_port += 1
+					succ_addr = bind_ip_addr + ":" + strconv.Itoa(start_port)
+					break
+				} else if retry_count < 3 {
+					//同じアドレスでもう一回
+					retry_count++
+					continue
+				} else {
+					fmt.Println("Error: successor should downed and information of successor is not recovered.")
+					is_fin = true
+					break fin
+				}
+			}
+			is_success_request = true
 			break
 		}
-		if err != nil {
-			if is_success_reqest == false {
-				start_port += 1
-				succ_addr = bind_ip_addr + ":" + strconv.Itoa(start_port)
-				continue
-			} else {
-				fmt.Println("Error: successor should downed and information of successor is not recovered.")
+		retry_count = 0
+		if is_success_request {
+			cur_addr, born_id, node_id, self_addr, succ_addr = extract_addr_and_born_id(resp_json)
+			counter++
+			fmt.Printf("addr=%s node_id=%d born_id=%d node_id_ratio=%f counter=%d self_addr=%s succ_addr=%s\n", cur_addr, node_id, born_id, (float64(node_id)/float64(0xFFFFFFFF))*float64(100.0), counter, self_addr, succ_addr)
+			if succ_addr == start_addr {
 				break
 			}
-		}
-		is_success_reqest = true
-		cur_addr, born_id, node_id, succ_addr = extract_addr_and_born_id(resp_json)
-		counter++
-		fmt.Printf("addr=%s born_id=%f node_id_ratio=%f counter=%d succ_addr=%s\n", cur_addr, born_id, (node_id/0xFFFFFFFF)*100.0, counter, succ_addr)
-		if succ_addr == start_addr {
-			break
 		}
 	}
 }
@@ -187,7 +245,7 @@ func setup_nodes(num int) {
 	for ii := 0; ii < num; ii++ {
 		start_a_node(ii+1, bind_ip_addr, cur_port+ii, bind_ip_addr, start_port, "./")
 		fmt.Printf("launched born_id=%d\n", ii+1)
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 3)
 	}
 }
 

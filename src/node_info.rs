@@ -73,15 +73,21 @@ impl NodeInfo {
 // ことを想定して実装されている.
 impl Clone for NodeInfo {
     fn clone(&self) -> Self {
-        let mut ret_node_info = NodeInfo::new();
-
-        ret_node_info.node_id = self.node_id;
-        ret_node_info.address_str = self.address_str.clone();
-        ret_node_info.born_id = self.born_id;
-        ret_node_info.successor_info_list = vec![];
-        ret_node_info.predecessor_info = vec![];
-    
-        return ret_node_info;
+        // let mut ret_node_info = NodeInfo::new();
+        // ret_node_info.node_id = self.node_id;
+        // ret_node_info.address_str = self.address_str.clone();
+        // ret_node_info.born_id = self.born_id;
+        // ret_node_info.successor_info_list = vec![];
+        // ret_node_info.predecessor_info = vec![];
+        //return ret_node_info;
+        return NodeInfo{
+            node_id: self.node_id,
+            address_str: self.address_str.clone(),
+            born_id: self.born_id,
+            successor_info_list: vec![],
+            predecessor_info: vec![],
+            finger_table: vec![None; gval::ID_SPACE_BITS as usize]
+        };
     }  
 }
 
@@ -95,16 +101,15 @@ impl Clone for NodeInfoSummary {
 // cloneした場合と異なり、predecessor_info, successor_info_list, finger_table
 // も一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
 pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
-    let mut ret_node_info = NodeInfo::new();
-
-    ret_node_info.node_id = node_info_ref.node_id;
-    ret_node_info.address_str = node_info_ref.address_str.clone();
-    ret_node_info.born_id = node_info_ref.born_id;
-    ret_node_info.successor_info_list = vec![];
+    //let mut ret_node_info = NodeInfo::new();
+    // ret_node_info.node_id = node_info_ref.node_id;
+    // ret_node_info.address_str = node_info_ref.address_str.clone();
+    // ret_node_info.born_id = node_info_ref.born_id;
+    let mut successor_info_list = vec![];
     for each_ninfo in &node_info_ref.successor_info_list {
-        ret_node_info.successor_info_list.push((*each_ninfo).clone());
+        successor_info_list.push((*each_ninfo).clone());
     }
-    ret_node_info.finger_table = vec![];
+    let mut finger_table = vec![];
     for each_ninfo in &node_info_ref.finger_table {
         let tmp_val = match each_ninfo {
             None => None,
@@ -113,30 +118,37 @@ pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
                 ret_val
             }
         };
-        ret_node_info.finger_table.push(tmp_val);
+        finger_table.push(tmp_val);
     }    
-    ret_node_info.predecessor_info = vec![];
+    let mut predecessor_info = vec![];
     for each_ninfo in &node_info_ref.predecessor_info {
-        ret_node_info.predecessor_info.push((*each_ninfo).clone());
+        predecessor_info.push((*each_ninfo).clone());
     }
 
-    return ret_node_info;    
+    //return ret_node_info;
+    return NodeInfo{
+        node_id: node_info_ref.node_id,
+        address_str: node_info_ref.address_str.clone(),
+        born_id: node_info_ref.born_id,
+        successor_info_list: successor_info_list,
+        predecessor_info: predecessor_info,
+        finger_table: finger_table
+    };
 }
 
 // 実体の参照からコピーを作成する
 // cloneした場合と異なり、predecessor_info, successor_info_list
 // も一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
 pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) -> NodeInfo {
-    let mut ret_node_info = NodeInfo::new();
-
-    ret_node_info.node_id = node_info_ref.node_id;
-    ret_node_info.address_str = node_info_ref.address_str.clone();
-    ret_node_info.born_id = node_info_ref.born_id;
-    ret_node_info.successor_info_list = vec![];
+    //let mut ret_node_info = NodeInfo::new();
+    // ret_node_info.node_id = node_info_ref.node_id;
+    // ret_node_info.address_str = node_info_ref.address_str.clone();
+    // ret_node_info.born_id = node_info_ref.born_id;
+    let mut successor_info_list = vec![];
     for each_ninfo in &node_info_ref.successor_info_list {
-        ret_node_info.successor_info_list.push((*each_ninfo).clone());
+        successor_info_list.push((*each_ninfo).clone());
     }
-    // ret_node_info.finger_table = vec![];
+    // let mut finger_table = vec![];
     // for each_ninfo in &node_info_ref.finger_table {
     //     let tmp_val = match each_ninfo {
     //         None => None,
@@ -145,14 +157,22 @@ pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) ->
     //             ret_val
     //         }
     //     };
-    //     ret_node_info.finger_table.push(tmp_val);
+    //     finger_table.push(tmp_val);
     // }    
-    ret_node_info.predecessor_info = vec![];
+    let mut predecessor_info = vec![];
     for each_ninfo in &node_info_ref.predecessor_info {
-        ret_node_info.predecessor_info.push((*each_ninfo).clone());
+        predecessor_info.push((*each_ninfo).clone());
     }
 
-    return ret_node_info;    
+    //return ret_node_info;
+    return NodeInfo{
+        node_id: node_info_ref.node_id,
+        address_str: node_info_ref.address_str.clone(),
+        born_id: node_info_ref.born_id,
+        successor_info_list: successor_info_list,
+        predecessor_info: predecessor_info,
+        finger_table: vec![]
+    };
 }
 
 pub fn gen_summary_node_info(node_info_ref: &NodeInfo) -> NodeInfoSummary {

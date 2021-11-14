@@ -50,6 +50,10 @@ use std::env;
 use std::collections::HashMap;
 use std::fs::File;
 
+extern crate flame;
+#[macro_use] extern crate flamer;
+//use flame;
+
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -87,6 +91,7 @@ fn req_rest_api_test() {
     req_rest_api_test_inner_get();
 }
 
+#[flame]
 fn main() {
     //引数処理
     let args: Vec<String> = env::args().collect();
@@ -96,6 +101,8 @@ fn main() {
             req_rest_api_test();
         }
     }else if args.len() > 2 {
+        //let _fg = flame::start_guard("main");
+
         let born_id: i32 = args[1].parse().unwrap();
         let bind_addr: String = args[2].parse().unwrap();
         let bind_port_num: i32 = args[3].parse().unwrap();
@@ -149,6 +156,9 @@ fn main() {
             }
             //std::thread::sleep(std::time::Duration::from_millis(100 as u64));
             std::thread::sleep(std::time::Duration::from_millis(500 as u64));
+            if counter == 600 {
+                flame::dump_html(File::create(("flamegraph".to_string() + born_id.to_string().as_str() + ".html").as_str()).unwrap()).unwrap();
+            }
         });
     
         let stabilize_ftable_th_handle = std::thread::spawn(move|| loop{

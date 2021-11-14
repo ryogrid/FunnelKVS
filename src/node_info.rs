@@ -48,6 +48,7 @@ pub struct NodeInfoSummary {
 }
 
 impl NodeInfo {
+    #[flame]
     pub fn new() -> NodeInfo {
         NodeInfo {
             node_id : 0, //TODO: node_idの初期値を-1から0に変更したので注意
@@ -72,6 +73,7 @@ impl NodeInfo {
 // 用途としては、あるノードの NodeInfo を他のノードが取得し保持する際に利用される
 // ことを想定して実装されている.
 impl Clone for NodeInfo {
+    #[flame]
     fn clone(&self) -> Self {
         let mut ret_node_info = NodeInfo::new();
 
@@ -86,6 +88,7 @@ impl Clone for NodeInfo {
 }
 
 impl Clone for NodeInfoSummary {
+    #[flame]
     fn clone(&self) -> Self {
         return NodeInfoSummary{ node_id: self.node_id, succ0_id: self.succ0_id, address_str: self.address_str.clone() };
     }  
@@ -94,6 +97,7 @@ impl Clone for NodeInfoSummary {
 // 実体の参照からコピーを作成する
 // cloneした場合と異なり、predecessor_info, successor_info_list, finger_table
 // も一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
+#[flame]
 pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
     let mut ret_node_info = NodeInfo::new();
 
@@ -126,6 +130,7 @@ pub fn partial_clone_from_ref_strong(node_info_ref: &NodeInfo) -> NodeInfo {
 // 実体の参照からコピーを作成する
 // cloneした場合と異なり、predecessor_info, successor_info_list
 // も一段階だけは値を埋めて返す（各NodeInfoオブジェクトはcloneされたもの）
+#[flame]
 pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) -> NodeInfo {
     let mut ret_node_info = NodeInfo::new();
 
@@ -155,10 +160,12 @@ pub fn partial_clone_from_ref_strong_without_ftable(node_info_ref: &NodeInfo) ->
     return ret_node_info;    
 }
 
+#[flame]
 pub fn gen_summary_node_info(node_info_ref: &NodeInfo) -> NodeInfoSummary {
     return NodeInfoSummary { node_id: node_info_ref.node_id, succ0_id: node_info_ref.successor_info_list[0].node_id, address_str: node_info_ref.address_str.clone() }
 }
 
+#[flame]
 pub fn gen_node_info_from_summary(summary_ref: &NodeInfoSummary) -> NodeInfo {
     let mut ret_ninfo = NodeInfo::new();
     ret_ninfo.node_id = summary_ref.node_id;
@@ -166,6 +173,7 @@ pub fn gen_node_info_from_summary(summary_ref: &NodeInfoSummary) -> NodeInfo {
     return ret_ninfo;
 }
 
+#[flame]
 pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
     let mut self_node_ref = self_node.lock().unwrap();
     if self_node_ref.predecessor_info.len() == 0 {
@@ -177,6 +185,7 @@ pub fn set_pred_info(self_node: ArMu<NodeInfo>, node_info: NodeInfo){
 
 // RPC呼出しが接続失敗やタイムアウトで終了した場合、保持しているルーティングに関する情報の各々について
 // 反映する
+#[flame]
 pub fn handle_downed_node_info(self_node: &mut NodeInfo, target_node: &NodeInfo, err: &chord_util::GeneralError){
     chord_util::dprint(&("handle_downed_node_info called!".to_string()));
 

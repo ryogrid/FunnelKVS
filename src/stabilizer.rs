@@ -15,6 +15,7 @@ type ArMu<T> = Arc<Mutex<T>>;
 
 // 経路表の情報を他ノードから強制的に設定する.
 // joinメソッドの中で、secondノードがfirstノードに対してのみ用いるものであり、他のケースで利用してはならない
+#[flame]
 pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo){
     //with self.existing_node.node_info.lock_of_pred_info, self.existing_node.node_info.lock_of_succ_infos:
     let self_node_clone;
@@ -29,6 +30,7 @@ pub fn set_routing_infos_force(self_node: ArMu<node_info::NodeInfo>, predecessor
 }
 
 // node_addressに対応するノードに問い合わせを行い、教えてもらったノードをsuccessorとして設定する
+#[flame]
 pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyukai_node_address: &String, born_id: i32){
     let mut new_node_ref = new_node.lock().unwrap();
     
@@ -122,6 +124,7 @@ pub fn join(new_node: ArMu<node_info::NodeInfo>, self_node_address: &String, tyu
     };
 }
 
+#[flame]
 pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{
     let mut self_node_ref = self_node.lock().unwrap();
     let mut deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -265,6 +268,7 @@ pub fn stabilize_successor(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 
 // successor_info_listのインデックス1より後ろを規定数まで埋める
 // 途中でエラーとなった場合は、規定数に届いていなくとも処理を中断する
+#[flame]
 pub fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>) -> Result<bool, chord_util::GeneralError>{    
     let mut self_node_ref = self_node.lock().unwrap();
     chord_util::dprint(&("fill_succ_info_list_0,".to_string() + chord_util::gen_debug_str_of_node(&self_node_ref).as_str()));
@@ -339,6 +343,7 @@ pub fn fill_succ_info_list(self_node: ArMu<node_info::NodeInfo>) -> Result<bool,
 // FingerTableに関するstabilize処理を行う
 // 一回の呼び出しで1エントリを更新する
 // FingerTableのエントリはこの呼び出しによって埋まっていく
+#[flame]
 pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -384,6 +389,7 @@ pub fn stabilize_finger_table(self_node: ArMu<node_info::NodeInfo>, idx: i32) ->
 
 // caller_node が自身の正しい predecessor でないかチェックし、そうであった場合、経路表の情報を更新する
 // 本メソッドはstabilize処理の中で用いられる
+#[flame]
 pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, caller_node_ni: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let self_node_deep_cloned = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -460,6 +466,7 @@ pub fn check_predecessor(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<
 // passed_datasで渡されたデータのリストを自身のDataStoreに加える
 // 基本的に、ノード参加が判明した際に他のノードが self_node に対してデータを委譲
 // する際に利用することを想定する
+#[flame]
 pub fn pass_datas(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
     let mut data_store_ref = data_store.lock().unwrap();
     data_store_ref.store_iv_with_vec(pass_datas);

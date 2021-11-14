@@ -59,18 +59,21 @@ pub struct GeneralError {
 }
 
 impl GeneralError {
+    #[flame]
     pub fn new(message: String, err_code: u32) -> GeneralError {
         GeneralError {message: message, line: 0, column: 0, err_code: err_code}
     }
 }
 
 impl std::fmt::Display for GeneralError {
+    #[flame]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         return write!(f, "({})", self.message);
     }
 }
 
 // 0からlimitより1少ない数までの値の乱数を返す
+#[flame]
 pub fn get_rnd_int_with_limit(limit : u32) -> u32{
     let mut rng = rand::thread_rng(); // 乱数生成器の初期化
     let limit_inner:i32 = limit as i32;
@@ -80,6 +83,7 @@ pub fn get_rnd_int_with_limit(limit : u32) -> u32{
 
 // 任意の文字列をハッシュ値（定められたbit数で表現される整数値）に変換しint型で返す
 // RustのDefaultHasherでハッシュをとった64bit値の下位32bitを u32 型で返す
+#[flame]
 pub fn hash_str_to_int(input_str : &String) -> u32 {
     let mut hasher = DefaultHasher::new();
     let str_bytes = input_str.as_bytes();
@@ -94,6 +98,7 @@ pub fn hash_str_to_int(input_str : &String) -> u32 {
     return hash_val_u32;
 }
 
+#[flame]
 pub fn get_unixtime_in_nanos() -> i32{
     let now = SystemTime::now();
     let unixtime = now.duration_since(UNIX_EPOCH).expect("back to the future");
@@ -101,10 +106,12 @@ pub fn get_unixtime_in_nanos() -> i32{
 }
 
 // UNIXTIME（ナノ秒精度）にいくつか値を加算した値からアドレス文字列を生成する
+#[flame]
 pub fn gen_address_str() -> String{
     return (get_unixtime_in_nanos() + 10).to_string();
 }
 
+#[flame]
 pub fn overflow_check_and_conv(id : u64) -> u32 {
     let mut ret_id = id;
     if id > gval::ID_MAX as u64 {
@@ -114,11 +121,13 @@ pub fn overflow_check_and_conv(id : u64) -> u32 {
     return ret_id as u32;
 }
 
+#[flame]
 pub fn conv_id_to_ratio_str(id : u32) -> String {
     let ratio = (id as f64 / gval::ID_MAX as f64) * 100.0;
     return format!("{:.4}", ratio);
 }
 
+#[flame]
 pub fn calc_distance_between_nodes_left_mawari(base_id : u32, target_id : u32) -> u32 {
     // successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
     // 距離0と考えることもできるが、一周分を距離として返す
@@ -143,6 +152,7 @@ pub fn calc_distance_between_nodes_left_mawari(base_id : u32, target_id : u32) -
     return slided_base_id as u32;
 }
 
+#[flame]
 pub fn calc_distance_between_nodes_right_mawari(base_id : u32, target_id : u32) -> u32 {
     // successorが自分自身である場合に用いられる場合を考慮し、base_id と target_id が一致する場合は
     // 距離0と考えることもできるが、一周分を距離として返す
@@ -167,6 +177,7 @@ pub fn calc_distance_between_nodes_right_mawari(base_id : u32, target_id : u32) 
     return slided_target_id as u32;
 }
 
+#[flame]
 pub fn exist_between_two_nodes_right_mawari(from_id : u32, end_id : u32, target_id : u32) -> bool { 
     let distance_end = calc_distance_between_nodes_right_mawari(from_id, end_id);
     let distance_target = calc_distance_between_nodes_right_mawari(from_id, target_id);
@@ -181,27 +192,32 @@ pub fn exist_between_two_nodes_right_mawari(from_id : u32, end_id : u32, target_
 // TODO: (rustr) グローバル定数を見て、ファイルに書き出すフラグが立っていたら、ファイルに書くようにする (dprint)
 //               スレッドセーフなロガーライブラリを採用する必要がありそう？？？
 //               最初は3ノードで動作確認をするので、その時点ではstdoutに書き出す形で問題ない
+#[flame]
 pub fn dprint(print_str : &String) {
     let local = Local::now();
     let local_naive = local.naive_local();
     println!("{:?},{}", local_naive, print_str);
 }
 
+#[flame]
 pub fn gen_debug_str_of_node(node_info : &node_info::NodeInfo) -> String {
     return node_info.born_id.to_string() + &",".to_string() + &format!("{:X}", node_info.node_id) + &",".to_string()
        + &conv_id_to_ratio_str(node_info.node_id);
 }
 
+#[flame]
 pub fn gen_debug_str_of_data(data_id : u32) -> String {
     return format!("{:X}", data_id) + &",".to_string() + &conv_id_to_ratio_str(data_id);
 }
 
+#[flame]
 pub fn get_node_info(self_node: ArMu<node_info::NodeInfo>) -> node_info::NodeInfo {
     let self_node_ref = self_node.lock().unwrap();
     let ret = node_info::partial_clone_from_ref_strong_without_ftable(&self_node_ref);
     return ret;
 }
 
+#[flame]
 pub fn iv_clone_from_ref(iv_ref: &DataIdAndValue) -> DataIdAndValue {
     return DataIdAndValue::new(iv_ref.data_id, iv_ref.val_str.clone());
 }

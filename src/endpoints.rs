@@ -21,6 +21,7 @@ use crate::stabilizer;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // urlは "http://から始まるものにすること"
+#[flame]
 fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
     let client = match reqwest::blocking::Client::builder()
     .timeout(Duration::from_secs(10000))
@@ -55,6 +56,7 @@ fn http_get_request(url_str: &str) -> Result<String, chord_util::GeneralError> {
 
 // urlは "http://から始まるものにすること"
 // json_str は JSONの文字列表現をそのまま渡せばよい
+#[flame]
 fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_util::GeneralError> {
     //let client = reqwest::blocking::Client::new();
     let client = match reqwest::blocking::Client::builder()
@@ -88,6 +90,7 @@ fn http_post_request(url_str: &str, json_str: String) -> Result<String, chord_ut
     return Ok(ret);
 }
 
+#[flame]
 #[get("/")]
 fn index() { //-> Json<node_info::NodeInfo> {
     // let mut node_info = node_info::NodeInfo::new();
@@ -103,6 +106,7 @@ fn index() { //-> Json<node_info::NodeInfo> {
     // Json(node_info)
 }
 
+#[flame]
 #[get("/result-type")]
 fn result_type() -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> {
     let mut node_info = node_info::NodeInfo::new();
@@ -118,6 +122,7 @@ fn result_type() -> Json<Result<node_info::NodeInfo, chord_util::GeneralError>> 
     Json(Ok(node_info))
 }
 
+#[flame]
 #[get("/get-param-test?<param1>&<param2>")]
 fn get_param_test(param1: String, param2: String) -> Json<node_info::NodeInfo> {
     let mut node_info = node_info::NodeInfo::new();
@@ -136,6 +141,7 @@ fn get_param_test(param1: String, param2: String) -> Json<node_info::NodeInfo> {
     Json(node_info)
 }
 
+#[flame]
 #[post("/deserialize", data = "<node_info>")]
 pub fn deserialize_test(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, node_info: Json<node_info::NodeInfo>) -> String {
     println!("{:?}", self_node.lock().unwrap());
@@ -144,6 +150,7 @@ pub fn deserialize_test(self_node: State<ArMu<node_info::NodeInfo>>, data_store:
     format!("Accepted post request! {:?}", node_info.0)
 }
 
+#[flame]
 pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node_ni: &node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/check_predecessor"),
@@ -158,11 +165,13 @@ pub fn rrpc_call__check_predecessor(self_node: &node_info::NodeInfo, caller_node
     };
 }
 
+#[flame]
 #[post("/check_predecessor", data = "<caller_node_ni>")]
 pub fn rrpc__check_predecessor(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, caller_node_ni: Json<node_info::NodeInfo>) -> Json<Result<bool, chord_util::GeneralError>> {
     return Json(stabilizer::check_predecessor(Arc::clone(&self_node), Arc::clone(&data_store), caller_node_ni.0));
 }
 
+#[flame]
 pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, predecessor_info: node_info::NodeInfo, successor_info_0: node_info::NodeInfo , ftable_enry_0: node_info::NodeInfo) -> Result<bool, chord_util::GeneralError> {
     let rpc_arg = SetRoutingInfosForce::new(predecessor_info, successor_info_0, ftable_enry_0);
 
@@ -176,12 +185,14 @@ pub fn rrpc_call__set_routing_infos_force(self_node: &node_info::NodeInfo, prede
     return Ok(true);
 }
 
+#[flame]
 #[post("/set_routing_infos_force", data = "<rpc_args>")]
 pub fn rrpc__set_routing_infos_force(self_node: State<ArMu<node_info::NodeInfo>>, rpc_args: Json<SetRoutingInfosForce>){
     let args = rpc_args.0;
     return stabilizer::set_routing_infos_force(Arc::clone(&self_node), args.predecessor_info, args.successor_info_0, args.ftable_enry_0);
 }
 
+#[flame]
 pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/find_successor"),
@@ -204,11 +215,13 @@ pub fn rrpc_call__find_successor(self_node: &node_info::NodeInfo, id : u32) -> R
 }
 
 // idで識別されるデータを担当するノードの名前解決を行う
+#[flame]
 #[post("/find_successor", data = "<id>")]
 pub fn rrpc__find_successor(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfoSummary, chord_util::GeneralError>> {
     return Json(router::find_successor(Arc::clone(&self_node), id.0));
 }
 
+#[flame]
 pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfoSummary, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/closest_preceding_finger"),
@@ -235,11 +248,13 @@ pub fn rrpc_call__closest_preceding_finger(self_node: &node_info::NodeInfoSummar
     return Ok(ret_ninfo);
 }
 
+#[flame]
 #[post("/closest_preceding_finger", data = "<id>")]
 pub fn rrpc__closest_preceding_finger(self_node: State<ArMu<node_info::NodeInfo>>, id : Json<u32>) -> Json<Result<node_info::NodeInfoSummary, chord_util::GeneralError>> {
     return Json(router::closest_preceding_finger(Arc::clone(&self_node), id.0));
 }
 
+#[flame]
 pub fn rrpc_call__global_put(self_node: &node_info::NodeInfo, key_str: String, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let rpc_arg = GlobalPut::new(key_str, val_str);
 
@@ -264,11 +279,13 @@ pub fn rrpc_call__global_put(self_node: &node_info::NodeInfo, key_str: String, v
     }
 }
 
+#[flame]
 #[post("/global_put", data = "<rpc_args>")]
 pub fn rrpc__global_put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, rpc_args: Json<GlobalPut>) -> Json<Result<bool, chord_util::GeneralError>> {
     return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key_str, rpc_args.0.val_str));
 }
 
+#[flame]
 pub fn rrpc_call__put(self_node: &node_info::NodeInfo, key_id: u32, val_str: String) -> Result<bool, chord_util::GeneralError> {
     let rpc_arg = Put::new(key_id, val_str);
 
@@ -293,11 +310,13 @@ pub fn rrpc_call__put(self_node: &node_info::NodeInfo, key_id: u32, val_str: Str
     }
 }
 
+#[flame]
 #[post("/put", data = "<rpc_args>")]
 pub fn rrpc__put(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, rpc_args: Json<Put>) -> Json<Result<bool, chord_util::GeneralError>> {
     return Json(chord_node::put(Arc::clone(&self_node), Arc::clone(&data_store), rpc_args.0.key_id, rpc_args.0.val_str));
 }
 
+#[flame]
 pub fn rrpc_call__global_get(self_node: &node_info::NodeInfo, key_str: String) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/global_get"),
@@ -324,11 +343,13 @@ pub fn rrpc_call__global_get(self_node: &node_info::NodeInfo, key_str: String) -
     return Ok(ret_iv);
 }
 
+#[flame]
 #[post("/global_get", data = "<key_str>")]
 pub fn rrpc__global_get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
     return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
 }
 
+#[flame]
 pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/get"),
@@ -355,11 +376,13 @@ pub fn rrpc_call__get(self_node: &node_info::NodeInfo, key_id: u32) -> Result<ch
     return Ok(ret_iv);
 }
 
+#[flame]
 #[post("/get", data = "<key_id>")]
 pub fn rrpc__get(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_id: Json<u32>) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
     return Json(chord_node::get(Arc::clone(&self_node), Arc::clone(&data_store), key_id.0));
 }
 
+#[flame]
 pub fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, pass_datas: Vec<chord_util::DataIdAndValue>) -> Result<bool, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/pass_datas"),
@@ -386,11 +409,13 @@ pub fn rrpc_call__pass_datas(self_node: &node_info::NodeInfo, pass_datas: Vec<ch
     return Ok(ret_bool);
 }
 
+#[flame]
 #[post("/pass_datas", data = "<pass_datas>")]
 pub fn rrpc__pass_datas(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, pass_datas: Json<Vec<chord_util::DataIdAndValue>>) -> Json<Result<bool, chord_util::GeneralError>> {
     return Json(stabilizer::pass_datas(Arc::clone(&self_node), Arc::clone(&data_store), pass_datas.0));
 }
 
+#[flame]
 pub fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, key_str: String) -> Result<bool, chord_util::GeneralError> {
     let req_rslt = http_post_request(
         &("http://".to_string() + self_node.address_str.as_str() + "/global_delete"),
@@ -417,29 +442,34 @@ pub fn rrpc_call__global_delete(self_node: &node_info::NodeInfo, key_str: String
     return Ok(is_exist);
 }
 
+#[flame]
 #[post("/global_delete", data = "<key_str>")]
 pub fn rrpc__global_delete(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key_str: Json<String>) -> Json<Result<bool, chord_util::GeneralError>> {
     return Json(chord_node::global_delete(Arc::clone(&self_node), Arc::clone(&data_store), key_str.0));
 }
 
 // ブラウザから試すためのエンドポイント
+#[flame]
 #[get("/global_put_simple?<key>&<val>")]
 pub fn rrpc__global_put_simple(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key: String, val: String) -> Json<Result<bool, chord_util::GeneralError>> {
     return Json(chord_node::global_put(Arc::clone(&self_node), Arc::clone(&data_store), key, val));
 }
 
 // ブラウザから試すためのエンドポイント
+#[flame]
 #[get("/global_get_simple?<key>")]
 pub fn rrpc__global_get_simple(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key: String) -> Json<Result<chord_util::DataIdAndValue, chord_util::GeneralError>> {
     return Json(chord_node::global_get(Arc::clone(&self_node), Arc::clone(&data_store), key));
 }
 
 // ブラウザから試すためのエンドポイント
+#[flame]
 #[get("/global_delete_simple?<key>")]
 pub fn rrpc__global_delete_simple(self_node: State<ArMu<node_info::NodeInfo>>, data_store: State<ArMu<data_store::DataStore>>, key: String) -> Json<Result<bool, chord_util::GeneralError>> {
     return Json(chord_node::global_delete(Arc::clone(&self_node), Arc::clone(&data_store), key));
 }
 
+#[flame]
 pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo, GeneralError> {
     let req_rslt = http_get_request(&("http://".to_string() + address.as_str() + "/get_node_info"));
     let ret_ninfo = match serde_json::from_str::<node_info::NodeInfo>(&(
@@ -455,6 +485,7 @@ pub fn rrpc_call__get_node_info(address : &String) -> Result<node_info::NodeInfo
     return Ok(ret_ninfo);
 }
 
+#[flame]
 #[get("/get_node_info")]
 pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>) -> Json<node_info::NodeInfo> {
     return Json(chord_util::get_node_info(Arc::clone(&self_node)));
@@ -464,6 +495,7 @@ pub fn rrpc__get_node_info(self_node: State<ArMu<node_info::NodeInfo>>) -> Json<
 // 与えられた0から100の整数の100分の1をID空間のサイズ（最大値）にかけた
 // 値をIDとして、find_successorした結果を返す
 // 問い合わせはまず自身に対してかける
+#[flame]
 #[get("/resolve_id_val?<percentage>")]
 pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, percentage : String) -> Json<node_info::NodeInfoSummary> {
     let percentage_num: f32 = percentage.parse().unwrap();
@@ -471,6 +503,7 @@ pub fn rrpc__resolve_id_val(self_node: State<ArMu<node_info::NodeInfo>>, percent
     Json(router::find_successor(Arc::clone(&self_node), id as u32).unwrap())
 }
 
+#[flame]
 pub fn rest_api_server_start(self_node: ArMu<node_info::NodeInfo>, data_store: ArMu<data_store::DataStore>, bind_addr: String, bind_port_num: i32){
     let config = Config::build(Environment::Production)
     .address(bind_addr)

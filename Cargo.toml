@@ -19,6 +19,8 @@ clippy = { version = "*", optional = true }
 rand = "0.8.3"
 chrono = "0.4"
 #pprof = { version = "0.5.1", features = ["protobuf"] }
+flame = "0.2.2"
+flamer = "0.4.0"
 
 [profile.release]
 panic = 'abort'

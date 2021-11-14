@@ -22,11 +22,13 @@ pub struct DataStore {
 }
 
 impl DataStore {
+    #[flame]
     pub fn new() -> DataStore {
         let sd = HashMap::new();
         DataStore {stored_data : sd}
     }
 
+    #[flame]
     pub fn store_one_iv(& mut self, data_id: u32, value_str: String) -> bool {
         let iv_entry = chord_util::DataIdAndValue::new(data_id, value_str.clone());
         match self.stored_data.insert(data_id.to_string(), iv_entry){
@@ -34,7 +36,8 @@ impl DataStore {
             Some(_old_val) => { return true; }
         };
     }
-            
+    
+    #[flame]
     pub fn get(&self, data_id: u32) -> Result<chord_util::DataIdAndValue, chord_util::GeneralError>{
         match self.stored_data.get(&data_id.to_string()){
             None => {
@@ -46,10 +49,12 @@ impl DataStore {
         }
     }
 
+    #[flame]
     pub fn remove_one_data(&mut self, key_id: u32){
         self.stored_data.remove(&key_id.to_string());
     }
 
+    #[flame]
     pub fn store_iv_with_vec(&mut self, iv_vec: Vec<chord_util::DataIdAndValue>){
         for each_iv in iv_vec {
             self.store_one_iv(each_iv.data_id, each_iv.val_str);
@@ -58,6 +63,7 @@ impl DataStore {
 
     // 自身のノードIDとpredecessorのノードIDを指定すると、自身の担当範囲外のデータを削除し、同時に削除したデータ
     // のリストが返る
+    #[flame]
     pub fn get_and_delete_iv_with_pred_self_id(&mut self, pred_id: u32, self_id: u32) -> Vec<chord_util::DataIdAndValue> {
         let mut ret_vec: Vec<chord_util::DataIdAndValue> = vec![];
         for (key, value) in &self.stored_data {

@@ -14,6 +14,7 @@ use crate::data_store;
 type ArMu<T> = Arc<Mutex<T>>;
 
 // idで識別されるデータを担当するノードの名前解決を行う
+#[flame]
 pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     let mut self_node_ref = self_node.lock().unwrap();
     let deep_cloned_self_node = node_info::partial_clone_from_ref_strong(&self_node_ref);
@@ -58,6 +59,7 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
 }
  
 // id の前で一番近い位置に存在するノードを探索する
+#[flame]
 pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     let mut n_dash: node_info::NodeInfoSummary = node_info::gen_summary_node_info(exnode_ni_ref);
     let mut n_dash_found: node_info::NodeInfoSummary = node_info::gen_summary_node_info(exnode_ni_ref);
@@ -137,6 +139,7 @@ pub fn find_predecessor(exnode_ni_ref: &node_info::NodeInfo, id: u32) -> Result<
 }
 
 //  自身の持つ経路情報をもとに,  id から前方向に一番近いノードの情報を返す
+#[flame]
 pub fn closest_preceding_finger(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<node_info::NodeInfoSummary, chord_util::GeneralError> {
     // 範囲の広いエントリから探索していく
     // finger_tableはインデックスが小さい方から大きい方に、範囲が大きくなっていく

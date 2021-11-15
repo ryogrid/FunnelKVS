@@ -56,10 +56,10 @@
   - KVS system network health check
     - $ go run -op=check-chain
     - if the network is helthy, launched or alive nodes (process) are listed without duplication
-  - test datas put to KVS
+  - testing put values to KVS
     - $ go run -op=put-test-values -arg1="127.0.0.1:11000"
     - node you specify with arg1 is free. above is example
-  - get testing already put values
+  - testing get already put values
     - $ go run -op=get-test-values -arg1="127.0.0.1:11000"
 
 ## Simulator of distributed KVS (chord_sim dir)

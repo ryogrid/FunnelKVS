@@ -75,7 +75,7 @@
   - $ cd chord_sim_rust
   - $ cargo run
 
-## Runnable platforms for KVS system (= We can build the daemon binary for the platform)
+## Runnable platforms for KVS system (= you can build the daemon binary for the platform)
 - Windows native
   - dev env is also OK
 - MacOS

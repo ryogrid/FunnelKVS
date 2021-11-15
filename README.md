@@ -36,7 +36,7 @@
     - $ cargo run 3 127.0.0.1 11002 127.0.0.1 11000 ./
     - ....
 
-- REST interfaces which is offered by KVS system
+- REST interfaces which are offered by KVS system
   - for easy testing with Web browser or something (use http GET request)
     - http://[node addr]:[node_port]/global_put_simple?key=[string only includes ascii character]&val=[string only includes ascii character]
     - http://[node addr]:[node_port]/global_get_simple?key=[string only includes ascii character]

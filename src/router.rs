@@ -45,16 +45,17 @@ pub fn find_successor(self_node: ArMu<node_info::NodeInfo>, id : u32) -> Result<
         }
     };
     
-    match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str) {
-        Err(err) => {
-            self_node_ref = self_node.lock().unwrap();
-            node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
-            return Err(chord_util::GeneralError::new(err.message, err.err_code));
-        }
-        Ok(got_node) => {                
-            return Ok(node_info::gen_summary_node_info(&got_node));
-        }
-    };
+    return Ok(node_info::NodeInfoSummary { node_id: asked_n_dash_info.successor_info_list[0].node_id, succ0_id: 0, address_str: asked_n_dash_info.successor_info_list[0].address_str.clone()});
+    // match endpoints::rrpc_call__get_node_info(&asked_n_dash_info.successor_info_list[0].address_str) {
+    //     Err(err) => {
+    //         self_node_ref = self_node.lock().unwrap();
+    //         node_info::handle_downed_node_info(&mut self_node_ref, &asked_n_dash_info.successor_info_list[0], &err);
+    //         return Err(chord_util::GeneralError::new(err.message, err.err_code));
+    //     }
+    //     Ok(got_node) => {                
+    //         return Ok(node_info::gen_summary_node_info(&got_node));
+    //     }
+    // };
 }
  
 // id の前で一番近い位置に存在するノードを探索する

@@ -41,14 +41,14 @@
     - http://[node addr]:[node_port]/global_put_simple?key=[string only includes ascii character]&val=[string only includes ascii character]
     - http://[node addr]:[node_port]/global_get_simple?key=[string only includes ascii character]
     - http://[node addr]:[node_port]/global_delete_simple?key=[string only includes ascii character]
-  - for using from code (use http POST request to send JSON text)
+  - for using from code or HTTP client tool (use http POST request to send JSON text)
     - **charactor code of body part must be UTF-8**
     - http://[node addr]:[node_port]/global_put  
-  　  - body at POST -> { "key_str" : "[string]", "val_str" : "[string]" }  
+  　  - body at POST -> { "key_str" : "[charactors]", "val_str" : "[charactors]" }  
     - http://[node addr]:[node_port]/global_get  
-  　  - body at POST -> "[key_str as string]"  
+  　  - body at POST -> "[key charactors]"  
     - http://[node addr]:[node_port]/global_delete  
-      - body at POST -> "[key_str as string]" 
+      - body at POST -> "[key charactors]" 
 
 - Utility CLI tool (tools/dkvs_client.go)
   - setup chord network (on local machine)
@@ -56,11 +56,13 @@
   - KVS system network health check
     - $ go run -op=check-chain
     - if the network is helthy, launched or alive nodes (process) are listed without duplication
-  - testing put values to KVS
+  - testing put values to KVS via specified node
     - $ go run -op=put-test-values -arg1="127.0.0.1:11000"
-    - node you specify with arg1 is free. above is example
-  - testing get already put values
-    - $ go run -op=get-test-values -arg1="127.0.0.1:11000"
+    - put 100 values
+    - node you specify with arg1 has no restiction like that local addresses can be only specified. above is example
+  - testing get already put values from KVS via specified node
+    - $ go run -op=get-test-values -arg1="127.0.0.1:11005"
+    - get 100 values 
 
 ## Simulator of distributed KVS (chord_sim dir)
 - design verification with simulator wrote by **Python** (**verification is finished**)

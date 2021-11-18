@@ -16,7 +16,7 @@
 
 - Data consistency
   - care for data consistency is not enough yet...
-  - First, **running test under node downs and joins is planned** 
+  - First, **running test on occring node downs and joins condition is planned** 
 
 - How to execute node daemon
   - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
@@ -66,7 +66,7 @@
 
 ## Simulator of distributed KVS (chord_sim dir)
 - design verification with simulator wrote by **Python** (**verification is finished**)
-  - you can simulate distributed kvs working  behavior. on the simulation put, get, stabilize, join operations are issued continuously under node down occuring condition.
+  - you can simulate distributed kvs working behavior. on the simulation put, get, stabilize, join operations are issued continuously on node downs and node joins occuring condition.
 
 ## Simulator of distributed KVS (chord_sim_rust dir)
 - design verification with simulator wrote by **Rust** (**verification is finished**)

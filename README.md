@@ -28,8 +28,8 @@
     - **launch example of node daemons which compose KVS system**
       - **you can build KVS system which is composed of multiple machines if you place rust_dkvs program binary to the machines and kick these with some tool like SSH**
         - procedures wrote below are single machine example for easy trying
-      - **born_id of first node must be 1** but born_id of other node has no restriction except thst "1" can't be used
-        - "1" can be used by first node only 
+      - **born_id of first node must be 1** but born_id of other node has no restriction except thst **1** can't be used
+        - **1** can be used by first node only 
       - **IP address and port number has no restriction but all nodes should be able to communicate directly with each other**
     - $ cargo run 1 127.0.0.1 11000 127.0.0.1 10999 ./  
     - $ cargo run 2 127.0.0.1 11001 127.0.0.1 11000 ./

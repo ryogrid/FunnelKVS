@@ -32,9 +32,9 @@
       - **born_id of first node must be 1** but born_id of other node has no restriction except thst **1** can't be used
         - **1** can be used by first node only 
       - **IP address and port number has no restriction but all nodes should be able to communicate directly with each other**
-    - $ target/build/release/rust_dkvs 1 127.0.0.1 11000 127.0.0.1 10999 ./  
-    - $ target/build/release/rust_dkvs 2 127.0.0.1 11001 127.0.0.1 11000 ./
-    - $ target/build/release/rust_dkvs 3 127.0.0.1 11002 127.0.0.1 11000 ./
+    - $ target/release/rust_dkvs 1 127.0.0.1 11000 127.0.0.1 10999 ./  
+    - $ target/release/rust_dkvs 2 127.0.0.1 11001 127.0.0.1 11000 ./
+    - $ target/release/rust_dkvs 3 127.0.0.1 11002 127.0.0.1 11000 ./
     - ....
 
 - REST interfaces which are offered by KVS system

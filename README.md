@@ -12,7 +12,7 @@
 
 - Fault torelance
   - data replication is implemented
-  - functionality for keeping network healthy is implemented
+  - functionality for keeping network healthy at occuring node down is also implemented
 
 - Data consistency
   - care for data consistency is not enough yet...

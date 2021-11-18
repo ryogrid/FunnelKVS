@@ -30,7 +30,7 @@
         - procedures wrote below are single machine example for easy trying
       - **born_id of first node must be 1** but born_id of other node is free except for "1"
         - "1" can be used by first node only 
-      - **IP address and port number has no restriction but each node should be able to communicate directly with other nodes**
+      - **IP address and port number has no restriction but all nodes should be able to communicate directly with each other**
     - $ cargo run 1 127.0.0.1 11000 127.0.0.1 10999 ./  
     - $ cargo run 2 127.0.0.1 11001 127.0.0.1 11000 ./
     - $ cargo run 3 127.0.0.1 11002 127.0.0.1 11000 ./

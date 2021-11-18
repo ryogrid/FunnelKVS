@@ -23,7 +23,7 @@
   - $ rustup override set nightly
   - $ rustup update && cargo update
   - $ cargo build --release
-  - $ target/build/release/rust_dkvs [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
+  - $ target/release/rust_dkvs [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
 
 - Setup KVS system
     - **launch example of node daemons which compose KVS system**

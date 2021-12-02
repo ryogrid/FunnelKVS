@@ -1,4 +1,4 @@
-# Rust implementation of distributed key-value store which has REST interfaces
+# Rust implementation of decentralized and distributed key-value store which has REST interfaces
 
 - TODO list (Japanese, includes finished tasks)
   - https://gist.github.com/ryogrid/9b1f340babfbb6cdc9d03e57b7834e71

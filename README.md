@@ -3,6 +3,11 @@
 - TODO list (Japanese, includes finished tasks)
   - https://gist.github.com/ryogrid/9b1f340babfbb6cdc9d03e57b7834e71
 
+## What is Funnel?
+- It is name of wepons which appears in MOBILE SUIT GUNUMD (animation) series
+- Several type of funnel attacks enemy cooporate with multi units
+- https://www.google.com/search?q=fin+funnel&tbm=isch
+
 ## Distributed KVS
 - Architecture (Japanese)
   - https://github.com/ryogrid/rust_dkvs/blob/master/ARCHITECTURE.md

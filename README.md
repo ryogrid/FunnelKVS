@@ -50,7 +50,8 @@
     - http://[node addr]:[node_port]/global_get_simple?key=[string only includes ascii character]
     - http://[node addr]:[node_port]/global_delete_simple?key=[string only includes ascii character]
   - for using from code or HTTP client tool (use http POST request to send JSON text)
-    - **charactor code of body part must be UTF-8**
+    - **Data should be appropriately escaped as JSON string and charactor code should be UTF-8**
+    - **"Content-Type" header's value should be "application/json"**
     - http://[node addr]:[node_port]/global_put  
   　  - body at POST -> { "key_str" : "[charactors]", "val_str" : "[charactors]" }  
     - http://[node addr]:[node_port]/global_get  

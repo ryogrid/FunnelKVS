@@ -26,9 +26,10 @@
   - First, **running test on occring node downs and joins condition is planned** 
 
 - How to execute node daemon
-  - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain nightly
-  - $ rustup override set nightly
+  - $ curl https://sh.rustup.rs -sSf | /bin/bash -s -- -y --default-toolchain stable
   - $ rustup update && cargo update
+  - **$ rustup install nightly-2021-07-29**
+  - **$ rustup override set nightly-2021-07-29**
   - $ cargo build --release
   - $ target/release/rust_dkvs [born_id: 1...N] [IP addr to bind] [Port number to bind] [IP addr of medietor] [Port number of medietor] [log output path: currently not referenced]
 

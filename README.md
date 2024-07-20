@@ -90,7 +90,7 @@
 ## Runnable platforms for KVS system (= you can build the daemon binary for the platform)
 - Windows native
   - dev env is also OK
-- MacOS
+- macOS
   - dev env is also OK
 - Linux (and Windows Subsystem for Linux environment)
   - dev env is also OK

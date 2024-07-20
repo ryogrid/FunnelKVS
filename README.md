@@ -16,7 +16,7 @@
   - https://rocket.rs/v0.4/guide/getting-started/
 
 - Fault torelance
-  - **in-memory DB with no persistance (file storage is not used)**
+  - **in-memory DB with no persistance (disk storage is not used)**
   - data replication is implemented
   - functionality for keeping network healthy at occuring node down is also implemented
 

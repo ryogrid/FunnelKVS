@@ -97,3 +97,7 @@
   - probably ...
 - other UNIX like OS environments
   - please try!
+
+
+### Related Work
+- [FunnelKVS-CPP - DHT based Distributed KVS in C++](https://github.com/ryogrid/FunnelKVS-CPP)
